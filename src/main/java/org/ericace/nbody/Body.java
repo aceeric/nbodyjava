@@ -7,6 +7,23 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 /**
+ * Models a body with position, velocity, radius, and mass. Calculates force exerted
+ * on itself from other <code>Body</code> instances.
+ * <p>
+ * The three primary components of functionality are:</p>
+ * <p>
+ * The {@link ForceComputer} nested class, which is run by a <code>ThreadPoolExecutor</code> and which
+ * calculates force from all other Body instances in the simulation.</p>
+ * <p>
+ * The {@link #update} method, which applies the calculated force to the body and computes a new position</p>
+ * <p>
+ * The {@link #subsume} method - which absorbs another body into an instance when they reach a certain
+ * proximity. Since the main purpose of this Java app is to see how many bodies can be simulated based
+ * on CPU/GPU configuration, I elected to combine bodies together if there is a collision, rather than
+ * breaking them apart or just doing a collision and redirection. (That might change in a future
+ * version.)</p>
+ * <p>
+ * This class borrows from: http://physics.princeton.edu/~fpretori/Nbody/code.htm</p>
  */
 class Body {
     private static final Logger logger = LogManager.getLogger(Body.class);
@@ -54,9 +71,9 @@ class Body {
     /**
      * Creates an instance with passed configuration
      *
-     * @param id     Every body should be created with a unique ID starting at zero with max <=>= total bodies
-     *               -1 because this ID is also used as an array index by the rendering engine. The class
-     *               does not enforce this
+     * @param id     Every body should be created with a unique ID starting at zero with max < total bodies
+     *               because this ID is also used as an array index by the rendering engine. (The class
+     *               does not enforce this)
      * @param x      Position
      * @param y      "
      * @param z      "
@@ -80,9 +97,10 @@ class Body {
     }
 
     /**
-     * re-computes velocity and position from force accumulated as of the instant of the call. Intended to be
-     * called from a single thread - so no two bodies are ever computed concurrently in different
-     * threads. Therefore, no concurrency control.
+     * Re-computes velocity and position from force accumulated as of the method call.
+     *
+     * Intended to be called from a single thread - so no two bodies are ever computed concurrently
+     * in different threads. Therefore, no concurrency control.
      *
      * @param timeScaling a smoothing factor
      *
@@ -113,11 +131,13 @@ class Body {
     }
 
     /**
-     * A Runnable that the ThreadPoolExecutor can run. Calculates the force on this body from all other
-     * bodies. The design is that one thread calculates the force for one instance - therefore the thread
-     * can safely write to the force class variables without synchronization code. The only other place the
-     * force variables are referenced is in the {@link #update} method which - again - by design runs
-     * in a single thread.
+     * A Runnable that a ThreadPoolExecutor can run to calculate the force on this body from all other
+     * bodies.
+     *
+     * The design is that one thread updates force for an instance - therefore the thread can safely
+     * write to the force class variables without synchronization code. The only other place the
+     * force variables are referenced is in the {@link #update} method which - again - by design,
+     * runs in a single thread.
      */
     class ForceComputer implements Runnable {
         private final ConcurrentLinkedQueue<Body> bodyQueue;
@@ -129,12 +149,12 @@ class Body {
         @Override
         public void run() {
             try {
+                if (!exists) {
+                    // this body was collapsed into another by another thread
+                    return;
+                }
                 fx = fy = fz = 0;
                 for (Body otherBody : bodyQueue) {
-                    if (!exists) {
-                        // this body was collapsed into another by another thread
-                        return;
-                    }
                     if (Body.this != otherBody && otherBody.exists) {
                         calcForceFrom(otherBody);
                     }
@@ -148,8 +168,10 @@ class Body {
     }
 
     /**
-     * Subsume the other body into this body. Absorbs the other body's mass and adds its radius
-     * to this instance's radius, and sets the other body's {@code exists} flag to false
+     * Subsumes another body into this body.
+     *
+     * Absorbs the other body's mass and adds its radius to this instance's radius, and sets
+     * the other body's {@code exists} flag to false
      *
      * @param otherBody the other body to subsume into this body
      */
@@ -165,6 +187,11 @@ class Body {
         logger.info("Body ID {} subsumed ID {}", id, otherBody.id);
     }
 
+    /**
+     * Calculates force on this body from another body
+     *
+     * @param otherBody the other body to calculate force from
+     */
     private void calcForceFrom(Body otherBody) {
         if (!exists || !otherBody.exists) {
             return;

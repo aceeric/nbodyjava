@@ -17,7 +17,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * thread catches draws the queue down to less than its max size.</p>
  * <p>
  * Storing the computation results outside of the bodies used to perform the calculation lets the rendering
- * engine have access to the computation results without any thread synchronization</p>
+ * engine have access to the computation results without any thread synchronization between the compute thread(s)
+ * and the rendering thread</p>
  */
 final class ResultQueueHolder {
     private static final Logger logger = LogManager.getLogger(Body.class);

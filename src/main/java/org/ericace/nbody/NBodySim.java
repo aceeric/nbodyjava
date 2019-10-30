@@ -8,9 +8,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Main class
  */
 class NBodySim {
-    private static final int THREAD_COUNT = 4;
+    private static final int THREAD_COUNT = 2;
     private static final int MAX_RESULT_QUEUES = 50;
-    private static final int BODY_COUNT = 3000;
+    private static final int BODY_COUNT = 2000;
     private static final double TIME_SCALING = .000000001F; // slows the simulation
     private static final double SOLAR_MASS = 1.98892e30;
 
@@ -72,7 +72,7 @@ class NBodySim {
     private static ConcurrentLinkedQueue<Body> initBodyQueue(int bodyCount) {
         ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
         int id = 0;
-        for (int i = -1; i <= 1; i += 2) {
+        for (int i = -1; i <= 1; i += 2) { // left clump/right clump
             for (int j = 0; j < bodyCount / 2; ++j) {
                 double x = ((.5 - Math.random()) * 420) + (400 * i);
                 double y = (.5 - Math.random()) * 10;

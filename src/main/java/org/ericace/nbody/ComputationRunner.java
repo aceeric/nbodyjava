@@ -3,7 +3,6 @@ package org.ericace.nbody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -47,7 +46,7 @@ class ComputationRunner implements Runnable {
     /**
      * Constructor
      *
-     * @param threadCount       number of threads in the executor
+     * @param threadCount       Number of threads in the executor
      * @param bodyQueue         Bodies in the simulation
      * @param timeScaling       To slow down and smooth out the body movement
      * @param resultQueueHolder Where the compute results are placed
@@ -100,10 +99,10 @@ class ComputationRunner implements Runnable {
      *       compute the force on body from other body
      * </pre>
      * Each body from the outer loop is scheduled into the thread pool, and passed the whole body
-     * queue. Therefore, each body is free to update its own force without thread synchronization because
-     * its the only body doing that calculation on itself. The application of the total final force to
-     * the body velocity and position is deferred until the entire queue of bodies have had their
-     * force computed.
+     * queue. Therefore, each body is free to update its own force without thread synchronization on the
+     * force member fields because its the only body doing that calculation on itself. The application
+     * of the total final force to the body velocity and position is deferred until the entire queue
+     * of bodies have had their force computed.
      * <p>
      * So at that time, it is safe to update the velocity and position without synchronization because no
      * other threads are reading the bodies. The results are stored in a queue of {@link BodyRenderInfo}

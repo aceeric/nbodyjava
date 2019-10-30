@@ -2,7 +2,7 @@ package org.ericace.nbody;
 
 /**
  * A value class that holds the computed position of a body in the simulation, and other elements
- * needed by the graphics engine. The value are all copies of a Body instance. The ID matches the
+ * needed by the graphics engine. The values are all copies from a Body instance. The ID matches the
  * ID of the Body from which it was created.
  */
 class BodyRenderInfo {

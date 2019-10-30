@@ -7,6 +7,8 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Sphere;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 
@@ -14,6 +16,7 @@ import java.util.ArrayList;
  * Integrates with the JMonkeyEngine game engine
  */
 public class JMEApp extends SimpleApplication {
+    private static final Logger logger = LogManager.getLogger(JMEApp.class);
 
     /**
      * Camera speed:
@@ -130,6 +133,7 @@ public class JMEApp extends SimpleApplication {
     public void simpleUpdate(float tpf) {
         ResultQueueHolder.ResultQueue rq = resultQueueHolder.nextComputedQueue();
         if (rq == null) {
+            logger.warn("No available result queue");
             return;
         }
         for (BodyRenderInfo b : rq.getQueue()) {
