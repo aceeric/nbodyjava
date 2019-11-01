@@ -1,11 +1,16 @@
 package org.ericace.nbody;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * A value class that holds the computed position of a body in the simulation, and other elements
  * needed by the graphics engine. The values are all copies from a Body instance. The ID matches the
  * ID of the Body from which it was created.
  */
 class BodyRenderInfo {
+    private static final Logger logger = LogManager.getLogger(BodyRenderInfo.class);
+
     final int id;
     final boolean exists;
     final double radius;
@@ -22,6 +27,7 @@ class BodyRenderInfo {
      * @param radius radius
      */
     BodyRenderInfo(int id, double x, double y, double z, double radius) {
+        logger.info("New existent BodyRenderInfo ID={}", id);
         this.id = id;
         this.x = x;
         this.y = y;
@@ -39,6 +45,7 @@ class BodyRenderInfo {
      * @param id The id of the body
      */
     BodyRenderInfo(int id) {
+        logger.info("New non-existent BodyRenderInfo ID={}", id);
         this.id = id;
         exists = false;
         radius = x = y = z = 0;

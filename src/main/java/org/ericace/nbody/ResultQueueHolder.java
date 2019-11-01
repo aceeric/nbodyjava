@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
@@ -21,12 +22,17 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * and the rendering thread</p>
  */
 final class ResultQueueHolder {
-    private static final Logger logger = LogManager.getLogger(Body.class);
+    private static final Logger logger = LogManager.getLogger(ResultQueueHolder.class);
 
     /**
      * The maximum number of {@link ResultQueue} instances that the class will hold
      */
     private final int maxQueues;
+
+    /**
+     * Allows assignment of a unique increasing ID to each result queue
+     */
+    private int queNum = 0;
 
     /**
      * The queue of queues
@@ -43,7 +49,12 @@ final class ResultQueueHolder {
          * sim - the class consumer sets the queue to computed. The rendering engine won't act on the
          * result queue until it is computed.
          */
-        private boolean computed = false;
+        private volatile boolean computed = false;
+
+        /**
+         * Diagnostic aid - monotonically increasing value
+         */
+        private final int queNum;
 
         /**
          * The bodies to render
@@ -55,8 +66,9 @@ final class ResultQueueHolder {
          *
          * @param capacity the initial number of BodyRenderInfo instances that will be enqueued (could grow)
          */
-        ResultQueue(int capacity) {
+        ResultQueue(int queNum, int capacity) {
             queue = new ArrayList<>(capacity);
+            this.queNum = queNum;
         }
 
         /**
@@ -84,6 +96,13 @@ final class ResultQueueHolder {
         List <BodyRenderInfo> getQueue() {
             return queue;
         }
+
+        /**
+         * @return see {@link #queNum}
+         */
+        int getQueNum() {
+            return queNum;
+        }
     }
 
     /**
@@ -108,9 +127,9 @@ final class ResultQueueHolder {
         if (queues.size() > maxQueues) {
             return null;
         }
-        ResultQueue rq = new ResultQueue(capacity);
+        ResultQueue rq = new ResultQueue(nextQueNum(), capacity);
         queues.add(rq);
-        logger.info("Adding result queue with size={}", queues.size());
+        logger.info("Adding result queue ID {} with size={}", rq.queNum, capacity);
         return rq;
     }
 
@@ -119,6 +138,17 @@ final class ResultQueueHolder {
      * so that the positions of the bodies in the scene graph change in the order they were computed
      */
     ResultQueue nextComputedQueue() {
-        return queues.size() == 0 || !queues.getFirst().computed ? null : queues.poll();
+        try {
+            return queues.getFirst().computed ? queues.poll() : null;
+        } catch (NoSuchElementException e) {
+            return null;
+        }
+    }
+
+    /**
+     * @return next queue number, wrapping: it's only a diagnostic aid
+     */
+    private int nextQueNum() {
+        return queNum = (queNum == Integer.MAX_VALUE ? 0 : queNum + 1);
     }
 }

@@ -1,6 +1,7 @@
 package org.ericace.nbody;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.input.controls.ActionListener;
 import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -122,7 +123,18 @@ public class JMEApp extends SimpleApplication {
         pl.setColor(ColorRGBA.White);
         pl.setRadius(0f);
         rootNode.addLight(pl);
+
+        //getInputManager().addListener(handleESCListener, INPUT_MAPPING_EXIT);
     }
+
+//    private ActionListener handleESCListener = new ActionListener() { // TODO MAY NOT BE NEEDED
+//        @Override
+//        public void onAction(String name, boolean isPressed, float tpf) {
+//            if (name.equals(INPUT_MAPPING_EXIT)) {
+//                logger.error("DETECTED ESCAPE");
+//            }
+//        }
+//    };
 
     /**
      * Updates the positions of all the bodies
@@ -136,18 +148,25 @@ public class JMEApp extends SimpleApplication {
             logger.warn("No available result queue");
             return;
         }
+        logger.info("Starting render cycle with rq.queNum={}", rq.getQueNum());
         for (BodyRenderInfo b : rq.getQueue()) {
             if (!b.exists) {
                 if (geos[b.id] != null) {
                     rootNode.detachChild(geos[b.id]); // remove from the scene graph
                     geos[b.id] = null;
+                    logger.info("Setting ID {} to null", b.id);
                 }
             } else {
+                if (geos[b.id] == null) {
+                    logger.error("ERROR: ID {} is null in geos", b.id);
+                    throw new RuntimeException("Null element in geos");
+                }
                 Sphere s = (Sphere) geos[b.id].getMesh();
                 if (s.radius < b.radius) {
                     // then this body subsumed another and got larger so gradually increase its size
                     // so it doesn't suddenly pop in size
-                    s.updateGeometry(50, 50, (float) Math.min(s.radius + .1F, b.radius));
+                    s.updateGeometry(s.getZSamples(), s.getRadialSamples(),
+                            (float) Math.min(s.radius + .1F, b.radius));
                 }
                 // update this body's position
                 geos[b.id].setLocalTranslation((float) b.x, (float) b.y, (float) b.z);

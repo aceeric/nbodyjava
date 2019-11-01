@@ -1,6 +1,8 @@
 package org.ericace.nbody;
 
-import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -8,9 +10,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Main class
  */
 class NBodySim {
-    private static final int THREAD_COUNT = 2;
-    private static final int MAX_RESULT_QUEUES = 50;
-    private static final int BODY_COUNT = 2000;
+    private static final Logger logger = LogManager.getLogger(NBodySim.class);
+
+    private static final int THREAD_COUNT = 4;
+    private static final int MAX_RESULT_QUEUES = 2;
+    private static final int BODY_COUNT = 2500;
     private static final double TIME_SCALING = .000000001F; // slows the simulation
     private static final double SOLAR_MASS = 1.98892e30;
 
@@ -26,7 +30,7 @@ class NBodySim {
      *     <li>Cleans up on exit</li>
      * </ol>
      */
-    public static void main(String [] args) throws IOException, InterruptedException {
+    public static void main(String [] args) throws InterruptedException {
         ConcurrentLinkedQueue<Body> bodyQueue = initBodyQueue(BODY_COUNT);
         ResultQueueHolder resultQueueHolder = new ResultQueueHolder(MAX_RESULT_QUEUES);
         ArrayList<BodyRenderInfo> bodies = new ArrayList<>(bodyQueue.size());
@@ -43,7 +47,13 @@ class NBodySim {
         jmeApp.start();
         ComputationRunner runner = new ComputationRunner(THREAD_COUNT, bodyQueue, TIME_SCALING, resultQueueHolder);
         new Thread(runner).start();
-        // TODO pick up JME ESC and stop the runner
+        Thread jme = getJmeThread();
+        if (jme != null) {
+            jme.join();
+        } else {
+            logger.error("Unable to find the JME thread");
+        }
+        runner.stopRunner();
     }
 
     /**
@@ -57,6 +67,15 @@ class NBodySim {
         double tmpRadius = 30;
         double tmpMass = tmpRadius * SOLAR_MASS * .1D;
         return new Body(id, 0, 0, 0, -3, -3, -5, tmpMass, (float) tmpRadius);
+    }
+
+    /**
+     * @return the JME thread
+     */
+    private static Thread getJmeThread() {
+        return Thread.getAllStackTraces().keySet()
+                .stream()
+                .filter(t -> t.getName().equals("jME3 Main")).findFirst().orElse(null);
     }
 
     /**

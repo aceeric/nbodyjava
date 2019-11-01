@@ -9,8 +9,11 @@
         </File>
     </Appenders>
     <Loggers>
-        <Root level="warn">
-            <AppenderRef ref="Console"/>
+<!--        <Logger name="org.ericace.nbody.JMEApp" level="info" />-->
+<!--        <Logger name="org.ericace.nbody.BodyRenderInfo" level="info" />-->
+<!--        <Logger name="org.ericace.nbody.ComputationRunner" level="info" />-->
+        <Root level="error">
+            <AppenderRef ref="File"/>
         </Root>
     </Loggers>
 </Configuration>

@@ -84,11 +84,15 @@ class ComputationRunner implements Runnable {
             try {
                 runOneComputation();
             } catch (InterruptedException e) {
+                logger.info("ComputationRunner interrupted");
                 running = false;
             } catch (Exception e) {
-                logger.error("WorkRunner exception", e);
+                logger.error("ComputationRunner exception", e);
+                running = false;
             }
         }
+        logger.info("ComputationRunner stopped");
+        executor.shutdownNow();
     }
 
     /**
@@ -117,6 +121,7 @@ class ComputationRunner implements Runnable {
         ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodyQueue.size());
         if (rq == null) {
             logger.warn("No more queues");
+            Thread.sleep(5);
             return;
         }
         CountDownLatch latch = new CountDownLatch(bodyQueue.size());
@@ -125,6 +130,7 @@ class ComputationRunner implements Runnable {
         }
         // wait for all work to complete
         latch.await();
+        logger.info("Starting update cycle with queNum={}", rq.getQueNum());
         for (Body body : bodyQueue) {
             rq.addRenderInfo(body.update(timeScaling));
             if (!body.exists()) {
@@ -134,6 +140,6 @@ class ComputationRunner implements Runnable {
             }
         }
         rq.setComputed();
-        logger.info("Computation finished in {} ms", System.currentTimeMillis() - startTime);
+        logger.info("Computation for queNum {} finished in {} ms", rq.getQueNum(), System.currentTimeMillis() - startTime);
     }
 }

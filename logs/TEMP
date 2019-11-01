@@ -1,0 +1,21 @@
+19:43:18.088 [Thread-1] INFO  org.ericace.nbody.ComputationRunner - Starting update cycle with rq.queNum=25
+19:43:18.089 [Thread-1] INFO  org.ericace.nbody.ComputationRunner - Computation finished in 30 ms
+19:43:18.107 [Thread-2] INFO  org.ericace.nbody.ComputationRunner - Starting update cycle with rq.queNum=24
+19:43:18.107 [Thread-2] INFO  org.ericace.nbody.BodyRenderInfo - New non-existent BodyRenderInfo ID=292
+19:43:18.108 [Thread-2] INFO  org.ericace.nbody.ComputationRunner - Computation finished in 49 ms
+19:43:18.109 [jME3 Main] INFO  org.ericace.nbody.JMEApp - Starting render cycle with rq.queNum=23
+19:43:18.135 [jME3 Main] INFO  org.ericace.nbody.JMEApp - Starting render cycle with rq.queNum=24
+19:43:18.135 [jME3 Main] INFO  org.ericace.nbody.JMEApp - Setting ID 292 to null
+19:43:18.153 [Thread-1] INFO  org.ericace.nbody.ComputationRunner - Starting update cycle with rq.queNum=27
+19:43:18.153 [Thread-1] INFO  org.ericace.nbody.BodyRenderInfo - New non-existent BodyRenderInfo ID=2029
+19:43:18.153 [Thread-2] INFO  org.ericace.nbody.ComputationRunner - Starting update cycle with rq.queNum=26
+19:43:18.153 [Thread-1] INFO  org.ericace.nbody.ComputationRunner - Computation finished in 44 ms
+19:43:18.154 [Thread-2] INFO  org.ericace.nbody.ComputationRunner - Computation finished in 44 ms
+19:43:18.159 [jME3 Main] INFO  org.ericace.nbody.JMEApp - Starting render cycle with rq.queNum=25
+19:43:18.160 [jME3 Main] INFO  org.ericace.nbody.JMEApp - ERROR: ID 292 is null in geos
+19:43:18.197 [Thread-1] INFO  org.ericace.nbody.ComputationRunner - Starting update cycle with rq.queNum=28
+19:43:18.197 [Thread-1] INFO  org.ericace.nbody.ComputationRunner - Computation finished in 38 ms
+19:43:18.209 [Thread-2] INFO  org.ericace.nbody.ComputationRunner - Starting update cycle with rq.queNum=29
+19:43:18.210 [Thread-2] INFO  org.ericace.nbody.ComputationRunner - Computation finished in 51 ms
+19:43:18.254 [Thread-1] INFO  org.ericace.nbody.ComputationRunner - ComputationRunner stopped
+19:43:18.254 [Thread-2] INFO  org.ericace.nbody.ComputationRunner - ComputationRunner stopped
