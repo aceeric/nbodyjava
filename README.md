@@ -6,17 +6,16 @@ This has been tested on a 12 core Ubuntu 18.04.3 LTS desktop with 32 gig of RAM 
 
 The design is to separate the simulation from the rendering engine as much as possible in the hopes of experimenting with different rendering engines in the future, although, building the sim in Java might limit alternatives.
 
-This is an initial version with some cleanups still to do: 
+### This is an initial version with some cleanups still to do: 
 
 * Implement ability to attach/detach keyboard/mouse to/from the JME Window so other windows can have focus while the sim is running
 * Get clear on the proper way to use radius for collision detection and replace `Body.accumulateForceFrom dist > 0.61F` hack
 * Make light source type and location configurable
 * Ability to initialize bodies from a file
-* Instructions to build and run JAR
 * Add GRPC for tuning during run-time (i.e. increase/decrease threads, bodies, etc)
 * Add Instrumentation (JMX?)
 
-The following classes comprise the package:
+### The following classes comprise the package:
 
 | Class | Purpose |
 |-------|---------|
@@ -27,3 +26,12 @@ The following classes comprise the package:
 | NBodySim | Main class |
 | ResultQueueHolder | Holds the results of a computation cycle: all bodies and their new positions. Allows the computation threads to slightly outrun the render thread |
 | Vector | Simple x,y,z vector class to avoid bringing the JME `Vector3f` class into the package and introducing that as a dependency |
+
+### To run the application
+
+```
+mvn package
+java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
+
+

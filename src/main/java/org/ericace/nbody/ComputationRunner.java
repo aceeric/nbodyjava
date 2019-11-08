@@ -117,19 +117,19 @@ class ComputationRunner implements Runnable {
      * @throws InterruptedException if interrupted waiting for the countdown latch
      */
     private void runOneComputation() throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-        ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodyQueue.size());
-        if (rq == null) {
+        if (resultQueueHolder.isFull()) {
             logger.warn("No more queues");
             Thread.sleep(5);
             return;
         }
+        long startTime = System.currentTimeMillis();
         CountDownLatch latch = new CountDownLatch(bodyQueue.size());
         for (Body body : bodyQueue) {
             executor.execute(body.new ForceComputer(bodyQueue, latch));
         }
         // wait for all work to complete
         latch.await();
+        ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodyQueue.size());
         logger.info("Starting update cycle with queNum={}", rq.getQueNum());
         for (Body body : bodyQueue) {
             rq.addRenderInfo(body.update(timeScaling));

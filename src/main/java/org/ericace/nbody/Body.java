@@ -8,11 +8,11 @@ import java.util.concurrent.CountDownLatch;
 
 /**
  * Models a body with position, velocity, radius, and mass. Calculates force exerted
- * on itself from other <code>Body</code> instances.
+ * on itself from other {@code Body} instances.
  * <p>
  * The three primary components of functionality are:</p>
  * <p>
- * The {@link ForceComputer} nested class, which is run by a <code>ThreadPoolExecutor</code> and which
+ * The {@link ForceComputer} nested class, which is run by a {@code ThreadPoolExecutor} and which
  * calculates force from all other Body instances in the simulation.</p>
  * <p>
  * The {@link #update} method, which applies the calculated force to the body and computes a new position</p>
@@ -137,7 +137,7 @@ class Body {
      * The design is that one thread updates force for an instance - therefore the thread can safely
      * write to the force class variables without synchronization code. The only other place the
      * force variables are referenced is in the {@link #update} method which - again - by design,
-     * runs in a single thread.
+     * runs in a single thread and is run at a different time by the {@code ComputationRunner} class.
      */
     class ForceComputer implements Runnable {
         private final ConcurrentLinkedQueue<Body> bodyQueue;
@@ -171,7 +171,8 @@ class Body {
      * Subsumes another body into this body.
      *
      * Absorbs the other body's mass and adds its radius to this instance's radius, and sets
-     * the other body's {@code exists} flag to false
+     * the other body's {@code exists} flag to false. This is the one method of the simulation with the
+     * most thread contention. However, it happens relatively infrequently.
      *
      * @param otherBody the other body to subsume into this body
      */
@@ -202,7 +203,7 @@ class Body {
         double dz = otherBody.z - z;
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
-        if (dist > 0.61D) {
+        if (dist > 0.51D) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body
             // were subsumed and mass set to zero then the result will be a NOP here

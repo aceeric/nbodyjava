@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * <p>
  * Storing the computation results outside of the bodies used to perform the calculation lets the rendering
  * engine have access to the computation results without any thread synchronization between the compute thread(s)
- * and the rendering thread</p>
+ * and the rendering thread. Though there is the expense of continually allocating and freeing the storage.</p>
  */
 final class ResultQueueHolder {
     private static final Logger logger = LogManager.getLogger(ResultQueueHolder.class);
@@ -124,13 +124,21 @@ final class ResultQueueHolder {
      * held by the instance
      */
     ResultQueue newQueue(int capacity) {
-        if (queues.size() > maxQueues) {
+        if (isFull()) {
             return null;
         }
         ResultQueue rq = new ResultQueue(nextQueNum(), capacity);
         queues.add(rq);
         logger.info("Adding result queue ID {} with size={}", rq.queNum, capacity);
         return rq;
+    }
+
+    /**
+     * @return true if the queue is at capacity and therefore cannot be increased
+     * via a call to {@link #newQueue}
+     */
+    boolean isFull() {
+        return queues.size() >= maxQueues;
     }
 
     /**

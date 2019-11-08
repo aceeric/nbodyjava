@@ -1,16 +1,17 @@
 package org.ericace.nbody;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.input.controls.ActionListener;
 import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Sphere;
+import com.jme3.system.AppSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.*;
 import java.util.ArrayList;
 
 /**
@@ -69,6 +70,20 @@ public class JMEApp extends SimpleApplication {
      * @param initialCam        Initial cam position. See {@link #initialCam}
      */
     JMEApp(ArrayList<BodyRenderInfo> bodies, ResultQueueHolder resultQueueHolder, Vector initialCam) {
+        super();
+
+        // not able to make this work so far...
+        /*
+        AppSettings settings = new AppSettings(true);
+        settings.setUseInput(false);
+        settings.setResolution(2560, 1440);
+        settings.setFrequency(60);
+        settings.setBitsPerPixel(24);
+        settings.setFullscreen(true);
+        setSettings(settings);
+        setShowSettings(false);
+        setPauseOnLostFocus(false);
+        */
         this.resultQueueHolder = resultQueueHolder;
         this.bodies = bodies;
         this.initialCam = initialCam;
@@ -127,7 +142,8 @@ public class JMEApp extends SimpleApplication {
         //getInputManager().addListener(handleESCListener, INPUT_MAPPING_EXIT);
     }
 
-//    private ActionListener handleESCListener = new ActionListener() { // TODO MAY NOT BE NEEDED
+    // wip...
+//    private ActionListener handleESCListener = new ActionListener() {
 //        @Override
 //        public void onAction(String name, boolean isPressed, float tpf) {
 //            if (name.equals(INPUT_MAPPING_EXIT)) {

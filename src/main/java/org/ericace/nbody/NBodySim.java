@@ -12,11 +12,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
 
-    private static final int THREAD_COUNT = 4;
-    private static final int MAX_RESULT_QUEUES = 2;
-    private static final int BODY_COUNT = 2500;
+    private static final int THREAD_COUNT = 2;
+    private static final int MAX_RESULT_QUEUES = 20;
+    private static final int BODY_COUNT = 3000;
     private static final double TIME_SCALING = .000000001F; // slows the simulation
     private static final double SOLAR_MASS = 1.98892e30;
+    private static final boolean JME332Alpha = false;
+    private static final String JME_THREADNAME = "jME3 Main";
 
     /**
      * <ol>
@@ -44,15 +46,19 @@ class NBodySim {
         bodies.add(ri);
 
         JMEApp jmeApp = new JMEApp(bodies, resultQueueHolder, new Vector(-100, 300, 800));
-        jmeApp.start();
+        if (JME332Alpha) { // have not been able to make this work yet...
+            new Thread(jmeApp::start, JME_THREADNAME).start();
+        } else {
+            jmeApp.start();
+        }
+        Thread jmeThread = getJmeThread();
+        if (jmeThread == null) {
+            logger.error("Unable to find the JME thread");
+            return;
+        }
         ComputationRunner runner = new ComputationRunner(THREAD_COUNT, bodyQueue, TIME_SCALING, resultQueueHolder);
         new Thread(runner).start();
-        Thread jme = getJmeThread();
-        if (jme != null) {
-            jme.join();
-        } else {
-            logger.error("Unable to find the JME thread");
-        }
+        jmeThread.join();
         runner.stopRunner();
     }
 
@@ -80,9 +86,9 @@ class NBodySim {
 
     /**
      * Creates a Queue and populates it with Body instances. This particular initializer creates
-     * two clumps of bodies, one on the right, and one on the left, and initializes the velocity so
-     * the two clumps will be captured by the sun. Each clump contains mostly small similar sized
-     * bodies but a small number of larger bodies are included for variety.
+     * four clumps of bodies and initializes the velocity so the clumps will be captured by the
+     * sun. Each clump contains mostly small similar sized bodies but a small number of larger
+     * bodies are included for variety.
      *
      * @param bodyCount the number of bodies to place into the queue
      *
@@ -91,17 +97,23 @@ class NBodySim {
     private static ConcurrentLinkedQueue<Body> initBodyQueue(int bodyCount) {
         ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
         int id = 0;
-        for (int i = -1; i <= 1; i += 2) { // left clump/right clump
-            for (int j = 0; j < bodyCount / 2; ++j) {
-                double x = ((.5 - Math.random()) * 420) + (400 * i);
-                double y = (.5 - Math.random()) * 10;
-                double z = (.5 - Math.random()) * 490;
-                double vx = 0;
-                double vy = (.5 - Math.random()) / 2; // mostly in the same y plane
-                double vz = -1100000000D * i;
-                double radius = j < 5 ? 12 * Math.random() : 2 * Math.random(); // a few large bodies in each clump
-                double mass = radius * SOLAR_MASS * .000005;
-                bodyQueue.add(new Body(id++, x, y, z, vx, vy, vz, mass, (float) radius));
+        double x, y, z, vx, vy, vz, radius, mass;
+        double VCONST = 698000000D;
+        for (int i = -1; i <= 1; i += 2) { // left/right
+            for (int j = -1; j <= 1; j += 2) { // front/back
+                for (int c = 0; c < bodyCount / 4; ++c) {
+                    x = (.5 - Math.random()) * 420 + (400 * i);
+                    y = (.5 - Math.random()) * 10;
+                    z = (.5 - Math.random()) * 420 + (400 * j);
+                    vy = .5 - Math.random(); // mostly in the same y plane
+                    if      (i == -1 && j == -1) {vx = -VCONST; vz =  VCONST;}
+                    else if (i == -1 && j ==  1) {vx =  VCONST; vz =  VCONST;}
+                    else if (i ==  1 && j ==  1) {vx =  VCONST; vz = -VCONST;}
+                    else                         {vx = -VCONST; vz = -VCONST;}
+                    radius = c < bodyCount * .0025D ? 12 * Math.random() : 2D * Math.random(); // a few large bodies
+                    mass = radius * SOLAR_MASS * .000005D;
+                    bodyQueue.add(new Body(id++, x, y, z, vx, vy, vz, mass, (float) radius));
+                }
             }
         }
         return bodyQueue;
