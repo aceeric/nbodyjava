@@ -15,8 +15,8 @@
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
     <jme3_g>org.jmonkeyengine</jme3_g>
-    <jme3_v>3.2.0-stable</jme3_v>
-<!--    <jme3_v>3.3.0-alpha2</jme3_v>-->
+<!--    <jme3_v>3.2.0-stable</jme3_v>-->
+    <jme3_v>3.3.0-alpha2</jme3_v>
   </properties>
 
   <dependencies>

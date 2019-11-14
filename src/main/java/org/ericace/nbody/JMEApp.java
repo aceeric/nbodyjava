@@ -1,6 +1,11 @@
 package org.ericace.nbody;
 
+import com.jme3.app.FlyCamAppState;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.StatsAppState;
+import com.jme3.input.KeyInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -11,7 +16,6 @@ import com.jme3.system.AppSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.awt.*;
 import java.util.ArrayList;
 
 /**
@@ -37,6 +41,16 @@ public class JMEApp extends SimpleApplication {
      * Defines the far side of the frustrum
      */
     private static final float FRUSTRUM_FAR = 400000F;
+
+    /**
+     * The key mappings used by the class
+     */
+    private static final String F12 = "F12";
+
+    /**
+     * True if the fly cam is currently attached, else false
+     */
+    private boolean flyCamAttached = true;
 
     /**
      * Holds the bodies in the simulation - they are indexed by the ID of the {@link BodyRenderInfo}
@@ -72,18 +86,17 @@ public class JMEApp extends SimpleApplication {
     JMEApp(ArrayList<BodyRenderInfo> bodies, ResultQueueHolder resultQueueHolder, Vector initialCam) {
         super();
 
-        // not able to make this work so far...
-        /*
         AppSettings settings = new AppSettings(true);
-        settings.setUseInput(false);
-        settings.setResolution(2560, 1440);
+        settings.setUseInput(true);
+        settings.setResolution(2560, 1380);
         settings.setFrequency(60);
         settings.setBitsPerPixel(24);
-        settings.setFullscreen(true);
+        settings.setFullscreen(false);
+        settings.setResizable(false);
         setSettings(settings);
         setShowSettings(false);
         setPauseOnLostFocus(false);
-        */
+
         this.resultQueueHolder = resultQueueHolder;
         this.bodies = bodies;
         this.initialCam = initialCam;
@@ -139,18 +152,38 @@ public class JMEApp extends SimpleApplication {
         pl.setRadius(0f);
         rootNode.addLight(pl);
 
-        //getInputManager().addListener(handleESCListener, INPUT_MAPPING_EXIT);
+        // connect the F12 key to handle engaging/disengaging the fly cam
+        getInputManager().addMapping(F12, new KeyTrigger(KeyInput.KEY_F12));
+        getInputManager().addListener(f12Listener, F12);
+        stateManager.getState(StatsAppState.class).toggleStats();
     }
 
-    // wip...
-//    private ActionListener handleESCListener = new ActionListener() {
-//        @Override
-//        public void onAction(String name, boolean isPressed, float tpf) {
-//            if (name.equals(INPUT_MAPPING_EXIT)) {
-//                logger.error("DETECTED ESCAPE");
-//            }
-//        }
-//    };
+    /**
+     *  Handles the F12 key.
+     *  <p>
+     *  If the fly cam is currently connected, then the F12 key disconnects the flycam from the JME window so
+     *  the user can tab into other windows while the sim is running.</p>
+     *  <p>
+     *  If the fly cam is currently <i>not</i> connected, then the F12 key connects the flycam so
+     *  the user can use it to navigate within the sim</p>
+     */
+    private ActionListener f12Listener = new ActionListener() {
+        @Override
+        public void onAction(String name, boolean isPressed, float tpf) {
+            if (name.equals(F12) && isPressed) {
+                if (flyCamAttached) {
+                    stateManager.detach(stateManager.getState(FlyCamAppState.class));
+                } else {
+                    FlyCamAppState state = new FlyCamAppState();
+                    state.initialize(getStateManager(), JMEApp.this);
+                    stateManager.attach(state);
+                    flyCam = state.getCamera();
+                    flyCam.setMoveSpeed(CAM_SPEED);
+                }
+                flyCamAttached = !flyCamAttached;
+            }
+        }
+    };
 
     /**
      * Updates the positions of all the bodies

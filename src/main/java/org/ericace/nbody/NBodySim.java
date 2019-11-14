@@ -12,12 +12,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
 
-    private static final int THREAD_COUNT = 2;
+    private static final int THREAD_COUNT = 3;
     private static final int MAX_RESULT_QUEUES = 20;
     private static final int BODY_COUNT = 3000;
     private static final double TIME_SCALING = .000000001F; // slows the simulation
     private static final double SOLAR_MASS = 1.98892e30;
-    private static final boolean JME332Alpha = false;
     private static final String JME_THREADNAME = "jME3 Main";
 
     /**
@@ -45,12 +44,8 @@ class NBodySim {
         ri.setSun();
         bodies.add(ri);
 
-        JMEApp jmeApp = new JMEApp(bodies, resultQueueHolder, new Vector(-100, 300, 800));
-        if (JME332Alpha) { // have not been able to make this work yet...
-            new Thread(jmeApp::start, JME_THREADNAME).start();
-        } else {
-            jmeApp.start();
-        }
+        JMEApp jmeApp = new JMEApp(bodies, resultQueueHolder, new Vector(-100, 300, 1200));
+        jmeApp.start();
         Thread jmeThread = getJmeThread();
         if (jmeThread == null) {
             logger.error("Unable to find the JME thread");
@@ -81,7 +76,7 @@ class NBodySim {
     private static Thread getJmeThread() {
         return Thread.getAllStackTraces().keySet()
                 .stream()
-                .filter(t -> t.getName().equals("jME3 Main")).findFirst().orElse(null);
+                .filter(t -> t.getName().equals(JME_THREADNAME)).findFirst().orElse(null);
     }
 
     /**
@@ -98,7 +93,7 @@ class NBodySim {
         ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
         int id = 0;
         double x, y, z, vx, vy, vz, radius, mass;
-        double VCONST = 698000000D;
+        double VCONST = 638000000D;
         for (int i = -1; i <= 1; i += 2) { // left/right
             for (int j = -1; j <= 1; j += 2) { // front/back
                 for (int c = 0; c < bodyCount / 4; ++c) {
@@ -118,4 +113,50 @@ class NBodySim {
         }
         return bodyQueue;
     }
+
+    /**
+     * wip - create objects in X/Z and Y/Z axes
+     */
+    private static ConcurrentLinkedQueue<Body> initBodyQueue2(int bodyCount) {
+        ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
+        int id = 0;
+        double x, y, z, vx, vy, vz, radius, mass;
+        double VCONST = 538000000D;
+        for (int i = -1; i <= 1; i += 2) { // left/right
+            for (int j = -1; j <= 1; j += 2) { // front/back
+                for (int c = 0; c < bodyCount / 8; ++c) {
+                    x = (.5 - Math.random()) * 420 + (400 * i);
+                    y = (.5 - Math.random()) * 100 * i;
+                    z = (.5 - Math.random()) * 420 + (400 * j);
+                    vy = .5 - Math.random(); // mostly in the same y plane
+                    if      (i == -1 && j == -1) {vx = -VCONST; vz =  VCONST;}
+                    else if (i == -1 && j ==  1) {vx =  VCONST; vz =  VCONST;}
+                    else if (i ==  1 && j ==  1) {vx =  VCONST; vz = -VCONST;}
+                    else                         {vx = -VCONST; vz = -VCONST;}
+                    radius = c < bodyCount * .0025D ? 12 * Math.random() : 2D * Math.random(); // a few large bodies
+                    mass = radius * SOLAR_MASS * .000005D;
+                    bodyQueue.add(new Body(id++, x, y, z, vx, vy, vz, mass, (float) radius));
+                }
+            }
+        }
+        for (int i = -1; i <= 1; i += 2) { // left/right
+            for (int j = -1; j <= 1; j += 2) { // front/back
+                for (int c = 0; c < bodyCount / 8; ++c) {
+                    y = (.5 - Math.random()) * 420 + (400 * i);
+                    x = (.5 - Math.random()) * 10;
+                    z = (.5 - Math.random()) * 420 + (400 * j);
+                    vx = .5 - Math.random();
+                    if      (i == -1 && j == -1) {vy = -VCONST; vz =  VCONST;}
+                    else if (i == -1 && j ==  1) {vy =  VCONST; vz =  VCONST;}
+                    else if (i ==  1 && j ==  1) {vy =  VCONST; vz = -VCONST;}
+                    else                         {vy = -VCONST; vz = -VCONST;}
+                    radius = c < bodyCount * .0025D ? 12 * Math.random() : 2D * Math.random(); // a few large bodies
+                    mass = radius * SOLAR_MASS * .000005D;
+                    bodyQueue.add(new Body(id++, x, y, z, vx, vy, vz, mass, (float) radius));
+                }
+            }
+        }
+        return bodyQueue;
+    }
+
 }
