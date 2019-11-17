@@ -12,9 +12,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
 
-    private static final int THREAD_COUNT = 3;
+    private static final int THREAD_COUNT = 4;
     private static final int MAX_RESULT_QUEUES = 20;
-    private static final int BODY_COUNT = 3000;
+    private static final int BODY_COUNT = 3300;
     private static final double TIME_SCALING = .000000001F; // slows the simulation
     private static final double SOLAR_MASS = 1.98892e30;
     private static final String JME_THREADNAME = "jME3 Main";
@@ -93,7 +93,7 @@ class NBodySim {
         ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
         int id = 0;
         double x, y, z, vx, vy, vz, radius, mass;
-        double VCONST = 638000000D;
+        double VCONST = 658000000D;
         for (int i = -1; i <= 1; i += 2) { // left/right
             for (int j = -1; j <= 1; j += 2) { // front/back
                 for (int c = 0; c < bodyCount / 4; ++c) {

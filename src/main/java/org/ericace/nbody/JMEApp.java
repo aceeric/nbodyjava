@@ -1,6 +1,5 @@
 package org.ericace.nbody;
 
-import com.jme3.app.FlyCamAppState;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.StatsAppState;
 import com.jme3.input.KeyInput;
@@ -45,7 +44,7 @@ public class JMEApp extends SimpleApplication {
     /**
      * The key mappings used by the class
      */
-    private static final String F12 = "F12";
+    private static final String F12MappingName = "F12";
 
     /**
      * True if the fly cam is currently attached, else false
@@ -153,36 +152,31 @@ public class JMEApp extends SimpleApplication {
         rootNode.addLight(pl);
 
         // connect the F12 key to handle engaging/disengaging the fly cam
-        getInputManager().addMapping(F12, new KeyTrigger(KeyInput.KEY_F12));
-        getInputManager().addListener(f12Listener, F12);
+        getInputManager().addMapping(F12MappingName, new KeyTrigger(KeyInput.KEY_F12));
+        getInputManager().addListener(f12Listener, F12MappingName);
+        // turn off debug stats initially
         stateManager.getState(StatsAppState.class).toggleStats();
     }
 
     /**
      *  Handles the F12 key.
      *  <p>
-     *  If the fly cam is currently connected, then the F12 key disconnects the flycam from the JME window so
+     *  If the fly cam is currently connected, then the F12 key disconnects the fly cam from the JME window so
      *  the user can tab into other windows while the sim is running.</p>
      *  <p>
-     *  If the fly cam is currently <i>not</i> connected, then the F12 key connects the flycam so
-     *  the user can use it to navigate within the sim</p>
+     *  If the fly cam is currently <i>not</i> connected, then the F12 key re-connects the fly cam so
+     *  the user can again use it to navigate within the sim (and press ESC to end the sim)</p>
      */
-    private ActionListener f12Listener = new ActionListener() {
-        @Override
-        public void onAction(String name, boolean isPressed, float tpf) {
-            if (name.equals(F12) && isPressed) {
-                if (flyCamAttached) {
-                    stateManager.detach(stateManager.getState(FlyCamAppState.class));
-                } else {
-                    FlyCamAppState state = new FlyCamAppState();
-                    state.initialize(getStateManager(), JMEApp.this);
-                    stateManager.attach(state);
-                    flyCam = state.getCamera();
-                    flyCam.setMoveSpeed(CAM_SPEED);
-                }
-                flyCamAttached = !flyCamAttached;
-            }
+    private ActionListener f12Listener = (name, isPressed, tpf) -> {
+        if (!(name.equals(F12MappingName) && isPressed)) {
+            return;
         }
+        if (flyCamAttached) {
+            flyCam.unregisterInput();
+        } else {
+            flyCam.registerWithInput(getInputManager());
+        }
+        flyCamAttached = !flyCamAttached;
     };
 
     /**
