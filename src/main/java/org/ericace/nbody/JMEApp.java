@@ -14,14 +14,27 @@ import com.jme3.scene.shape.Sphere;
 import com.jme3.system.AppSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ericace.instrumentation.InstrumentationManager;
+import org.ericace.instrumentation.Metric;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Integrates with the JMonkeyEngine game engine
  */
 public class JMEApp extends SimpleApplication {
     private static final Logger logger = LogManager.getLogger(JMEApp.class);
+    private static final Metric metricRenderCount = InstrumentationManager.getInstrumentation()
+            .registerCounter("nbody_render_count");
+    private static final Metric metricBodyCountGauge = InstrumentationManager.getInstrumentation()
+            .registerGauge("nbody_rendered_bodies_gauge");
+    private static final Metric metricNoQueuesCount = InstrumentationManager.getInstrumentation()
+            .registerCounter("nbody_no_queues_to_render_count");
+    private static final Metric metricComputationMillisRendererSummary = InstrumentationManager.getInstrumentation()
+            .registerSummary("nbody_computation_millis/processor", "renderer");
+    private static final Metric metricComputationMillisJmeSummary = InstrumentationManager.getInstrumentation()
+            .registerSummary("nbody_computation_millis/processor", "jme");
 
     /**
      * Camera speed:
@@ -76,6 +89,12 @@ public class JMEApp extends SimpleApplication {
     private final Vector initialCam;
 
     /**
+     * For performance benchmarking - records the last time the render method was invoked by
+     * the engine on each render invocation
+     */
+    private long lastRenderTime;
+
+    /**
      * Initializes the instance
      *
      * @param bodies            Used once to init the geos. See {@link #bodies}
@@ -118,26 +137,7 @@ public class JMEApp extends SimpleApplication {
 
         // place all the bodies into JME
         for (BodyRenderInfo b : bodies) {
-            Material mat;
-            Sphere sphere;
-            if (b.sun) {
-                sphere = new Sphere(40, 50, (float) b.radius);
-                mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-            } else {
-                sphere = new Sphere(20, 20, (float) b.radius);
-                mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-                mat.setFloat("Shininess", 25);
-                mat.setBoolean("UseMaterialColors", true);
-                mat.setColor("Ambient", ColorRGBA.Black);
-                mat.setColor("Diffuse", ColorRGBA.randomColor());
-                mat.setColor("Specular", ColorRGBA.Yellow);
-            }
-            Geometry geo = new Geometry(String.valueOf(b.id), sphere);
-            geo.setLocalScale(1f);
-            geo.setLocalTranslation((float)b.x, (float)b.y, (float)b.z);
-            geo.setMaterial(mat);
-            rootNode.attachChild(geo);
-            geos[b.id] = geo;
+            addBody(b);
         }
         bodies = null; // no longer needed
 
@@ -156,6 +156,44 @@ public class JMEApp extends SimpleApplication {
         getInputManager().addListener(f12Listener, F12MappingName);
         // turn off debug stats initially
         stateManager.getState(StatsAppState.class).toggleStats();
+
+        lastRenderTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Adds the passed BodyRenderInfo to the JME scene graph, and also to the local
+     * array of Geometry instances. Each Geometry instance holds the JME-specific info
+     * corresponding to a {@code Body} in the simulation.
+     *
+     * @param b the instance to add
+     */
+    private void addBody(BodyRenderInfo b) {
+        Material mat;
+        Sphere sphere;
+        if (b.sun) {
+            sphere = new Sphere(40, 50, (float) b.radius);
+            mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        } else {
+            sphere = new Sphere(20, 20, (float) b.radius);
+            mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+            mat.setFloat("Shininess", 25);
+            mat.setBoolean("UseMaterialColors", true);
+            mat.setColor("Ambient", ColorRGBA.Black);
+            mat.setColor("Diffuse", ColorRGBA.randomColor());
+            mat.setColor("Specular", ColorRGBA.Yellow);
+        }
+        Geometry geo = new Geometry(String.valueOf(b.id), sphere);
+        geo.setLocalScale(1f);
+        geo.setLocalTranslation((float)b.x, (float)b.y, (float)b.z);
+        geo.setMaterial(mat);
+        rootNode.attachChild(geo);
+        if (geos.length <= b.id) {
+            // TODO convert to ArrayList since we now support growing it...
+            Geometry [] newGeos = new Geometry[b.id + 1];
+            System.arraycopy(geos, 0, newGeos, 0, b.id);
+            geos = newGeos;
+        }
+        geos[b.id] = geo;
     }
 
     /**
@@ -180,29 +218,32 @@ public class JMEApp extends SimpleApplication {
     };
 
     /**
-     * Updates the positions of all the bodies
+     * Updates the positions of all the bodies in the scene graph
      *
      * @param tpf unused
      */
     @Override
     public void simpleUpdate(float tpf) {
+        metricComputationMillisJmeSummary.setValue(System.currentTimeMillis() - lastRenderTime);
+        lastRenderTime = System.currentTimeMillis();
+
         ResultQueueHolder.ResultQueue rq = resultQueueHolder.nextComputedQueue();
         if (rq == null) {
-            logger.warn("No available result queue");
+            metricNoQueuesCount.incValue();
             return;
         }
-        logger.info("Starting render cycle with rq.queNum={}", rq.getQueNum());
+        long startTime = System.currentTimeMillis();
+        int countDetached = 0;
         for (BodyRenderInfo b : rq.getQueue()) {
             if (!b.exists) {
-                if (geos[b.id] != null) {
+                if (b.id < geos.length && geos[b.id] != null) {
                     rootNode.detachChild(geos[b.id]); // remove from the scene graph
                     geos[b.id] = null;
-                    logger.info("Setting ID {} to null", b.id);
+                    ++countDetached;
                 }
             } else {
-                if (geos[b.id] == null) {
-                    logger.error("ERROR: ID {} is null in geos", b.id);
-                    throw new RuntimeException("Null element in geos");
+                if (b.id >= geos.length) {
+                    addBody(b); // TODO better way to sync this internal geo list with external body list
                 }
                 Sphere s = (Sphere) geos[b.id].getMesh();
                 if (s.radius < b.radius) {
@@ -215,5 +256,11 @@ public class JMEApp extends SimpleApplication {
                 geos[b.id].setLocalTranslation((float) b.x, (float) b.y, (float) b.z);
             }
         }
+        if (countDetached > 0) {
+            logger.info("Detached {} bodies from the root node", countDetached);
+        }
+        metricRenderCount.incValue();
+        metricBodyCountGauge.setValue(rootNode.getChildren().size());
+        metricComputationMillisRendererSummary.setValue(System.currentTimeMillis() - startTime);
     }
 }

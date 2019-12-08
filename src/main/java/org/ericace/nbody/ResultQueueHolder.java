@@ -2,6 +2,8 @@ package org.ericace.nbody;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ericace.instrumentation.InstrumentationManager;
+import org.ericace.instrumentation.Metric;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,25 +11,31 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- * A queue of queues.
+ * A queue of queues. The outer queue is a FIFO queue of nested queues.
  * <p>
  * The nested {@link ResultQueue} class holds the result of one computation cycle: the positions of all the bodies
  * in the sim. There can be multiple of these result queues enqueued in the outer class if the computation thread
  * is faster than the render thread. However there is a limit to the number of result queues the class can
  * hold. Once that limit is reached, the computation thread won't do any additional work until the render
- * thread catches draws the queue down to less than its max size.</p>
+ * thread catches draws the queue down to less than its max size. (This has the effect of pegging the number
+ * of n-body computations per second to the number of render cycles per second.)</p>
  * <p>
- * Storing the computation results outside of the bodies used to perform the calculation lets the rendering
+ * Storing the computation results outside of the bodies that are used to perform the calculation lets the rendering
  * engine have access to the computation results without any thread synchronization between the compute thread(s)
- * and the rendering thread. Though there is the expense of continually allocating and freeing the storage.</p>
+ * and the rendering thread. Though there is the garbage collection expense of continually allocating and freeing
+ * the storage.</p>
  */
 final class ResultQueueHolder {
     private static final Logger logger = LogManager.getLogger(ResultQueueHolder.class);
+    private static final Metric metricResultQueueMaxSizeGauge = InstrumentationManager.getInstrumentation()
+            .registerGauge("nbody_result_queue_max_size");
+    private static final Metric metricResultQueueSizeGauge = InstrumentationManager.getInstrumentation()
+            .registerGauge("nbody_result_queue_size");
 
     /**
      * The maximum number of {@link ResultQueue} instances that the class will hold
      */
-    private final int maxQueues;
+    private int maxQueues;
 
     /**
      * Allows assignment of a unique increasing ID to each result queue
@@ -111,7 +119,7 @@ final class ResultQueueHolder {
      * @param maxQueues the maximum number of result queues that are allowed. (See {@link #newQueue})
      */
     ResultQueueHolder(int maxQueues) {
-        this.maxQueues = maxQueues;
+        setMaxQueues(maxQueues);
         queues = new ConcurrentLinkedDeque<>();
     }
 
@@ -130,6 +138,7 @@ final class ResultQueueHolder {
         ResultQueue rq = new ResultQueue(nextQueNum(), capacity);
         queues.add(rq);
         logger.info("Adding result queue ID {} with size={}", rq.queNum, capacity);
+        metricResultQueueSizeGauge.setValue(queues.size());
         return rq;
     }
 
@@ -142,8 +151,24 @@ final class ResultQueueHolder {
     }
 
     /**
-     * @return the next computed queue or null if there are no computed queues. Queues are returned in order
-     * so that the positions of the bodies in the scene graph change in the order they were computed
+     * @return the max queues allowed
+     */
+    int getMaxQueues() {
+        return maxQueues;
+    }
+
+    /**
+     * Sets the max number of result queues the class will allow
+     *
+     * @param maxQueues the value to set
+     */
+    void setMaxQueues(int maxQueues) {
+        this.maxQueues = maxQueues;
+        metricResultQueueMaxSizeGauge.setValue(maxQueues);
+    }
+
+    /**
+     * @return the next computed queue or null if there are no computed queues
      */
     ResultQueue nextComputedQueue() {
         try {

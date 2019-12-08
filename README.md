@@ -8,12 +8,13 @@ The design is to separate the simulation from the rendering engine as much as po
 
 ### This is an initial version with some cleanups still to do: 
 
-* Implement ability to attach/detach keyboard/mouse to/from the JME Window so other windows can have focus while the sim is running
 * Get clear on the proper way to use radius for collision detection and replace `Body.accumulateForceFrom dist > 0.61F` hack
 * Make light source type and location configurable
 * Ability to initialize bodies from a file
 * Add GRPC for tuning during run-time (i.e. increase/decrease threads, bodies, etc)
 * Add Instrumentation (JMX?)
+* Handle light source (sun) moving
+* Don't store JME objects as array - harder to sync with body list
 
 ### The following classes comprise the package:
 

@@ -2,8 +2,14 @@ package org.ericace.nbody;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ericace.grpcserver.Configurables;
+import org.ericace.grpcserver.NBodyServiceServer;
+import org.ericace.instrumentation.Instrumentation;
+import org.ericace.instrumentation.InstrumentationManager;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -12,12 +18,21 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
 
-    private static final int THREAD_COUNT = 4;
-    private static final int MAX_RESULT_QUEUES = 20;
-    private static final int BODY_COUNT = 3300;
-    private static final double TIME_SCALING = .000000001F; // slows the simulation
+    private static final int DEFAULT_THREAD_COUNT = 3;
+    private static final int DEFAULT_MAX_RESULT_QUEUES = 1;
+    private static final int DEFAULT_BODY_COUNT = 1000;
+    private static final double DEFAULT_TIME_SCALING = .000000001F; // slows the simulation
     private static final double SOLAR_MASS = 1.98892e30;
-    private static final String JME_THREADNAME = "jME3 Main";
+    private static final String JME_THREAD_NAME = "jME3 Main";
+    private static final Instrumentation inst = InstrumentationManager.getInstrumentation();
+
+    private static ConcurrentLinkedQueue<Body> bodyQueue;
+    private static ResultQueueHolder resultQueueHolder;
+    private static ArrayList<BodyRenderInfo> bodies;
+    private static JMEApp jmeApp;
+    private static NBodyServiceServer gRPCServer;
+    private static ComputationRunner computationRunner;
+    private static int idOfSun;
 
     /**
      * <ol>
@@ -31,43 +46,46 @@ class NBodySim {
      *     <li>Cleans up on exit</li>
      * </ol>
      */
-    public static void main(String [] args) throws InterruptedException {
-        ConcurrentLinkedQueue<Body> bodyQueue = initBodyQueue(BODY_COUNT);
-        ResultQueueHolder resultQueueHolder = new ResultQueueHolder(MAX_RESULT_QUEUES);
-        ArrayList<BodyRenderInfo> bodies = new ArrayList<>(bodyQueue.size());
+    public static void main(String [] args) throws IOException, InterruptedException {
+        bodyQueue = initBodyQueue(DEFAULT_BODY_COUNT);
+        resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
+        bodies = new ArrayList<>(bodyQueue.size());
         for (Body body : bodyQueue) {
             bodies.add(body.getRenderInfo());
         }
-        Body sun = createSun(bodyQueue.size());
+        Body sun = createSun();
+        idOfSun  = sun.getId();
         bodyQueue.add(sun);
         BodyRenderInfo ri = sun.getRenderInfo();
         ri.setSun();
         bodies.add(ri);
 
-        JMEApp jmeApp = new JMEApp(bodies, resultQueueHolder, new Vector(-100, 300, 1200));
+        jmeApp = new JMEApp(bodies, resultQueueHolder, new Vector(-100, 300, 1200));
         jmeApp.start();
         Thread jmeThread = getJmeThread();
         if (jmeThread == null) {
             logger.error("Unable to find the JME thread");
             return;
         }
-        ComputationRunner runner = new ComputationRunner(THREAD_COUNT, bodyQueue, TIME_SCALING, resultQueueHolder);
-        new Thread(runner).start();
-        jmeThread.join();
-        runner.stopRunner();
+        gRPCServer = new NBodyServiceServer(new ConfigurablesImpl());
+        gRPCServer.start();
+        computationRunner = new ComputationRunner(DEFAULT_THREAD_COUNT, bodyQueue, DEFAULT_TIME_SCALING, resultQueueHolder);
+        new Thread(computationRunner).start();
+        jmeThread.join(); // ESC key is handled by JME and terminates the render thread
+        computationRunner.stopRunner();
+        gRPCServer.stop();
+        inst.stop();
     }
 
     /**
      * Creates a sun body with larger mass, very low velocity, placed at 0, 0, 0
      *
-     * @param id the ID to assign
-     *
      * @return the Body
      */
-    private static Body createSun(int id) {
+    private static Body createSun() {
         double tmpRadius = 30;
         double tmpMass = tmpRadius * SOLAR_MASS * .1D;
-        return new Body(id, 0, 0, 0, -3, -3, -5, tmpMass, (float) tmpRadius);
+        return new Body(IdGenerator.nextID(), 0, 0, 0, -3, -3, -5, tmpMass, (float) tmpRadius);
     }
 
     /**
@@ -76,7 +94,7 @@ class NBodySim {
     private static Thread getJmeThread() {
         return Thread.getAllStackTraces().keySet()
                 .stream()
-                .filter(t -> t.getName().equals(JME_THREADNAME)).findFirst().orElse(null);
+                .filter(t -> t.getName().equals(JME_THREAD_NAME)).findFirst().orElse(null);
     }
 
     /**
@@ -91,7 +109,6 @@ class NBodySim {
      */
     private static ConcurrentLinkedQueue<Body> initBodyQueue(int bodyCount) {
         ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
-        int id = 0;
         double x, y, z, vx, vy, vz, radius, mass;
         double VCONST = 658000000D;
         for (int i = -1; i <= 1; i += 2) { // left/right
@@ -105,9 +122,9 @@ class NBodySim {
                     else if (i == -1 && j ==  1) {vx =  VCONST; vz =  VCONST;}
                     else if (i ==  1 && j ==  1) {vx =  VCONST; vz = -VCONST;}
                     else                         {vx = -VCONST; vz = -VCONST;}
-                    radius = c < bodyCount * .0025D ? 12 * Math.random() : 2D * Math.random(); // a few large bodies
+                    radius = c < bodyCount * .0025D ? 12D * Math.random() : 2D * Math.random(); // a few large bodies
                     mass = radius * SOLAR_MASS * .000005D;
-                    bodyQueue.add(new Body(id++, x, y, z, vx, vy, vz, mass, (float) radius));
+                    bodyQueue.add(new Body(IdGenerator.nextID(), x, y, z, vx, vy, vz, mass, (float) radius));
                 }
             }
         }
@@ -119,7 +136,6 @@ class NBodySim {
      */
     private static ConcurrentLinkedQueue<Body> initBodyQueue2(int bodyCount) {
         ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
-        int id = 0;
         double x, y, z, vx, vy, vz, radius, mass;
         double VCONST = 538000000D;
         for (int i = -1; i <= 1; i += 2) { // left/right
@@ -135,7 +151,7 @@ class NBodySim {
                     else                         {vx = -VCONST; vz = -VCONST;}
                     radius = c < bodyCount * .0025D ? 12 * Math.random() : 2D * Math.random(); // a few large bodies
                     mass = radius * SOLAR_MASS * .000005D;
-                    bodyQueue.add(new Body(id++, x, y, z, vx, vy, vz, mass, (float) radius));
+                    bodyQueue.add(new Body(IdGenerator.nextID(), x, y, z, vx, vy, vz, mass, (float) radius));
                 }
             }
         }
@@ -152,11 +168,95 @@ class NBodySim {
                     else                         {vy = -VCONST; vz = -VCONST;}
                     radius = c < bodyCount * .0025D ? 12 * Math.random() : 2D * Math.random(); // a few large bodies
                     mass = radius * SOLAR_MASS * .000005D;
-                    bodyQueue.add(new Body(id++, x, y, z, vx, vy, vz, mass, (float) radius));
+                    bodyQueue.add(new Body(IdGenerator.nextID(), x, y, z, vx, vy, vz, mass, (float) radius));
                 }
             }
         }
         return bodyQueue;
     }
 
+    private static class ConfigurablesImpl implements Configurables {
+
+        @Override
+        public void setResultQueueSize(int queueSize)  {
+            resultQueueHolder.setMaxQueues(queueSize);
+        }
+
+        @Override
+        public int getResultQueueSize() {
+            return resultQueueHolder.getMaxQueues();
+        }
+
+        @Override
+        public void setSmoothing(double smoothing)  {
+            computationRunner.setTimeScaling(smoothing);
+        }
+
+        @Override
+        public double getSmoothing() {
+            return computationRunner.getTimeScaling();
+        }
+
+        @Override
+        public void setComputationThreads(int threads)  {
+            computationRunner.setPoolSize(threads);
+        }
+
+        @Override
+        public int getComputationThreads() {
+            return computationRunner.getPoolSize();
+        }
+
+        @Override
+        public void setCollisionBehavior(CollisionBehavior behavior)  {
+            // not currently supported - should err?
+        }
+
+        @Override
+        public CollisionBehavior getCollisionBehavior() {
+            return CollisionBehavior.SUBSUME;
+        }
+
+        /**
+         * Makes a best effort to remove approximately the number of requested bodies. (The sun - if it is
+         * encountered - is not removed)
+         * @param bodyCount the number of bodies to remove.
+         */
+        @Override
+        public void removeBodies(int bodyCount)  {
+            Random r = new Random();
+            int modCount = 0;
+            while (modCount < bodyCount) {
+                int idx = r.nextInt(bodyQueue.size());
+                for (Body b : bodyQueue) {
+                    if (idx-- <= 0) {
+                        if (b.getId() != idOfSun && b.exists()) {
+                            b.setNotExists();
+                            modCount++;
+                        }
+                        break;
+                    }
+                }
+            }
+            logger.info("Set {} bodies to not exist", modCount);
+        }
+
+        @Override
+        public int getBodyCount() {
+            return bodyQueue.size();
+        }
+
+        @Override
+        public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz,
+                            double radius)  {
+            bodyQueue.add(new Body(IdGenerator.nextID(), x, y, z, vx, vy, vz, mass, (float) radius));
+        }
+    }
+
+    private static class IdGenerator {
+        private static int id = 0;
+        static int nextID() {
+            return id++;
+        }
+    }
 }

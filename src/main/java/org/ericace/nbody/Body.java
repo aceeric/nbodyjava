@@ -62,10 +62,27 @@ class Body {
     private volatile boolean exists;
 
     /**
+     * @return the body ID
+     */
+    int getId() {
+        return id;
+    }
+
+    /**
      * Getter for {@link #exists}
      */
     boolean exists() {
         return exists;
+    }
+
+    /**
+     * Sets the body to not exist
+     */
+    void setNotExists() {
+        synchronized (this) {
+            mass = 0;
+            exists = false;
+        }
     }
 
     /**
@@ -180,16 +197,16 @@ class Body {
         synchronized (this) {
             mass += otherBody.mass;
             radius += otherBody.radius;
-            synchronized (otherBody) {
-                otherBody.mass = 0D;
-                otherBody.exists = false;
-            }
+            otherBody.setNotExists();
         }
         logger.info("Body ID {} subsumed ID {}", id, otherBody.id);
     }
 
     /**
-     * Calculates force on this body from another body
+     * Calculates force on this body from another body. If the bodies reach a hard-coded proximity, the larger
+     * body subsumes the smaller body.
+     *
+     * TODO: implement collision instead.
      *
      * @param otherBody the other body to calculate force from
      */

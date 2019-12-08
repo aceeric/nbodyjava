@@ -1,0 +1,12 @@
+---
+global:
+  # default scrape interval if not overridden
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'nbodyjava'
+    scrape_interval: 1s
+    static_configs:
+      - targets:
+        - 'localhost:12345'
+

@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.ericace.grpcserver";
+option objc_class_prefix = "NBODYSVC";
+
+import "google/protobuf/empty.proto";
+
+package nbodyservice;
+
+// Defines a gRPC Service that enables viewing/modifying configurables externally
+// to the running JVM
+service NBodyService {
+
+  // Sets the number of threads allocated to computing the body positions
+  // (The render engine threading model is not modifiable at this time)
+  rpc SetComputationThreads (ItemCount) returns (ResultCode) {}
+
+  // Sets the number of compute-ahead results allowed, in cases where the computation
+  // thread outruns the render thread
+  rpc SetResultQueueSize (ItemCount) returns (ResultCode) {}
+
+  // Changes the smoothing factor. When the body force and position computation runs
+  // during each compute cycle, the force and resulting motion of the bodies is
+  // smoothed by a factor which can be changed using this RPC method. The result is
+  // that the apparent motion of the simulation is faster or slower
+  rpc SetSmoothing (Factor) returns (ResultCode) {}
+
+  // Sets the collision behavior. See the message enum for explanation
+  rpc SetCollisionBehavior (CollisionBehavior) returns (ResultCode) {}
+
+  // Removes the specified number of bodies from the sim
+  rpc RemoveBodies (ItemCount) returns (ResultCode) {}
+
+  // Adds a body into the simulation
+  rpc AddBody (BodyDescription) returns (ResultCode) {}
+
+  // Gets the current values of sim configurables
+  rpc GetCurrentConfig(google.protobuf.Empty) returns (CurrentConfig) {}
+}
+
+// Holds the values of configurables
+message CurrentConfig {
+  int64  bodies = 1;
+  int64  result_queue_size = 2;
+  int64  computation_threads = 3;
+  double smoothing_factor = 4;
+  CollisionBehaviorEnum collision_behavior = 5;
+}
+
+// All the params required to represent a body in the simulation
+message BodyDescription {
+  double mass = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+  double vx = 5;
+  double vy = 6;
+  double vz = 7;
+  double radius = 8;
+}
+
+// Allows for setting collision behavior
+message CollisionBehavior {
+  CollisionBehaviorEnum collision_behavior = 1;
+}
+
+// A generic int arg
+message ItemCount {
+  int64 item_count = 1;
+}
+
+// A smoothing  factor
+message Factor {
+  double factor = 1;
+}
+
+// Returned to clients
+message ResultCode {
+  enum ResultCodeEnum {
+    OK = 0;
+    ERROR = 1;
+  }
+  ResultCodeEnum result_code = 1;
+}
+
+// Defines the behavior when bodies reach a certain proximity. Currently, only SUBSUME
+// is supported:
+//
+// - UNDEF   - Because protobuf handles zero enum values oddly - like it doesn't display a value
+//             in the cli tool if it is zero
+// - SUBSUME - (default) Larger bodies subsume smaller bodies within a defined proximity. The
+//             proximity is currently hard-coded. Future: make configurable
+// - BOUNCE  - Not currently supported - Future: bodies bounce off each other
+// - FRAG    - Not currently supported - Future: bodies fragment
+// - NOOP    - Not currently supported - Future: nothing - allows bodies to occupy the same space (can
+//             result in extreme slingshot kinds of behaviors)
+enum CollisionBehaviorEnum {
+  UNDEF = 0;
+  SUBSUME = 1;
+  BOUNCE = 2;
+  FRAG = 3;
+  NOOP = 99;
+}
