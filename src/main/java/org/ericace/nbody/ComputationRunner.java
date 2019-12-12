@@ -175,15 +175,16 @@ class ComputationRunner implements Runnable {
             return;
         }
         long startTime = System.currentTimeMillis();
-        int bodies = 0;
+        int bodyCount = 0;
         for (Body body : bodyQueue) {
             completionService.submit(body.new ForceComputer(bodyQueue));
-            ++bodies;
+            ++bodyCount;
         }
-        for (int i = 0; i < bodies; ++i) {
+        // blocks until all calculations are complete
+        for (int i = 0; i < bodyCount; ++i) {
             completionService.take();
         }
-        ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodies);
+        ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodyCount);
         int countRemoved = 0;
         for (Body body : bodyQueue) {
             rq.addRenderInfo(body.update(timeScaling));

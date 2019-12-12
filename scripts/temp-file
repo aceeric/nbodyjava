@@ -18,7 +18,7 @@ grpc_cli call localhost:50051 AddBody "mass: 5.96676E+22 x: 0 y: 0 z: 500 vx: -6
 
 grpc_cli call localhost:50051 SetSmoothing "factor: 9.9899999971718071e-10"
 
-grpc_cli call localhost:50051 SetComputationThreads "item_count: 6"
+grpc_cli call localhost:50051 SetComputationThreads "item_count: 5"
 
 for i in {1..1}; do\
   x=$((RANDOM % 20));\
@@ -45,14 +45,15 @@ for i in {1..300}; do\
 done
 
 
-for i in {1..1000}; do\
+for i in {1..500}; do\
   x=$((RANDOM % 50));\
   y=$((RANDOM % 50));\
   z=$((RANDOM % 50));\
-  x=$((600 + x));\
-  y=$((650 + y));\
-  z=$((690 - z));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -12321000 vy: -668000000 vz: -12321000 radius: .5"
+  x=$((250 + x));\
+  y=$((250 + y));\
+  z=$((250 - z));\
+  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -912321000 vy: -198000000 vz: -912321000 radius: .5"
+  sleep .1
 done
 
 

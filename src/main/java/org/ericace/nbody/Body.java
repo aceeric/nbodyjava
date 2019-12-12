@@ -196,12 +196,11 @@ class Body {
         @Override
         public Void call() {
             try {
-                if (!exists) {
-                    // this body was collapsed into another by another thread
-                    return null;
-                }
                 fx = fy = fz = 0;
                 for (Body otherBody : bodyQueue) {
+                    if (!exists) {
+                        break;
+                    }
                     if (Body.this != otherBody && otherBody.exists) {
                         calcForceFrom(otherBody);
                     }
@@ -234,6 +233,7 @@ class Body {
      * @param otherBody the other body to subsume into this body
      */
     private void subsume(Body otherBody) {
+        boolean subsumed = false;
         if (tryLock()) {
             boolean otherLock = false;
             try {
@@ -242,6 +242,7 @@ class Body {
                     mass += otherBody.mass;
                     radius += otherBody.radius;
                     otherBody.setNotExists();
+                    subsumed = true;
                 }
             } finally {
                 unlock();
@@ -250,7 +251,9 @@ class Body {
                 }
             }
         }
-        logger.info("Body ID {} subsumed ID {}", id, otherBody.id);
+        if (subsumed) {
+            logger.info("Body ID {} subsumed ID {}", id, otherBody.id);
+        }
     }
 
     /**
@@ -260,9 +263,6 @@ class Body {
      * @param otherBody the other body to calculate force from
      */
     private void calcForceFrom(Body otherBody) {
-        if (!exists || !otherBody.exists) {
-            return;
-        }
         // position values are updated via a single thread in the update method, so no concurrency guards here
         double dx = otherBody.x - x;
         double dy = otherBody.y - y;
