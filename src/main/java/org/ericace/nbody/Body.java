@@ -3,8 +3,11 @@ package org.ericace.nbody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Models a body with position, velocity, radius, and mass. Calculates force exerted
@@ -61,6 +64,17 @@ class Body {
      */
     private volatile boolean exists;
 
+    private final Lock lock;
+
+    /**
+     * Monotonically increasing ID generator
+     *
+     * @return next ID value starting at zero and incrementing on each call
+     */
+    static int nextID() {
+        return IdGenerator.nextID();
+    }
+
     /**
      * @return the body ID
      */
@@ -76,20 +90,19 @@ class Body {
     }
 
     /**
-     * Sets the body to not exist
+     * Sets the body to not exist. Eventually it will be removed from the simulation and from the
+     * rendering engine's scene graph
      */
     void setNotExists() {
-        synchronized (this) {
-            mass = 0;
-            exists = false;
-        }
+        mass = 0;
+        exists = false;
     }
 
     /**
      * Creates an instance with passed configuration
      *
-     * @param id     Every body should be created with a unique ID starting at zero with max < total bodies
-     *               because this ID is also used as an array index by the rendering engine. (The class
+     * @param id     Every body should be created with a unique ID starting at zero with max < total
+     *               bodies because this ID is also used as an id by the rendering engine. (The class
      *               does not enforce this)
      * @param x      Position
      * @param y      "
@@ -111,6 +124,23 @@ class Body {
         this.vz     = vz;
         this.mass   = mass;
         this.radius = radius;
+        lock = new ReentrantLock();
+    }
+
+    /**
+     * Acquires a lock on this instance if no other thread has already acquired a lock
+     *
+     * @return true if the lock was acquired
+     */
+    boolean tryLock() {
+        return lock.tryLock();
+    }
+
+    /**
+     * Releases the lock
+     */
+    void unlock() {
+        lock.unlock();
     }
 
     /**
@@ -148,27 +178,27 @@ class Body {
     }
 
     /**
-     * A Runnable that a ThreadPoolExecutor can run to calculate the force on this body from all other
+     * A Callable that a ThreadPoolExecutor can run to calculate the force on this body from all other
      * bodies.
      *
      * The design is that one thread updates force for an instance - therefore the thread can safely
-     * write to the force class variables without synchronization code. The only other place the
+     * write to the force instance fields without synchronization code. The only other place the
      * force variables are referenced is in the {@link #update} method which - again - by design,
      * runs in a single thread and is run at a different time by the {@code ComputationRunner} class.
+     *
+     * The exception is when one body subsumes another body. There is thread synchronization there
      */
-    class ForceComputer implements Runnable {
+    class ForceComputer implements Callable<Void> {
         private final ConcurrentLinkedQueue<Body> bodyQueue;
-        private final CountDownLatch latch;
-        ForceComputer(ConcurrentLinkedQueue<Body> bodyQueue, CountDownLatch latch) {
+        ForceComputer(ConcurrentLinkedQueue<Body> bodyQueue) {
             this.bodyQueue = bodyQueue;
-            this.latch = latch;
         }
         @Override
-        public void run() {
+        public Void call() {
             try {
                 if (!exists) {
                     // this body was collapsed into another by another thread
-                    return;
+                    return null;
                 }
                 fx = fy = fz = 0;
                 for (Body otherBody : bodyQueue) {
@@ -178,9 +208,8 @@ class Body {
                 }
             } catch (Exception e) {
                 logger.error("ForceComputer threw", e);
-            } finally {
-                latch.countDown();
             }
+            return null;
         }
     }
 
@@ -191,13 +220,35 @@ class Body {
      * the other body's {@code exists} flag to false. This is the one method of the simulation with the
      * most thread contention. However, it happens relatively infrequently.
      *
+     * Attempts to acquire two locks - first this body and then to the other body. Only if both locks
+     * are acquired does the operation succeed. Otherwise it is a NOP. The thinking here is - if an
+     * attempt to acquire this object's lock fails then another thread is subsuming this instance. And
+     * if the other instance's lock can't be acquired then that instance is being subsumed so do
+     * nothing and let the first thread do the subsuming.
+     *
+     * The updates to mass and radius are not atomic. Worst case, another thread reading these values
+     * won't see the updated values until next compute cycle. But since they are volatile, the write
+     * is guaranteed to avoid a race condition. And - the only place that updates those values is here
+     * and the write is guarded to there will never be contention on the writes.
+     *
      * @param otherBody the other body to subsume into this body
      */
     private void subsume(Body otherBody) {
-        synchronized (this) {
-            mass += otherBody.mass;
-            radius += otherBody.radius;
-            otherBody.setNotExists();
+        if (tryLock()) {
+            boolean otherLock = false;
+            try {
+                otherLock = otherBody.tryLock();
+                if (otherLock) {
+                    mass += otherBody.mass;
+                    radius += otherBody.radius;
+                    otherBody.setNotExists();
+                }
+            } finally {
+                unlock();
+                if (otherLock) {
+                    otherBody.unlock();
+                }
+            }
         }
         logger.info("Body ID {} subsumed ID {}", id, otherBody.id);
     }
@@ -205,8 +256,6 @@ class Body {
     /**
      * Calculates force on this body from another body. If the bodies reach a hard-coded proximity, the larger
      * body subsumes the smaller body.
-     *
-     * TODO: implement collision instead.
      *
      * @param otherBody the other body to calculate force from
      */
@@ -233,6 +282,16 @@ class Body {
             } else {
                 otherBody.subsume(this);
             }
+        }
+    }
+
+    /**
+     * Monotonically increasing thread-safe ID generator to generate unique IDs for each body
+     */
+    private static class IdGenerator {
+        private volatile static int id = 0;
+        static synchronized int nextID() {
+            return id++;
         }
     }
 }

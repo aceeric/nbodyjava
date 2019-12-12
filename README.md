@@ -10,13 +10,15 @@ The design is to separate the simulation from the rendering engine as much as po
 
 * Get clear on the proper way to use radius for collision detection and replace `Body.accumulateForceFrom dist > 0.61F` hack
 * Make light source type and location configurable
-* Ability to initialize bodies from a file
-* Add GRPC for tuning during run-time (i.e. increase/decrease threads, bodies, etc)
-* Add Instrumentation (JMX?)
 * Handle light source (sun) moving
-* Don't store JME objects as array - harder to sync with body list
+* Implement different options for collision behavior. Currently have subsume. Add bounce and fragment
+* Add Prometheus "HELP" field to metric initializer
+* Document the gRPC, and instrumentation capabilities
+* clean up the scripts directory - right now it's a collection of fragments
+* Consider init with only the sun and add all other bodies via gRPS
+* Add a guide to running the whole app
 
-### The following classes comprise the package:
+### The following classes comprise the N-Body package:
 
 | Class | Purpose |
 |-------|---------|
@@ -27,6 +29,14 @@ The design is to separate the simulation from the rendering engine as much as po
 | NBodySim | Main class |
 | ResultQueueHolder | Holds the results of a computation cycle: all bodies and their new positions. Allows the computation threads to slightly outrun the render thread |
 | Vector | Simple x,y,z vector class to avoid bringing the JME `Vector3f` class into the package and introducing that as a dependency |
+
+### The following classes comprise the gRPC Server package:
+
+TODO
+
+### The following classes comprise the Instrumentation package:
+
+TODO
 
 ### To run the application
 

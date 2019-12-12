@@ -56,6 +56,33 @@ public class NBodyServiceServer {
     class NBodyService extends NBodyServiceGrpc.NBodyServiceImplBase {
 
         @Override
+        public void setComputationThreads(org.ericace.grpcserver.ItemCount request,
+                                          io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode> responseObserver) {
+            configurables.setComputationThreads((int) request.getItemCount());
+            ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
+            responseObserver.onNext(resultCode);
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void setResultQueueSize(org.ericace.grpcserver.ItemCount request,
+                                       io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode> responseObserver) {
+            configurables.setResultQueueSize((int) request.getItemCount());
+            ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
+            responseObserver.onNext(resultCode);
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void setSmoothing(org.ericace.grpcserver.Factor request,
+                                 io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode> responseObserver) {
+            configurables.setSmoothing(request.getFactor());
+            ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
+            responseObserver.onNext(resultCode);
+            responseObserver.onCompleted();
+        }
+
+        @Override
         public void getCurrentConfig(com.google.protobuf.Empty request,
                                      io.grpc.stub.StreamObserver<org.ericace.grpcserver.CurrentConfig> responseObserver) {
             CurrentConfig currentConfig = CurrentConfig.newBuilder()

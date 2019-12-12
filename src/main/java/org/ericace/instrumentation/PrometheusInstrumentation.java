@@ -76,7 +76,7 @@ public class PrometheusInstrumentation extends Instrumentation {
     private Collector buildMetric(SimpleCollector.Builder b, String name) {
         String [] nameElements = name.split("/");
         b.name(nameElements[0]);
-        b.help("TODO");
+        b.help("future");
         if (nameElements.length == 2) {
             b.labelNames(nameElements[1]);
         }

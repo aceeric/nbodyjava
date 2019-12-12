@@ -9,7 +9,7 @@
         </File>
     </Appenders>
     <Loggers>
-<!--        <Logger name="org.ericace.nbody.JMEApp" level="info" />-->
+<!--        <Logger name="org.ericace.nbody.JMEApp" level="error" />-->
 <!--        <Logger name="org.ericace.nbody.BodyRenderInfo" level="info" />-->
 <!--        <Logger name="org.ericace.nbody.ComputationRunner" level="info" />-->
 <!--        <Logger name="org.ericace.nbody.NBodySim" level="info" />-->

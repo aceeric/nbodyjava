@@ -18,7 +18,8 @@ import org.ericace.instrumentation.InstrumentationManager;
 import org.ericace.instrumentation.Metric;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Integrates with the JMonkeyEngine game engine
@@ -65,10 +66,9 @@ public class JMEApp extends SimpleApplication {
     private boolean flyCamAttached = true;
 
     /**
-     * Holds the bodies in the simulation - they are indexed by the ID of the {@link BodyRenderInfo}
-     * passed to the class for rendering
+     * Holds the bodies in the simulation - the map key is the ID of the body
      */
-    private Geometry [] geos;
+    private Map<Integer, Geometry> geos;
 
     /**
      * Provides lists of bodies to render each cycle as their positions are re-computed in a separate
@@ -118,7 +118,7 @@ public class JMEApp extends SimpleApplication {
         this.resultQueueHolder = resultQueueHolder;
         this.bodies = bodies;
         this.initialCam = initialCam;
-        geos = new Geometry[bodies.size()];
+        geos = new HashMap<>(bodies.size());
     }
 
     /**
@@ -144,13 +144,6 @@ public class JMEApp extends SimpleApplication {
         // set a larger depth because the sim takes up a fair bit of space
         cam.setFrustumFar(FRUSTRUM_FAR);
 
-        // shines from the sun position
-        PointLight pl = new PointLight();
-        pl.setPosition(new Vector3f(0, 0, 0));
-        pl.setColor(ColorRGBA.White);
-        pl.setRadius(0f);
-        rootNode.addLight(pl);
-
         // connect the F12 key to handle engaging/disengaging the fly cam
         getInputManager().addMapping(F12MappingName, new KeyTrigger(KeyInput.KEY_F12));
         getInputManager().addListener(f12Listener, F12MappingName);
@@ -167,12 +160,17 @@ public class JMEApp extends SimpleApplication {
      *
      * @param b the instance to add
      */
-    private void addBody(BodyRenderInfo b) {
+    private Geometry addBody(BodyRenderInfo b) {
         Material mat;
         Sphere sphere;
         if (b.sun) {
             sphere = new Sphere(40, 50, (float) b.radius);
             mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            PointLight pl = new PointLight();
+            pl.setPosition(new Vector3f(0, 0, 0));
+            pl.setColor(ColorRGBA.White);
+            pl.setRadius(0f);
+            rootNode.addLight(pl);
         } else {
             sphere = new Sphere(20, 20, (float) b.radius);
             mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
@@ -187,13 +185,8 @@ public class JMEApp extends SimpleApplication {
         geo.setLocalTranslation((float)b.x, (float)b.y, (float)b.z);
         geo.setMaterial(mat);
         rootNode.attachChild(geo);
-        if (geos.length <= b.id) {
-            // TODO convert to ArrayList since we now support growing it...
-            Geometry [] newGeos = new Geometry[b.id + 1];
-            System.arraycopy(geos, 0, newGeos, 0, b.id);
-            geos = newGeos;
-        }
-        geos[b.id] = geo;
+        geos.put(b.id, geo);
+        return geo;
     }
 
     /**
@@ -236,16 +229,17 @@ public class JMEApp extends SimpleApplication {
         int countDetached = 0;
         for (BodyRenderInfo b : rq.getQueue()) {
             if (!b.exists) {
-                if (b.id < geos.length && geos[b.id] != null) {
-                    rootNode.detachChild(geos[b.id]); // remove from the scene graph
-                    geos[b.id] = null;
+                if (geos.containsKey(b.id)) {
+                    rootNode.detachChild(geos.get(b.id)); // remove from the scene graph
+                    geos.remove(b.id);
                     ++countDetached;
                 }
             } else {
-                if (b.id >= geos.length) {
-                    addBody(b); // TODO better way to sync this internal geo list with external body list
+                Geometry g = geos.get(b.id);
+                if (g == null) {
+                    g = addBody(b);
                 }
-                Sphere s = (Sphere) geos[b.id].getMesh();
+                Sphere s = (Sphere) g.getMesh();
                 if (s.radius < b.radius) {
                     // then this body subsumed another and got larger so gradually increase its size
                     // so it doesn't suddenly pop in size
@@ -253,7 +247,7 @@ public class JMEApp extends SimpleApplication {
                             (float) Math.min(s.radius + .1F, b.radius));
                 }
                 // update this body's position
-                geos[b.id].setLocalTranslation((float) b.x, (float) b.y, (float) b.z);
+                g.setLocalTranslation((float) b.x, (float) b.y, (float) b.z);
             }
         }
         if (countDetached > 0) {

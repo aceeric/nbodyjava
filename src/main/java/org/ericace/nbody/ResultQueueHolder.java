@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * in the sim. There can be multiple of these result queues enqueued in the outer class if the computation thread
  * is faster than the render thread. However there is a limit to the number of result queues the class can
  * hold. Once that limit is reached, the computation thread won't do any additional work until the render
- * thread catches draws the queue down to less than its max size. (This has the effect of pegging the number
+ * thread draws the queue down to less than its max size. (This has the effect of pegging the number
  * of n-body computations per second to the number of render cycles per second.)</p>
  * <p>
  * Storing the computation results outside of the bodies that are used to perform the calculation lets the rendering

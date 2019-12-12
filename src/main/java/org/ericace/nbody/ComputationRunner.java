@@ -5,10 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.ericace.instrumentation.InstrumentationManager;
 import org.ericace.instrumentation.Metric;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 /**
  * This class runs the n-body computation perpetually within a thread, until the {@link #stopRunner()} method
@@ -44,6 +41,11 @@ class ComputationRunner implements Runnable {
     private final ThreadPoolExecutor executor;
 
     /**
+     * Wraps the executor
+     */
+    private final CompletionService<Void> completionService;
+
+    /**
      * The queue of bodies representing the simulation
      */
     private final ConcurrentLinkedQueue<Body> bodyQueue;
@@ -74,6 +76,7 @@ class ComputationRunner implements Runnable {
     ComputationRunner(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
                       ResultQueueHolder resultQueueHolder) {
         executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadCount);
+        completionService = new ExecutorCompletionService<>(executor);
         setPoolSize(threadCount);
         this.bodyQueue = bodyQueue;
         this.timeScaling = timeScaling;
@@ -100,8 +103,8 @@ class ComputationRunner implements Runnable {
      * @param threadCount the new thread count
      */
     void setPoolSize(int threadCount) {
-        executor.setCorePoolSize(threadCount);
         executor.setMaximumPoolSize(threadCount);
+        executor.setCorePoolSize(threadCount);
         metricComputationThreadsGauge.setValue(threadCount);
     }
 
@@ -134,7 +137,7 @@ class ComputationRunner implements Runnable {
                 logger.info("ComputationRunner interrupted");
                 running = false;
             } catch (Exception e) {
-                logger.error("ComputationRunner exception", e);
+                logger.error("ComputationRunner exception - computation runner is stopping", e);
                 running = false;
             }
         }
@@ -161,23 +164,26 @@ class ComputationRunner implements Runnable {
      * body values (and only what it needs to render the visuals) so there is never thread contention
      * between the graphics engine and the body position computation</p>
      *
-     * @throws InterruptedException if interrupted waiting for the countdown latch
+     * @throws InterruptedException if interrupted waiting for a computation to complete
      */
     private void runOneComputation() throws InterruptedException {
         if (resultQueueHolder.isFull()) {
+            // this thread has outrun the rendering engine
             logger.debug("No more queues");
             metricNoQueuesCount.incValue();
             Thread.sleep(5);
             return;
         }
         long startTime = System.currentTimeMillis();
-        CountDownLatch latch = new CountDownLatch(bodyQueue.size());
+        int bodies = 0;
         for (Body body : bodyQueue) {
-            executor.execute(body.new ForceComputer(bodyQueue, latch));
+            completionService.submit(body.new ForceComputer(bodyQueue));
+            ++bodies;
         }
-        // wait for all work to complete
-        latch.await();
-        ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodyQueue.size());
+        for (int i = 0; i < bodies; ++i) {
+            completionService.take();
+        }
+        ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodies);
         int countRemoved = 0;
         for (Body body : bodyQueue) {
             rq.addRenderInfo(body.update(timeScaling));
@@ -190,7 +196,7 @@ class ComputationRunner implements Runnable {
         }
         rq.setComputed();
         if (countRemoved > 0) {
-            logger.info("Removed {} bodies from the queue", countRemoved);
+            logger.debug("Removed {} bodies from the queue", countRemoved);
         }
         metricComputationCount.incValue();
         metricComputationMillisComputationSummary.setValue(System.currentTimeMillis() - startTime);
