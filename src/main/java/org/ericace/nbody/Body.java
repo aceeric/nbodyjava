@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -31,7 +30,10 @@ import java.util.concurrent.locks.ReentrantLock;
 class Body {
     private static final Logger logger = LogManager.getLogger(Body.class);
 
-    private static final double G = 6.673e-11; // gravitational constant
+    /**
+     * The gravitational constant
+     */
+    private static final double G = 6.673e-11;
 
     /**
      * A unique ID value for each instance
@@ -59,11 +61,19 @@ class Body {
     private double fx, fy, fz;
 
     /**
+     * If this is a sun, then it has a light source
+     */
+    private boolean isSun = false;
+
+    /**
      * If this body is collapsed into another then this flag is set to false
      * and it will be removed from the simulation
      */
     private volatile boolean exists;
 
+    /**
+     * Supports modifying the instance from multiple threads
+     */
     private final Lock lock;
 
     /**
@@ -96,6 +106,20 @@ class Body {
     void setNotExists() {
         mass = 0;
         exists = false;
+    }
+
+    /**
+     * Sets this instance to a sun - the render engine should create an associated light source
+     */
+    void setSun() {
+        isSun = true;
+    }
+
+    /**
+     * @return true if this body is a sun, else false
+     */
+    boolean isSun() {
+        return isSun;
     }
 
     /**
@@ -146,10 +170,10 @@ class Body {
     /**
      * Re-computes velocity and position from force accumulated as of the method call.
      *
-     * Intended to be called from a single thread - so no two bodies are ever computed concurrently
-     * in different threads. Therefore, no concurrency control.
+     * Intended to be called such that the calling thread has exclusive access to the body. Therefore,
+     * no concurrency control.
      *
-     * @param timeScaling a smoothing factor
+     * @param timeScaling a smoothing factor. Larger numbers speed up the sim, and smaller number slow it down
      *
      * @return see {@link BodyRenderInfo}
      */
@@ -168,13 +192,13 @@ class Body {
     }
 
     /**
-     * Returns a {@link BodyRenderInfo} instance with values populated so the body will be rendered
+     * Returns a {@link BodyRenderInfo} instance with values populated with info needed to render the body
      * by the graphics engine
      *
      * @return see {@link BodyRenderInfo}
      */
     BodyRenderInfo getRenderInfo() {
-        return new BodyRenderInfo(id, x, y, z, radius);
+        return new BodyRenderInfo(id, x, y, z, radius, isSun);
     }
 
     /**
@@ -184,15 +208,33 @@ class Body {
      * The design is that one thread updates force for an instance - therefore the thread can safely
      * write to the force instance fields without synchronization code. The only other place the
      * force variables are referenced is in the {@link #update} method which - again - by design,
-     * runs in a single thread and is run at a different time by the {@code ComputationRunner} class.
+     * runs in a single thread and is run at a different time by the {@code ComputationRunner} class and
+     * therefore has exclusive access to the instance.
      *
      * The exception is when one body subsumes another body. There is thread synchronization there
      */
     class ForceComputer implements Callable<Void> {
+        /**
+         * A concurrent queue of bodies in the sim - including this one. Expectation is that this
+         * queue is changing while the force computation occurs - i.e. objects are being added
+         * and removed.
+         */
         private final ConcurrentLinkedQueue<Body> bodyQueue;
+
+        /**
+         * Saves a ref to the passed body queue for the {@link #call} method
+         *
+         * @param bodyQueue the queue of bodies in the simulation
+         */
         ForceComputer(ConcurrentLinkedQueue<Body> bodyQueue) {
             this.bodyQueue = bodyQueue;
         }
+
+        /**
+         * Calculates the force on this instance from all other instances in the simulation
+         *
+         * @return always null
+         */
         @Override
         public Void call() {
             try {
@@ -219,7 +261,7 @@ class Body {
      * the other body's {@code exists} flag to false. This is the one method of the simulation with the
      * most thread contention. However, it happens relatively infrequently.
      *
-     * Attempts to acquire two locks - first this body and then to the other body. Only if both locks
+     * Attempts to acquire two locks - first on this body and then on the other body. Only if both locks
      * are acquired does the operation succeed. Otherwise it is a NOP. The thinking here is - if an
      * attempt to acquire this object's lock fails then another thread is subsuming this instance. And
      * if the other instance's lock can't be acquired then that instance is being subsumed so do
@@ -263,12 +305,10 @@ class Body {
      * @param otherBody the other body to calculate force from
      */
     private void calcForceFrom(Body otherBody) {
-        // position values are updated via a single thread in the update method, so no concurrency guards here
         double dx = otherBody.x - x;
         double dy = otherBody.y - y;
         double dz = otherBody.z - z;
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-
         if (dist > 0.51D) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body

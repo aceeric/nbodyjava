@@ -2,8 +2,8 @@ package org.ericace.nbody;
 
 /**
  * A simple value class. Rather than pulling the JME <i>Vector3f</i> class
- * into this package, define our own vector class. This way it should be
- * easier to try the simulation with a different rendering engine.
+ * into this package, define our own vector class. Reduces coupling between the
+ * simulation and the rendering engine.
  */
 class Vector {
     /**

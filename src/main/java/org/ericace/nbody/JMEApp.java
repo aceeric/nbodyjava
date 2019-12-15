@@ -17,12 +17,11 @@ import org.apache.logging.log4j.Logger;
 import org.ericace.instrumentation.InstrumentationManager;
 import org.ericace.instrumentation.Metric;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Integrates with the JMonkeyEngine game engine
+ * Integrates with the JMonkeyEngine game engine to render the simulation
  */
 public class JMEApp extends SimpleApplication {
     private static final Logger logger = LogManager.getLogger(JMEApp.class);
@@ -38,7 +37,7 @@ public class JMEApp extends SimpleApplication {
             .registerSummary("nbody_computation_millis/processor", "jme");
 
     /**
-     * Camera speed:
+     * Camera functionality:
      * W     = Forward
      * A     = Left
      * S     = Back
@@ -77,13 +76,6 @@ public class JMEApp extends SimpleApplication {
     private final ResultQueueHolder resultQueueHolder;
 
     /**
-     * Used to initialize the geos. JME didn't allow that to be done in the constructor so a ref
-     * to the list is saved here, used in the {@link #simpleInitApp} method, and then discarded
-     * there after the {@link #geos} are initialized
-     */
-    private ArrayList<BodyRenderInfo> bodies;
-
-    /**
      * The initial camera location
      */
     private final Vector initialCam;
@@ -94,14 +86,18 @@ public class JMEApp extends SimpleApplication {
      */
     private long lastRenderTime;
 
+    static void start(JMEApp jmeApp) {
+        jmeApp.start();
+    }
     /**
      * Initializes the instance
      *
-     * @param bodies            Used once to init the geos. See {@link #bodies}
+     * @param bodySize          Initial number of bodies in the simulation - initializes the internal Map that
+     *                          the class uses to manage the bodies in the scene graph
      * @param resultQueueHolder provides the updated list of bodies to render each cycle. See {@link #resultQueueHolder}
      * @param initialCam        Initial cam position. See {@link #initialCam}
      */
-    JMEApp(ArrayList<BodyRenderInfo> bodies, ResultQueueHolder resultQueueHolder, Vector initialCam) {
+    JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, Vector initialCam) {
         super();
 
         AppSettings settings = new AppSettings(true);
@@ -116,14 +112,14 @@ public class JMEApp extends SimpleApplication {
         setPauseOnLostFocus(false);
 
         this.resultQueueHolder = resultQueueHolder;
-        this.bodies = bodies;
         this.initialCam = initialCam;
-        geos = new HashMap<>(bodies.size());
+        geos = new HashMap<>(bodySize);
     }
 
     /**
-     * Performs JMonkeyEngine initialization: creates Spheres for all the bodies and
-     * places them into the scene graph. Sets camera, frustrum, and light source
+     * Performs JMonkeyEngine initialization: Initializes fly camera, frustrum, and creates an input
+     * key mapping that supports detaching / and re-attaching the mouse and keyboard to the
+     * simulation window.
      */
     @Override
     public void simpleInitApp() {
@@ -135,12 +131,6 @@ public class JMEApp extends SimpleApplication {
         // a little faster fly speed
         flyCam.setMoveSpeed(CAM_SPEED);
 
-        // place all the bodies into JME
-        for (BodyRenderInfo b : bodies) {
-            addBody(b);
-        }
-        bodies = null; // no longer needed
-
         // set a larger depth because the sim takes up a fair bit of space
         cam.setFrustumFar(FRUSTRUM_FAR);
 
@@ -150,6 +140,7 @@ public class JMEApp extends SimpleApplication {
         // turn off debug stats initially
         stateManager.getState(StatsAppState.class).toggleStats();
 
+        // Supports instrumentation
         lastRenderTime = System.currentTimeMillis();
     }
 
@@ -163,11 +154,11 @@ public class JMEApp extends SimpleApplication {
     private Geometry addBody(BodyRenderInfo b) {
         Material mat;
         Sphere sphere;
-        if (b.sun) {
+        if (b.isSun) {
             sphere = new Sphere(40, 50, (float) b.radius);
             mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
             PointLight pl = new PointLight();
-            pl.setPosition(new Vector3f(0, 0, 0));
+            pl.setPosition(new Vector3f((float)b.x, (float)b.y, (float)b.z));
             pl.setColor(ColorRGBA.White);
             pl.setRadius(0f);
             rootNode.addLight(pl);
@@ -227,6 +218,7 @@ public class JMEApp extends SimpleApplication {
         }
         long startTime = System.currentTimeMillis();
         int countDetached = 0;
+
         for (BodyRenderInfo b : rq.getQueue()) {
             if (!b.exists) {
                 if (geos.containsKey(b.id)) {

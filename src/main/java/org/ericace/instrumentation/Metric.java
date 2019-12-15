@@ -1,6 +1,18 @@
 package org.ericace.instrumentation;
 
+/**
+ * Defines a metric. Metrics can either be incremented, or have a value set.
+ */
 public interface Metric {
-    void incValue();            // for counter
-    void setValue(double amt);  // for Summary and Gauge
+    /**
+     * Increments the metric value
+     */
+    void incValue();
+
+    /**
+     * Sets the metric value to the passed value
+     *
+     * @param amt the value to set the metric to
+     */
+    void setValue(double amt);
 }

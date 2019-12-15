@@ -6,7 +6,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * A value class that holds the computed position of a body in the simulation, and other elements
  * needed by the graphics engine. The values are all copies from a Body instance. The ID matches the
- * ID of the Body from which it was created.
+ * ID of the Body from which it was created. For simplicity the fields are publicly accessible rather
+ * than being wrapped in getters.
  */
 class BodyRenderInfo {
     private static final Logger logger = LogManager.getLogger(BodyRenderInfo.class);
@@ -15,7 +16,7 @@ class BodyRenderInfo {
     final boolean exists;
     final double radius;
     final double x, y, z;
-    boolean sun;
+    boolean isSun;
 
     /**
      * Creates an instance representing a body that exists
@@ -25,8 +26,9 @@ class BodyRenderInfo {
      * @param y      y "
      * @param z      z "
      * @param radius radius
+     * @param isSun  true if this is a sun (the rendering engine should create a light source for it)
      */
-    BodyRenderInfo(int id, double x, double y, double z, double radius) {
+    BodyRenderInfo(int id, double x, double y, double z, double radius, boolean isSun) {
         logger.info("New existent BodyRenderInfo ID={}", id);
         this.id = id;
         this.x = x;
@@ -34,7 +36,7 @@ class BodyRenderInfo {
         this.z = z;
         this.radius = radius;
         exists = true;
-        sun = false;
+        this.isSun = isSun;
     }
 
     /**
@@ -49,15 +51,6 @@ class BodyRenderInfo {
         this.id = id;
         exists = false;
         radius = x = y = z = 0;
-    }
-
-    /**
-     * It may be desirable for the simulation to have a sun. If so, a body can be marked as the sun
-     * and then the Sphere created for that body in the {@link JMEApp} class will be rendered
-     * accordingly
-     */
-    void setSun() {
-        sun = true;
     }
 
     @Override

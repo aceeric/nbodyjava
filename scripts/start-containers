@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+#
+# Starts a Docker container to run Prometheus, providing it a configuration to scrape the n-body
+# simulation. Then starts a Grafana container, and provisions: 1) a data source referencing
+# the Prometheus Docker instance, and 2) a Dashboard to watch a set of n-body metrics
+# scraped from Prometheus
+#
+
+RESROOT="/home/eace/IdeaProjects/nbodyjava/src/main/resources"
+PROMROOT="$RESROOT/prometheus"
+GRAFROOT="$RESROOT/grafana"
+
+# Prometheus
+
+docker run -d --rm \
+ -p 9090:9090 \
+ --name=prometheus \
+ --net="host" \
+ --mount "type=bind,source=$PROMROOT/prometheus.yml,target=/etc/prometheus/prometheus.yml" \
+ prom/prometheus
+
+# Grafana
+
+docker run -d --rm \
+ -p 3000:3000 \
+ --name=grafana \
+ --net="host" \
+ -e "GF_SECURITY_ADMIN_USER=root" \
+ -e "GF_SECURITY_ADMIN_PASSWORD=secret" \
+ --mount "type=bind,source=$GRAFROOT/datasource.yaml,target=/etc/grafana/provisioning/datasources/prometheus.yml" \
+ --mount "type=bind,source=$GRAFROOT/dashboard.yaml,target=/etc/grafana/provisioning/dashboards/dashboard.yaml" \
+ --mount "type=bind,source=$GRAFROOT/nbody-sim-dash.json,target=/var/lib/grafana/dashboards/nbody-sim-dash.json" \
+ grafana/grafana

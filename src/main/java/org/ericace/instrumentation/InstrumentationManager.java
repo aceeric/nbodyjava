@@ -3,6 +3,21 @@ package org.ericace.instrumentation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * Creates an instrumentation singleton. Intended to be used the same way as the Log4J LogManager. E.g.:
+ * <pre>
+ * {@code
+ * class MyClass {
+ *   private static final Instrumentation instrumentation = InstrumentationManager.getInstrumentation();
+ *   private static final Metric metricMyCount = instrumentation.registerCounter("my_count");
+ *
+ *   void myInstrumentedMethod() {
+ *        metricMyCount.incValue();
+ *   }
+ * }
+ * }
+ * </pre>
+ */
 public class InstrumentationManager {
 
     /**
@@ -15,11 +30,15 @@ public class InstrumentationManager {
      * which, as the name implies, performs no instrumentation.
      */
     private static final String INSTRUMENTATION_CLASS_PROPERTY = "org.ericace.instrumentation.class";
+
+    /**
+     * The class single instance
+     */
     private static Instrumentation instance;
 
     /**
      * @return a reference to the singleton instance of the class being used to implement instrumentation. (Creates
-     * the  instance on the first call.)
+     * the instance on the first call.)
      */
     public static Instrumentation getInstrumentation() {
         if (instance == null) {
@@ -37,8 +56,8 @@ public class InstrumentationManager {
     /**
      * Creates - and returns an instance of - an instrumentation class
      *
-     * @param className The full package/name of an instrumentation class. The specified class must extend
-     *                  the {@link Instrumentation} abstract class
+     * @param className The full package/name of an instrumentation class to instantiate. The specified class
+     *                  must extend the {@link Instrumentation} abstract class
      *
      * @return the instance
      */

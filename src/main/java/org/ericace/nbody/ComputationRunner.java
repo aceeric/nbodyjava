@@ -8,7 +8,7 @@ import org.ericace.instrumentation.Metric;
 import java.util.concurrent.*;
 
 /**
- * This class runs the n-body computation perpetually within a thread, until the {@link #stopRunner()} method
+ * This class runs the n-body computation perpetually within a thread, until the {@link #stop()} method
  * is called. It stores each compute cycle's result in a {@link ResultQueueHolder}, unless the holder is already
  * full at the time the compute cycle starts, in which case that compute cycle is skipped.
  * <p>
@@ -21,6 +21,8 @@ import java.util.concurrent.*;
  */
 class ComputationRunner implements Runnable {
     private static final Logger logger = LogManager.getLogger(ComputationRunner.class);
+    private static ComputationRunner instance;
+
     private static final Metric metricComputationCount = InstrumentationManager.getInstrumentation()
             .registerCounter("nbody_computation_count");
     private static final Metric metricComputationThreadsGauge = InstrumentationManager.getInstrumentation()
@@ -31,7 +33,7 @@ class ComputationRunner implements Runnable {
             .registerCounter("nbody_no_computation_queues_count");
 
     /**
-     * Set to false via the {@link #stopRunner()} method to stop the runner
+     * Set to false via the {@link #stop()} method to stop the runner
      */
     private volatile boolean running = true;
 
@@ -73,8 +75,8 @@ class ComputationRunner implements Runnable {
      *
      * @see #run
      */
-    ComputationRunner(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
-                      ResultQueueHolder resultQueueHolder) {
+    private ComputationRunner(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
+                              ResultQueueHolder resultQueueHolder) {
         executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadCount);
         completionService = new ExecutorCompletionService<>(executor);
         setPoolSize(threadCount);
@@ -84,10 +86,32 @@ class ComputationRunner implements Runnable {
     }
 
     /**
+     * Creates a new runner, and starts the runner in a thread
+     *
+     * @param threadCount       Refer to {@link #ComputationRunner}
+     * @param bodyQueue         "
+     * @param timeScaling       "
+     * @param resultQueueHolder "
+     */
+    static void start(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
+                      ResultQueueHolder resultQueueHolder) {
+        instance = new ComputationRunner(threadCount, bodyQueue, timeScaling, resultQueueHolder);
+        new Thread(instance).start();
+    }
+    /**
      * Stops the runner
      */
-    void stopRunner() {
-        running = false;
+    static void stop() {
+        if (instance != null) {
+            instance.running = false;
+        }
+    }
+
+    /**
+     * @return the singleton
+     */
+    static ComputationRunner getInstance() {
+        return instance;
     }
 
     /**

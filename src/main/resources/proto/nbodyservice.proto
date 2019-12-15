@@ -8,8 +8,8 @@ import "google/protobuf/empty.proto";
 
 package nbodyservice;
 
-// Defines a gRPC Service that enables viewing/modifying configurables externally
-// to the running JVM
+// Defines a gRPC Service that enables entities external to the running JVM to view / modify
+// simulation configurables, thus changing the behavior of the simulation on the fly
 service NBodyService {
 
   // Sets the number of threads allocated to computing the body positions

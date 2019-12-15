@@ -13,26 +13,41 @@ import java.util.Map;
  */
 public class PrometheusInstrumentation extends Instrumentation {
 
+    /**
+     * Defines the port that will expose the metrics to Prometheus. Can be manually inspected e.g. using
+     * curl: watch -n 1 curl -s localhost:12345/metrics
+     */
     private static final int PROMETHEUS_EXPORTER_PORT = 12345;
+
+    /**
+     * The Prometheus-provided HTTP server that serves the metrics collected by the application
+     */
     private final HTTPServer httpServer;
+
     /**
      * Prometheus Java client doesn't allow querying the registry so we maintain a list of registered metrics
      * here, because attempting to register the same metric name twice in the Prometheus Java client throws.
      */
     private final Map<String, Collector> collectors = new HashMap<>();
 
+    /**
+     * Initializes the Prometheus client libs to collect JVM metrics, and starts an HTTP server to
+     * serve the metrics to Prometheus
+     */
     PrometheusInstrumentation() {
         super();
         try {
-            // Export JVM metrics
+            // Export JVM metrics too
             DefaultExports.initialize();
-            // to test: watch -n 1 curl -s localhost:12345/metrics
             httpServer = new HTTPServer(PROMETHEUS_EXPORTER_PORT);
         } catch (IOException e) {
             throw new RuntimeException("Cannot initialize Prometheus exporter on port " + PROMETHEUS_EXPORTER_PORT);
         }
     }
 
+    /**
+     * Stops the Prometheus HTTP server
+     */
     @Override
     public void stop() {
         httpServer.stop();
@@ -52,6 +67,15 @@ public class PrometheusInstrumentation extends Instrumentation {
         }
     }
 
+    /**
+     * Builds a "counter" metric. A counter metric only ever increases, so the only valid operation
+     * is "increment"
+     *
+     * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
+     * @param label The metric label. Refer to the {@link Instrumentation} class for semantics
+     *
+     * @return the Metric
+     */
     private Metric buildCounterMetric(String name, String label) {
         if (collectors.containsKey(name)) {
             return new PrometheusMetric(collectors.get(name), MetricType.COUNT, label);
@@ -59,6 +83,15 @@ public class PrometheusInstrumentation extends Instrumentation {
         return new PrometheusMetric(buildMetric(Counter.build(), name), MetricType.COUNT, label);
     }
 
+    /**
+     * Builds a "summary" metric. A summary metric is additive. Every time the value is set, the metric
+     * total increases.
+     *
+     * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
+     * @param label The metric label. Refer to the {@link Instrumentation} class for semantics
+     *
+     * @return the Metric
+     */
     private Metric buildSummaryMetric(String name, String label) {
         if (collectors.containsKey(name)) {
             return new PrometheusMetric(collectors.get(name), MetricType.SUMMARY, label);
@@ -66,6 +99,14 @@ public class PrometheusInstrumentation extends Instrumentation {
         return new PrometheusMetric(buildMetric(Summary.build(), name), MetricType.SUMMARY, label);
     }
 
+    /**
+     * Builds a "gauge" metric. A gauge metric goes up and down
+     *
+     * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
+     * @param label The metric label. Refer to the {@link Instrumentation} class for semantics
+     *
+     * @return the Metric
+     */
     private Metric buildGaugeMetric(String name, String label) {
         if (collectors.containsKey(name)) {
             return new PrometheusMetric(collectors.get(name), MetricType.GAUGE, label);
@@ -73,6 +114,14 @@ public class PrometheusInstrumentation extends Instrumentation {
         return new PrometheusMetric(buildMetric(Gauge.build(), name), MetricType.GAUGE, label);
     }
 
+    /**
+     * Builds the Prometheus metric that is wrapped by the class
+     *
+     * @param b     A Prometheus builder
+     * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
+     *
+     * @return A Prometheus collector instance
+     */
     private Collector buildMetric(SimpleCollector.Builder b, String name) {
         String [] nameElements = name.split("/");
         b.name(nameElements[0]);
@@ -85,17 +134,43 @@ public class PrometheusInstrumentation extends Instrumentation {
         return c;
     }
 
+    /**
+     * Provides the Prometheus-specific metric implementation for one Metric
+     */
     static class PrometheusMetric implements Metric {
+        /**
+         * The Prometheus {@code Collector} wrapped by the metric
+         */
         private final Collector collector;
+
+        /**
+         * The metric type - maps exactly to Prometheus metric types
+         */
         private final MetricType metricType;
+
+        /**
+         * The metric label. Refer to the {@link Instrumentation} class for semantics
+         */
         private final String label;
 
+        /**
+         * Creates the instance from the passed params
+         *
+         * @param collector  The Prometheus {@code Collector} wrapped by the metric
+         * @param metricType maps exactly to Prometheus metric types
+         * @param label      Refer to the {@link Instrumentation} class for semantics
+         */
         PrometheusMetric(Collector collector, MetricType metricType, String label) {
             this.collector = collector;
             this.metricType = metricType;
             this.label = label;
         }
 
+        /**
+         * Increments a metric value if the metric is a counter metric.
+         *
+         * @throws RuntimeException if the metric is not a counter
+         */
         @Override
         public void incValue() {
             if (metricType == MetricType.COUNT) {
@@ -109,6 +184,13 @@ public class PrometheusInstrumentation extends Instrumentation {
             }
         }
 
+        /**
+         * Sets the metric value if the metric is a summary metric or a gauge metric. For a summary metric,
+         * the Prometheus Java code adds the passed value to the accumulating summary. For a gauge metric
+         * the gauge value is set from the passed value directly.
+         *
+         * @throws RuntimeException if the metric is not a summary metric or a gauge metric
+         */
         @Override
         public void setValue(double amt) {
             if (metricType == MetricType.SUMMARY) {

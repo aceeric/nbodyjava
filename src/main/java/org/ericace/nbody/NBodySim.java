@@ -2,32 +2,33 @@ package org.ericace.nbody;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ericace.grpcserver.Configurables;
 import org.ericace.grpcserver.NBodyServiceServer;
 import org.ericace.instrumentation.Instrumentation;
 import org.ericace.instrumentation.InstrumentationManager;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Main class
+ * Simulation runner
  */
 class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
+    private static final Instrumentation instrumentation = InstrumentationManager.getInstrumentation();
 
     private static final int DEFAULT_THREAD_COUNT = 3;
     private static final int DEFAULT_MAX_RESULT_QUEUES = 10;
-    private static final int DEFAULT_BODY_COUNT = 500;
+    private static final int DEFAULT_BODY_COUNT = 30;
     private static final double DEFAULT_TIME_SCALING = .000000001F; // slows the simulation
     private static final double SOLAR_MASS = 1.98892e30;
     private static final String JME_THREAD_NAME = "jME3 Main";
-    private static final Instrumentation inst = InstrumentationManager.getInstrumentation();
 
     /**
+     * Simulation runner
+     *
      * <ol>
+     *     <li>Initializes instrumentation which - depending on JVM properties - could be
+     *         NOP instrumentation, or Prometheus instrumentation</li>
      *     <li>Initializes a queue to hold all the bodies in the simulation</li>
      *     <li>Fills the queue with bodies</li>
      *     <li>Initializes a result queue holder to hold computed results</li>
@@ -35,61 +36,55 @@ class NBodySim {
      *         placing the computed results into the result queue holder</li>
      *     <li>Initializes a JMonkey App and starts it which renders the computed results from the result queue
      *         perpetually in a thread</li>
+     *     <li>Starts a gRPC server to handle requests from external entities to modify various
+     *         aspects of the simulation</li>
      *     <li>Cleans up on exit</li>
      * </ol>
      */
-    public static void main(String [] args) throws IOException, InterruptedException {
-        ConcurrentLinkedQueue<Body> bodyQueue = initBodyQueue(DEFAULT_BODY_COUNT);
-        ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
-        ArrayList<BodyRenderInfo> bodies = new ArrayList<>(bodyQueue.size());
-        for (Body body : bodyQueue) {
-            bodies.add(body.getRenderInfo());
+    void run() {
+        try {
+            ConcurrentLinkedQueue<Body> bodyQueue = initBodyQueue(DEFAULT_BODY_COUNT);
+            ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
+            createSunAndAddToQueue(bodyQueue);
+            JMEApp.start(new JMEApp(DEFAULT_BODY_COUNT + 1, resultQueueHolder, new Vector(-100, 300, 1200)));
+            ComputationRunner.start(DEFAULT_THREAD_COUNT, bodyQueue, DEFAULT_TIME_SCALING, resultQueueHolder);
+            NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));
+            getJmeThread().join();
+        } catch (Exception e) {
+            logger.error("Simulation error", e);
+        } finally {
+            NBodyServiceServer.stop();
+            ComputationRunner.stop();
+            instrumentation.stop();
         }
-        Body sun = createSun();
-        int idOfSun  = sun.getId();
-        bodyQueue.add(sun);
-        BodyRenderInfo ri = sun.getRenderInfo();
-        ri.setSun();
-        bodies.add(ri);
-
-        JMEApp jmeApp = new JMEApp(bodies, resultQueueHolder, new Vector(-100, 300, 1200));
-        jmeApp.start();
-        Thread jmeThread = getJmeThread();
-        if (jmeThread == null) {
-            logger.error("Unable to find the JME thread");
-            return;
-        }
-        ComputationRunner computationRunner = new ComputationRunner(DEFAULT_THREAD_COUNT, bodyQueue,
-                DEFAULT_TIME_SCALING, resultQueueHolder);
-        new Thread(computationRunner).start();
-        NBodyServiceServer gRPCServer = new NBodyServiceServer(new ConfigurablesImpl(bodyQueue, resultQueueHolder,
-                computationRunner, idOfSun));
-        gRPCServer.start();
-        jmeThread.join(); // ESC key is handled by JME and terminates the render thread
-        computationRunner.stopRunner();
-        gRPCServer.stop();
-        inst.stop();
         logger.info("Exiting the simulation");
     }
 
     /**
-     * Creates a sun body with larger mass, very low velocity, placed at 0, 0, 0
+     * Creates a sun body with larger mass, very low (non-zero) velocity, placed at 0, 0, 0 and
+     * places it into the passed body queue that holds the bodies in the simulation
      *
-     * @return the Body
+     * @param bodyQueue  a queue of bodies in the simulation. The sun is appended to the queue
      */
-    private static Body createSun() {
+    private static void createSunAndAddToQueue(ConcurrentLinkedQueue<Body> bodyQueue) {
         double tmpRadius = 30;
         double tmpMass = tmpRadius * SOLAR_MASS * .1D;
-        return new Body(Body.nextID(), 0, 0, 0, -3, -3, -5, tmpMass, (float) tmpRadius);
+        Body theSun = new Body(Body.nextID(), 0, 0, 0, -3, -3, -5, tmpMass, (float) tmpRadius);
+        theSun.setSun();
+        bodyQueue.add(theSun);
     }
 
     /**
-     * @return the JME thread
+     * @return the JME thread, or throw a RuntimeException
      */
     private static Thread getJmeThread() {
-        return Thread.getAllStackTraces().keySet()
+        Thread thread = Thread.getAllStackTraces().keySet()
                 .stream()
                 .filter(t -> t.getName().equals(JME_THREAD_NAME)).findFirst().orElse(null);
+        if (thread == null) {
+            throw new RuntimeException("Unable to find the JME thread");
+        }
+        return thread;
     }
 
     /**
@@ -100,7 +95,7 @@ class NBodySim {
      *
      * @param bodyCount the number of bodies to place into the queue
      *
-     * @return the Queue
+     * @return the Queue that was created and populated
      */
     private static ConcurrentLinkedQueue<Body> initBodyQueue(int bodyCount) {
         ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>();
@@ -126,19 +121,39 @@ class NBodySim {
         return bodyQueue;
     }
 
+    /**
+     * Handles the requests from the gRPC server to get and set configurables affecting the
+     * behavior of the simulation. This is a facade class that delegates everything to the {@link #resultQueueHolder},
+     * {@link #bodyQueue}, and {@link #computationRunner} instance fields. It is called by the gRPC server.
+     *
+     * @see NBodyServiceServer
+     */
     private static class ConfigurablesImpl implements Configurables {
+        /**
+         * Holds all the bodies in the simulation
+         */
         private final ConcurrentLinkedQueue<Body> bodyQueue;
-        private final ResultQueueHolder resultQueueHolder;
-        private final ComputationRunner computationRunner;
-        private final int idOfSun;
 
+        /**
+         * Holds computation results that are provided to the rendering engine
+         */
+        private final ResultQueueHolder resultQueueHolder;
+
+        /**
+         * Has a thread that continually computes force and position of bodies in the simulation
+         */
+        private final ComputationRunner computationRunner;
+
+        /**
+         * Saves the passed refs to instance fields with the same name to delegate calls to
+         */
         ConfigurablesImpl(ConcurrentLinkedQueue<Body> bodyQueue, ResultQueueHolder resultQueueHolder,
-                          ComputationRunner computationRunner, int idOfSun) {
+                          ComputationRunner computationRunner) {
             this.bodyQueue = bodyQueue;
             this.resultQueueHolder = resultQueueHolder;
             this.computationRunner = computationRunner;
-            this.idOfSun = idOfSun;
         }
+
         @Override
         public void setResultQueueSize(int queueSize)  {
             resultQueueHolder.setMaxQueues(queueSize);
@@ -187,7 +202,7 @@ class NBodySim {
                 int idx = r.nextInt(bodyQueue.size());
                 for (Body b : bodyQueue) {
                     if (idx-- <= 0) {
-                        if (b.getId() != idOfSun && b.exists()) {
+                        if (!b.isSun() && b.exists()) {
                             b.setNotExists();
                             modCount++;
                         }

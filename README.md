@@ -9,11 +9,10 @@ The design is to separate the simulation from the rendering engine as much as po
 ### This is an initial version with some cleanups still to do: 
 
 * Get clear on the proper way to use radius for collision detection and replace `Body.accumulateForceFrom dist > 0.61F` hack
-* Make light source type and location configurable
+* Tie light source to sun - allow multiple suns / multiple light sources
 * Handle light source (sun) moving
 * Implement different options for collision behavior. Currently have subsume. Add bounce and fragment
 * Add Prometheus "HELP" field to metric initializer
-* Document the gRPC, and instrumentation capabilities
 * clean up the scripts directory - right now it's a collection of fragments
 * Consider init with only the sun and add all other bodies via gRPS
 * Add a guide to running the whole app

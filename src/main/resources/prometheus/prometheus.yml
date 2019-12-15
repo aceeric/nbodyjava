@@ -1,4 +1,8 @@
 ---
+#
+# A Prometheus scrape config that scrapes the n-body simulation which exposes metrics
+# on port 12345
+#
 global:
   # default scrape interval if not overridden
   scrape_interval: 15s

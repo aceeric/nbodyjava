@@ -1,4 +1,6 @@
 
+to get the grafana datasource formatted as json
+curl -u root:secret  http://localhost:3000/api/datasources/1 | python -m json.tool
 
 
 
@@ -9,16 +11,16 @@ grpc_cli call localhost:50051 RemoveBodies "item_count: 1000"
 
 grpc_cli call localhost:50051 AddBody "mass: 5.96676E+030 x: 10 y: 10 z: 10 vx: 10 vy: 10 vz: 10 radius: 30"
 
-grpc_cli call localhost:50051 AddBody "mass: 5.96676E+20 x: 300 y: 300 z: -300 vx: -12321000 vy: -668000000 vz: 0 radius: 20"
+grpc_cli call localhost:50051 AddBody "mass: 5.96676E+20 x: 300 y: 300 z: -300 vx: -12321000 vy: -668000000 vz: 0 radius: 12"
 
 
 grpc_cli call localhost:50051 AddBody "mass: 5.96676E+29 x: 500 y: 10 z: -500 vx: 0 vy: -668000000 vz: -12321000 radius: 20"
 
-grpc_cli call localhost:50051 AddBody "mass: 5.96676E+22 x: 0 y: 0 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 20"
+grpc_cli call localhost:50051 AddBody "mass: 5.96676E+22 x: 400 y: 400 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 20"
 
 grpc_cli call localhost:50051 SetSmoothing "factor: 9.9899999971718071e-10"
 
-grpc_cli call localhost:50051 SetComputationThreads "item_count: 5"
+grpc_cli call localhost:50051 SetComputationThreads "item_count: 8"
 
 for i in {1..1}; do\
   x=$((RANDOM % 20));\
@@ -28,8 +30,8 @@ for i in {1..1}; do\
   y=$((250 + y));\
   z=$((250 - z));\
   radius=$((RANDOM % 30));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+28 x: $x y: $y z: $z vx: -12321000 vy: -668000000 vz: 324 radius: $radius"
-  sleep .1
+  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+28 x: $x y: $y z: $z vx: -12321000 vy: -668000000 vz: 324 radius: $radius"\
+  sleep .1\
 done
 
 
@@ -40,8 +42,8 @@ for i in {1..300}; do\
   x=$((600 + x));\
   y=$((600 + y));\
   z=$((600 - z));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+15 x: $x y: $y z: $z vx: -12321000 vy: -668000000 vz: 0 radius: 1"
-  sleep 1
+  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+15 x: $x y: $y z: $z vx: -12321000 vy: -668000000 vz: 0 radius: 1"\
+  sleep 1\
 done
 
 
@@ -49,27 +51,26 @@ for i in {1..500}; do\
   x=$((RANDOM % 50));\
   y=$((RANDOM % 50));\
   z=$((RANDOM % 50));\
-  x=$((250 + x));\
-  y=$((250 + y));\
-  z=$((250 - z));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -912321000 vy: -198000000 vz: -912321000 radius: .5"
-  sleep .1
+  x=$((650 + x));\
+  y=$((650 + y));\
+  z=$((650 - z));\
+  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -912321000 vy: -18000000 vz: -12321000 radius: .6";\
+  sleep .1;\
 done
 
 
-grpc_cli call localhost:50051 AddBody "mass: 5.96676E+29 x: 200 y: 200 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 30"
+grpc_cli call localhost:50051 AddBody "mass: 5.96676E+29 x: 200 y: 200 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 10"
 
 
-for i in {1..500}; do\
-  x=$((RANDOM % 40));\
-  y=$((RANDOM % 40));\
-  z=$((RANDOM % 40));\
-  x=$((x - 200));\
-  y=$((y - 200));\
-  z=$((z - 200));\
-  radius=$((RANDOM % 5));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.196676E+22 x: $x y: $y z: $z vx: 12321000 vy: 668000000 vz: 668000000 radius: $radius"
-  sleep .1
+for i in {1..300}; do\
+  x=$((RANDOM % 10));\
+  y=$((RANDOM % 10));\
+  z=$((RANDOM % 10));\
+  x=$((x - 400));\
+  y=$((y - 400));\
+  z=$((z - 400));\
+  grpc_cli call localhost:50051 AddBody "mass: 5.196676E+22 x: $x y: $y z: $z vx: 112321000 vy: 168000000 vz: -168000000 radius: 3";\
+  sleep 1;\
 done
 
 
@@ -81,9 +82,7 @@ for i in {1..1}; do\
   y=$((200 + y));\
   z=$((2500 - z));\
   radius=$((RANDOM % 5));\
-# echo $i $x $y $z;\
-  grpc_cli call localhost:50051 AddBody "mass: 5.916676E+27 x: $x y: $y z: $z vx: -12321000 vy: -662000000 vz: 0 radius: 15"
-#  sleep .05
+  grpc_cli call localhost:50051 AddBody "mass: 5.916676E+27 x: $x y: $y z: $z vx: -12321000 vy: -662000000 vz: 0 radius: 15";\
 done
 
 
@@ -92,15 +91,17 @@ HERE>>>
 Issues: sometimes just freezes! Why!
 
 
-for i in {1..700}; do\
-  x=$((RANDOM % 40));\
-  y=$((RANDOM % 40));\
-  z=$((RANDOM % 40));\
-  x=$((x - 200));\
-  y=$((y - 200));\
-  z=$((z - 200));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: 12321000 vy: 668000000 vz: 923210000 radius: .1"
-  sleep .1
+for i in {1..500}; do\
+  x=$((RANDOM % 510));\
+  y=$((RANDOM % 510));\
+  z=$((RANDOM % 510));\
+  x=$((x + 600));\
+  y=$((y + 30 ));\
+  z=$((z + 600));\
+  radius=$((RANDOM % 2));\
+  mass=$((RANDOM % 5));\
+  grpc_cli call localhost:50051 AddBody "mass: $mass x: $x y: $y z: $z vx: 12321000 vy: -60000000 vz: -592210000 radius: $radius;"
+  sleep .2;\
 done
 
 
@@ -112,5 +113,44 @@ for i in {1..50}; do\
   y=$((y + 100));\
   z=$((z + 100));\
   grpc_cli call localhost:50051 AddBody "mass: 992.16676E+15 x: $x y: $y z: $z vx: -53434 vy: 96800 vz: -900000000 radius: 10"
-  sleep 1
+  sleep 5
 done
+
+
+
+for i in {1..700}; do\
+  x=$((RANDOM % 80));\
+  y=$((RANDOM % 80));\
+  z=$((RANDOM % 80));\
+  x=$((-20  + x));\
+  y=$((-20  + y));\
+  z=$((-500 + z));\
+  grpc_cli call localhost:50051 AddBody "mass: 9.16676E+14 x: $x y: $y z: $z vx: 100 vy: 392344240 vz: -303464000 radius: 1";\
+  sleep .1;\
+done
+
+
+for i in {1..100}; do\
+  x=$((RANDOM % 80));\
+  y=$((RANDOM % 80));\
+  z=$((RANDOM % 80));\
+  x=$((-600 + x));\
+  y=$((600 + y));\
+  z=$(( 20 + z));\
+  grpc_cli call localhost:50051 AddBody "mass: 2.1116676E+15 x: $x y: $y z: $z vx: 212321000 vy: 423421200 vz: -3100 radius: 3";\
+  sleep 1;\
+done
+
+for i in {1..1000}; do\
+  x=$((RANDOM % 2));\
+  y=$((RANDOM % 2));\
+  z=$((RANDOM % 2));\
+  x=$((x - 400 ));\
+  y=$((y - 400));\
+  z=$((z - 400));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: -612321000 vy: 668000000 vz: 616800000 radius: 2";\
+  sleep .1;\
+done
+
+
+grpc_cli call localhost:50051 AddBody "mass: 1.916676E+23 x: 400 y: 0 z: 400 vx: 12321000 vy: -6600 vz: -16800000 radius: 10";\
