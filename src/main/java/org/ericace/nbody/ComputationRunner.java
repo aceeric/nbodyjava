@@ -24,13 +24,13 @@ class ComputationRunner implements Runnable {
     private static ComputationRunner instance;
 
     private static final Metric metricComputationCount = InstrumentationManager.getInstrumentation()
-            .registerCounter("nbody_computation_count");
+            .registerCounter("nbody_computation_count/thread", "runner");
     private static final Metric metricComputationThreadsGauge = InstrumentationManager.getInstrumentation()
             .registerGauge("nbody_computation_thread_gauge");
-    private static final Metric metricComputationMillisComputationSummary = InstrumentationManager.getInstrumentation()
-            .registerSummary("nbody_computation_millis/processor", "runner");
     private static final Metric metricNoQueuesCount = InstrumentationManager.getInstrumentation()
             .registerCounter("nbody_no_computation_queues_count");
+    private static final Metric metricBodyCountGauge = InstrumentationManager.getInstrumentation()
+            .registerGauge("nbody_body_count_gauge/thread", "runner");
 
     /**
      * Set to false via the {@link #stop()} method to stop the runner
@@ -198,12 +198,12 @@ class ComputationRunner implements Runnable {
             Thread.sleep(5);
             return;
         }
-        long startTime = System.currentTimeMillis();
         int bodyCount = 0;
         for (Body body : bodyQueue) {
             completionService.submit(body.new ForceComputer(bodyQueue));
             ++bodyCount;
         }
+        metricBodyCountGauge.setValue(bodyCount);
         // blocks until all calculations are complete
         for (int i = 0; i < bodyCount; ++i) {
             completionService.take();
@@ -224,6 +224,5 @@ class ComputationRunner implements Runnable {
             logger.debug("Removed {} bodies from the queue", countRemoved);
         }
         metricComputationCount.incValue();
-        metricComputationMillisComputationSummary.setValue(System.currentTimeMillis() - startTime);
     }
 }

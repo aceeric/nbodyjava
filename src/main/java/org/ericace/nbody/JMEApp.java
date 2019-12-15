@@ -25,16 +25,12 @@ import java.util.Map;
  */
 public class JMEApp extends SimpleApplication {
     private static final Logger logger = LogManager.getLogger(JMEApp.class);
-    private static final Metric metricRenderCount = InstrumentationManager.getInstrumentation()
-            .registerCounter("nbody_render_count");
+    private static final Metric metricComputationCount = InstrumentationManager.getInstrumentation()
+            .registerCounter("nbody_computation_count/thread", "renderer");
     private static final Metric metricBodyCountGauge = InstrumentationManager.getInstrumentation()
-            .registerGauge("nbody_rendered_bodies_gauge");
+            .registerGauge("nbody_body_count_gauge/thread", "renderer");
     private static final Metric metricNoQueuesCount = InstrumentationManager.getInstrumentation()
             .registerCounter("nbody_no_queues_to_render_count");
-    private static final Metric metricComputationMillisRendererSummary = InstrumentationManager.getInstrumentation()
-            .registerSummary("nbody_computation_millis/processor", "renderer");
-    private static final Metric metricComputationMillisJmeSummary = InstrumentationManager.getInstrumentation()
-            .registerSummary("nbody_computation_millis/processor", "jme");
 
     /**
      * Camera functionality:
@@ -70,6 +66,11 @@ public class JMEApp extends SimpleApplication {
     private Map<Integer, Geometry> geos;
 
     /**
+     * Holds the bodies in the simulation - the map key is the ID of the body
+     */
+    private Map<Integer, PointLight> lightSources;
+
+    /**
      * Provides lists of bodies to render each cycle as their positions are re-computed in a separate
      * thread
      */
@@ -81,13 +82,11 @@ public class JMEApp extends SimpleApplication {
     private final Vector initialCam;
 
     /**
-     * For performance benchmarking - records the last time the render method was invoked by
-     * the engine on each render invocation
+     * Starts the JME app (which in turn starts a thread). Refer to constructor - {@link #JMEApp} - for
+     * param explanation
      */
-    private long lastRenderTime;
-
-    static void start(JMEApp jmeApp) {
-        jmeApp.start();
+    static void start(int bodySize, ResultQueueHolder resultQueueHolder, Vector initialCam) {
+        new JMEApp(bodySize, resultQueueHolder, initialCam).start();
     }
     /**
      * Initializes the instance
@@ -97,7 +96,7 @@ public class JMEApp extends SimpleApplication {
      * @param resultQueueHolder provides the updated list of bodies to render each cycle. See {@link #resultQueueHolder}
      * @param initialCam        Initial cam position. See {@link #initialCam}
      */
-    JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, Vector initialCam) {
+    private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, Vector initialCam) {
         super();
 
         AppSettings settings = new AppSettings(true);
@@ -114,6 +113,7 @@ public class JMEApp extends SimpleApplication {
         this.resultQueueHolder = resultQueueHolder;
         this.initialCam = initialCam;
         geos = new HashMap<>(bodySize);
+        lightSources = new HashMap<>();
     }
 
     /**
@@ -139,9 +139,6 @@ public class JMEApp extends SimpleApplication {
         getInputManager().addListener(f12Listener, F12MappingName);
         // turn off debug stats initially
         stateManager.getState(StatsAppState.class).toggleStats();
-
-        // Supports instrumentation
-        lastRenderTime = System.currentTimeMillis();
     }
 
     /**
@@ -162,6 +159,7 @@ public class JMEApp extends SimpleApplication {
             pl.setColor(ColorRGBA.White);
             pl.setRadius(0f);
             rootNode.addLight(pl);
+            lightSources.put(b.id, pl);
         } else {
             sphere = new Sphere(20, 20, (float) b.radius);
             mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
@@ -208,15 +206,11 @@ public class JMEApp extends SimpleApplication {
      */
     @Override
     public void simpleUpdate(float tpf) {
-        metricComputationMillisJmeSummary.setValue(System.currentTimeMillis() - lastRenderTime);
-        lastRenderTime = System.currentTimeMillis();
-
         ResultQueueHolder.ResultQueue rq = resultQueueHolder.nextComputedQueue();
         if (rq == null) {
             metricNoQueuesCount.incValue();
             return;
         }
-        long startTime = System.currentTimeMillis();
         int countDetached = 0;
 
         for (BodyRenderInfo b : rq.getQueue()) {
@@ -238,15 +232,18 @@ public class JMEApp extends SimpleApplication {
                     s.updateGeometry(s.getZSamples(), s.getRadialSamples(),
                             (float) Math.min(s.radius + .1F, b.radius));
                 }
-                // update this body's position
+                // update this body's position and if the body has a light source, also update that
                 g.setLocalTranslation((float) b.x, (float) b.y, (float) b.z);
+                PointLight pl = lightSources.get(b.id);
+                if (pl != null) {
+                    pl.setPosition(new Vector3f((float)b.x, (float)b.y, (float)b.z));
+                }
             }
         }
         if (countDetached > 0) {
             logger.info("Detached {} bodies from the root node", countDetached);
         }
-        metricRenderCount.incValue();
+        metricComputationCount.incValue();
         metricBodyCountGauge.setValue(rootNode.getChildren().size());
-        metricComputationMillisRendererSummary.setValue(System.currentTimeMillis() - startTime);
     }
 }

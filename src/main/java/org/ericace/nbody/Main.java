@@ -7,6 +7,6 @@ import java.io.IOException;
  */
 public class Main {
     public static void main(String[] args) throws IOException, InterruptedException {
-        new NBodySim().run();
+        new NBodySim().run(SimGenerator.defaultSim());
     }
 }

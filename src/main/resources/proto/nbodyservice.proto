@@ -58,6 +58,7 @@ message BodyDescription {
   double vy = 6;
   double vz = 7;
   double radius = 8;
+  bool is_sun = 9;
 }
 
 // Allows for setting collision behavior

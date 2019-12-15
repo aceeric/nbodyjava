@@ -165,7 +165,8 @@ public class NBodyServiceServer {
             double vy = request.getVy();
             double vz = request.getVz();
             double radius = request.getRadius();
-            configurables.addBody(mass, x, y, z, vx, vy, vz, radius);
+            boolean isSun = request.getIsSun();
+            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun);
             ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
             responseObserver.onNext(resultCode);
             responseObserver.onCompleted();
@@ -217,6 +218,7 @@ public class NBodyServiceServer {
         }
 
         @Override
-        public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius)  {}
+        public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius,
+                            boolean isSun)  {}
     }
 }
