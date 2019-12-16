@@ -1,10 +1,17 @@
 package org.ericace.nbody;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Generates lists of bodies to run the simulation with. So far - only one method is provided: {@link #defaultSim()}
+ * Utility class to generate lists of bodies to start the simulation with. Two methods are provided so far:
+ * <p>
+ *     {@link #defaultSim()} Sets up a canned simulation</p>
+ * <p> 
+ *     {@link #fromCSV(String)} Loads body definitions from a file</p>
  */
 public class SimGenerator {
     private static final double SOLAR_MASS = 1.98892e30;
@@ -45,6 +52,56 @@ public class SimGenerator {
     }
 
     /**
+     * Parses a CSV into a list of bodies. The format must be comma-delimited, with fields:
+     *
+     * x,y,z,vz,vy,vz,mass,radius
+     * ... or:
+     * x,y,z,vz,vy,vz,mass,radius,true
+     *
+     * In the second form, the line specifies a sun. The first form specifies a non-sun body
+     *
+     * E.g.:
+     * 100.0,100.0,100.0,100.0,100.0,100.0,10.0,.5
+     * 1.0,1.0,1.0,1.0,1.0,1.0,10000.0,10,true
+     *
+     * The above example would load a simulation with one body and one sun
+     *
+     * @param pathSpec path of the CSV
+     *
+     * @return the parsed list of bodies
+     */
+    static List<Body> fromCSV(String pathSpec) {
+        List<Body> bodies = new ArrayList<>();
+        String line;
+        try (BufferedReader br = new BufferedReader(new FileReader(pathSpec))) {
+            while ((line = br.readLine()) != null) {
+                String[] fields = line.split(",");
+                try {
+                    double x = Double.parseDouble(fields[0]);
+                    double y = Double.parseDouble(fields[1]);
+                    double z = Double.parseDouble(fields[2]);
+                    double vx = Double.parseDouble(fields[3]);
+                    double vy = Double.parseDouble(fields[4]);
+                    double vz = Double.parseDouble(fields[5]);
+                    double mass = Double.parseDouble(fields[6]);
+                    float radius = Float.parseFloat(fields[7]);
+                    boolean isSun = fields.length == 9 && Boolean.parseBoolean(fields[8]);
+                    Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius);
+                    if (isSun) {
+                        b.setSun();
+                    }
+                    bodies.add(b);
+                } catch (NumberFormatException e) {
+                    // do nothing - load what is possible to load and ignore everything else
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to parse input file '" + pathSpec + "'");
+        }
+        return bodies;
+    }
+
+    /**
      * Creates a sun body with larger mass, very low (non-zero) velocity, placed at 0, 0, 0 and
      * places it into the passed body queue that holds the bodies in the simulation
      *
@@ -81,7 +138,7 @@ public class SimGenerator {
     }
 
     /**
-     * Similar to {@link #getVectorEven} except concentrates the vector more toward the center of the
+     * Similar to {@link #getVectorEven} except is more likely to return a vector closer toward the center of the
      * sphere. This function is based on:
      *
      * https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/

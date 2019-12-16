@@ -150,3 +150,16 @@ for i in {1..1000}; do\
   grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: 212321000 vy: 0 vz: -316800000 radius: 1";\
   sleep .1;\
 done
+
+
+
+for i in {1..1500}; do\
+ x=$((RANDOM % 180));\
+ y=$((RANDOM % 180));\
+ z=$((RANDOM % 380));\
+ x=$((-300  + x));\
+ y=$((-300  + y));\
+ z=$((-500 + z));\
+ radius=$(awk -v min=0 -v max=2 'BEGIN{srand(); print min+rand()*(max-min+1)}');\
+ printf "%s,%s,%s,-497827312,392344240,403464000,2.93E+12,%s\n" $x $y $z $radius >> /home/eace/IdeaProjects/nbodyjava/src/main/resources/csvs/test.csv; \
+done
