@@ -281,8 +281,12 @@ class Body {
             try {
                 otherLock = otherBody.tryLock();
                 if (otherLock) {
+                    double volume = (4.1888D * radius*radius*radius) +
+                            (4.1888D * otherBody.radius*otherBody.radius*otherBody.radius);
+                    double newRadius = (Math.pow(0.62035D * volume, .333D) - radius) * .125D;
+                    logger.info("old radius: {} -- new radius: {}", radius, newRadius);
+                    radius = newRadius;
                     mass += otherBody.mass;
-                    radius += otherBody.radius;
                     otherBody.setNotExists();
                     subsumed = true;
                 }
@@ -309,7 +313,8 @@ class Body {
         double dy = otherBody.y - y;
         double dz = otherBody.z - z;
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-        if (dist > 0.51D) {
+//        if (dist > 0.51D) {
+        if (dist > (radius + otherBody.radius) * .125D) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body
             // were subsumed and mass set to zero then the result will be a NOP here
@@ -317,6 +322,7 @@ class Body {
             fy += force * dy / dist;
             fz += force * dz / dist;
         } else {
+            logger.info("distance: {} -- this radius {}: -- other radius: {}", dist, radius, otherBody.radius);
             if (mass > otherBody.mass) {
                 subsume(otherBody);
             } else {

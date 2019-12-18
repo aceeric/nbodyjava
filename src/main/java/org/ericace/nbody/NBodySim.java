@@ -18,7 +18,7 @@ class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
     private static final Instrumentation instrumentation = InstrumentationManager.getInstrumentation();
 
-    private static final int DEFAULT_THREAD_COUNT = 4;
+    private static final int DEFAULT_THREAD_COUNT = 6;
     private static final int DEFAULT_MAX_RESULT_QUEUES = 10;
     private static final double DEFAULT_TIME_SCALING = .000000001F; // slows the simulation
     private static final String JME_THREAD_NAME = "jME3 Main";

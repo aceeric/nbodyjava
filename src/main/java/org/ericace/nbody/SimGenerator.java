@@ -108,7 +108,7 @@ public class SimGenerator {
      * @param bodies a list of bodies in the simulation. The sun is appended
      */
     private static void createSunAndAddToQueue(List<Body> bodies) {
-        double tmpRadius = 30;
+        double tmpRadius = 25;
         double tmpMass = tmpRadius * SOLAR_MASS * .1D;
         Body theSun = new Body(Body.nextID(), 0, 0, 0, -3, -3, -5, tmpMass, (float) tmpRadius);
         theSun.setSun();

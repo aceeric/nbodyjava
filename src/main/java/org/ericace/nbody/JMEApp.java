@@ -227,10 +227,7 @@ public class JMEApp extends SimpleApplication {
                 }
                 Sphere s = (Sphere) g.getMesh();
                 if (s.radius < b.radius) {
-                    // then this body subsumed another and got larger so gradually increase its size
-                    // so it doesn't suddenly pop in size
-                    s.updateGeometry(s.getZSamples(), s.getRadialSamples(),
-                            (float) Math.min(s.radius + .1F, b.radius));
+                    s.updateGeometry(s.getZSamples(), s.getRadialSamples(), (float) b.radius);
                 }
                 // update this body's position and if the body has a light source, also update that
                 g.setLocalTranslation((float) b.x, (float) b.y, (float) b.z);
