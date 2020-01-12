@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <p>
  * The three primary components of functionality are:</p>
  * <p>
- * The {@link ForceComputer} nested class, which is run by a {@code ThreadPoolExecutor} and which
+ * The {@link Body.ForceComputer} nested class, which is run by a {@code ThreadPoolExecutor} and which
  * calculates force from all other Body instances in the simulation.</p>
  * <p>
  * The {@link #update} method, which applies the calculated force to the body and computes a new position</p>
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <p>
  * This class borrows from: http://physics.princeton.edu/~fpretori/Nbody/code.htm</p>
  */
-class Body {
+public class Body {
     private static final Logger logger = LogManager.getLogger(Body.class);
 
     /**
@@ -81,7 +81,7 @@ class Body {
      *
      * @return next ID value starting at zero and incrementing on each call
      */
-    static int nextID() {
+    public static int nextID() {
         return IdGenerator.nextID();
     }
 
@@ -95,7 +95,7 @@ class Body {
     /**
      * Getter for {@link #exists}
      */
-    boolean exists() {
+    public boolean exists() {
         return exists;
     }
 
@@ -103,7 +103,7 @@ class Body {
      * Sets the body to not exist. Eventually it will be removed from the simulation and from the
      * rendering engine's scene graph
      */
-    void setNotExists() {
+    public void setNotExists() {
         mass = 0;
         exists = false;
     }
@@ -111,14 +111,14 @@ class Body {
     /**
      * Sets this instance to a sun - the render engine should create an associated light source
      */
-    void setSun() {
+    public void setSun() {
         isSun = true;
     }
 
     /**
      * @return true if this body is a sun, else false
      */
-    boolean isSun() {
+    public boolean isSun() {
         return isSun;
     }
 
@@ -137,7 +137,7 @@ class Body {
      * @param mass   Mass
      * @param radius Radius
      */
-    Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius) {
+    public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius) {
         exists      = true;
         this.id     = id;
         this.x      = x;
@@ -257,7 +257,7 @@ class Body {
     /**
      * Subsumes another body into this body.
      *
-     * Absorbs the other body's mass and adds its radius to this instance's radius, and sets
+     * Absorbs the other body's mass and adjusts this instance's radius accordingly, and sets
      * the other body's {@code exists} flag to false. This is the one method of the simulation with the
      * most thread contention. However, it happens relatively infrequently.
      *
@@ -276,11 +276,14 @@ class Body {
      */
     private void subsume(Body otherBody) {
         boolean subsumed = false;
+        double thisMass=0, otherMass=0;
         if (tryLock()) {
             boolean otherLock = false;
             try {
                 otherLock = otherBody.tryLock();
                 if (otherLock) {
+                    thisMass = mass;
+                    otherMass = otherBody.mass;
                     double volume = (4.1888D * radius*radius*radius) +
                             (4.1888D * otherBody.radius*otherBody.radius*otherBody.radius);
                     double newRadius = (Math.pow(0.62035D * volume, .333D) - radius) * .125D;
@@ -298,13 +301,13 @@ class Body {
             }
         }
         if (subsumed) {
-            logger.info("Body ID {} subsumed ID {}", id, otherBody.id);
+            logger.info("Body ID {} (mass {}) subsumed ID {} (mass {})", id, thisMass, otherBody.id, otherMass);
         }
     }
 
     /**
-     * Calculates force on this body from another body. If the bodies reach a hard-coded proximity, the larger
-     * body subsumes the smaller body.
+     * Calculates force on this body from another body. If the bodies collide, resolves
+     * the collision
      *
      * @param otherBody the other body to calculate force from
      */
@@ -313,8 +316,7 @@ class Body {
         double dy = otherBody.y - y;
         double dz = otherBody.z - z;
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-//        if (dist > 0.51D) {
-        if (dist > (radius + otherBody.radius) * .125D) {
+        if (dist > (radius + otherBody.radius)) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body
             // were subsumed and mass set to zero then the result will be a NOP here
@@ -323,6 +325,12 @@ class Body {
             fz += force * dz / dist;
         } else {
             logger.info("distance: {} -- this radius {}: -- other radius: {}", dist, radius, otherBody.radius);
+            resolveCollision(otherBody);
+        }
+    }
+
+    private void resolveCollision(Body otherBody) {
+        if (true) {
             if (mass > otherBody.mass) {
                 subsume(otherBody);
             } else {

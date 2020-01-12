@@ -12,8 +12,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
     <jme3_g>org.jmonkeyengine</jme3_g>
 <!--    <jme3_v>3.2.0-stable</jme3_v>-->
     <jme3_v>3.3.0-alpha2</jme3_v>
@@ -23,12 +23,6 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
 
     <!-- JMonkey Engine -->
 
@@ -62,7 +56,7 @@
       <version>2.12.1</version>
     </dependency>
 
-    <!-- Prometheus -->
+    <!-- Prometheus instrumentation -->
 
     <dependency>
       <groupId>io.prometheus</groupId>
@@ -123,61 +117,25 @@
 
   <build>
     <extensions>
-      <!-- provides maven properties referenced by protobuf-maven-plugin -->
+      <!-- provides maven properties referenced by the protobuf-maven-plugin -->
       <extension>
         <groupId>kr.motd.maven</groupId>
         <artifactId>os-maven-plugin</artifactId>
       </extension>
     </extensions>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>maven-clean-plugin</artifactId>
-          <version>3.1.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>3.0.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.0.0</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
+
     <plugins>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.0</version>
         <configuration>
           <source>8</source>
           <target>8</target>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -191,7 +149,7 @@
               <archive>
                 <manifest>
                   <mainClass>
-                    org.ericace.nbody.NBodySim
+                    org.ericace.sim.NBodySim
                   </mainClass>
                 </manifest>
               </archive>
@@ -202,6 +160,7 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
@@ -221,6 +180,19 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.1.1</version>
+        <configuration>
+          <javadocExecutable>/usr/bin/javadoc</javadocExecutable>
+          <show>private</show>
+        </configuration>
+      </plugin>
+
     </plugins>
+
   </build>
+
 </project>

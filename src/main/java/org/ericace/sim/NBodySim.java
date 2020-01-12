@@ -1,13 +1,13 @@
-package org.ericace.nbody;
+package org.ericace.sim;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ericace.grpcserver.NBodyServiceServer;
 import org.ericace.instrumentation.Instrumentation;
 import org.ericace.instrumentation.InstrumentationManager;
+import org.ericace.nbody.*;
 
 import java.util.List;
-import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -47,7 +47,7 @@ class NBodySim {
         try {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
-            JMEApp.start(bodies.size(), resultQueueHolder, new Vector(-100, 300, 1200));
+            JMEApp.start(bodies.size(), resultQueueHolder, new SimpleVector(-100, 300, 1200));
             ComputationRunner.start(DEFAULT_THREAD_COUNT, bodyQueue, DEFAULT_TIME_SCALING, resultQueueHolder);
             NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));
             getJmeThread().join();

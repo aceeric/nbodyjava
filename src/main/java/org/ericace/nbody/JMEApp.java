@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Integrates with the JMonkeyEngine game engine to render the simulation
  */
-public class JMEApp extends SimpleApplication {
+public final class JMEApp extends SimpleApplication {
     private static final Logger logger = LogManager.getLogger(JMEApp.class);
     private static final Metric metricComputationCount = InstrumentationManager.getInstrumentation()
             .registerCounter("nbody_computation_count/thread", "renderer");
@@ -79,15 +79,8 @@ public class JMEApp extends SimpleApplication {
     /**
      * The initial camera location
      */
-    private final Vector initialCam;
+    private final SimpleVector initialCam;
 
-    /**
-     * Starts the JME app (which in turn starts a thread). Refer to constructor - {@link #JMEApp} - for
-     * param explanation
-     */
-    static void start(int bodySize, ResultQueueHolder resultQueueHolder, Vector initialCam) {
-        new JMEApp(bodySize, resultQueueHolder, initialCam).start();
-    }
     /**
      * Initializes the instance
      *
@@ -96,7 +89,7 @@ public class JMEApp extends SimpleApplication {
      * @param resultQueueHolder provides the updated list of bodies to render each cycle. See {@link #resultQueueHolder}
      * @param initialCam        Initial cam position. See {@link #initialCam}
      */
-    private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, Vector initialCam) {
+    private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam) {
         super();
 
         AppSettings settings = new AppSettings(true);
@@ -114,6 +107,14 @@ public class JMEApp extends SimpleApplication {
         this.initialCam = initialCam;
         geos = new HashMap<>(bodySize);
         lightSources = new HashMap<>();
+    }
+
+    /**
+     * Starts the JME app (which in turn starts a thread). Refer to constructor - {@link #JMEApp} - for
+     * param explanation
+     */
+    public static void start(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam) {
+        new JMEApp(bodySize, resultQueueHolder, initialCam).start();
     }
 
     /**

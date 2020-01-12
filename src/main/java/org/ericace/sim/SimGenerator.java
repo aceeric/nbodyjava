@@ -1,10 +1,14 @@
-package org.ericace.nbody;
+package org.ericace.sim;
+
+import org.ericace.nbody.Body;
+import org.ericace.nbody.SimpleVector;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Utility class to generate lists of bodies to start the simulation with. Two methods are provided so far:
@@ -28,12 +32,12 @@ public class SimGenerator {
     static List<Body> defaultSim() {
         List<Body> bodies = new ArrayList<>();
         double vx, vy, vz, radius, mass;
-        double V = 658000000D;
-        int bodyCount = 2500;
+        double V = 358000000D;
+        int bodyCount = 3000;
         for (int i = -1; i <= 1; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
-                double xc = 300 * i;
-                double zc = 300 * j;
+                double xc = 200 * i;
+                double zc = 200 * j;
                 for (int c = 0; c < bodyCount / 4; ++c) {
                     vy = .5 - Math.random(); // mostly in the same y plane
                     if      (i == -1 && j == -1) {vx = -V; vz =  V;}
@@ -42,7 +46,8 @@ public class SimGenerator {
                     else                         {vx = -V; vz = -V;}
                     radius = c < bodyCount * .0025D ? 5.0 * Math.random() : 1.0 * Math.random();
                     mass = radius * SOLAR_MASS * .000005D;
-                    Vector v = getVectorEven(new Vector((float) xc, 0.0F, (float) zc));
+                    //SimpleVector v = getVectorEven(new SimpleVector((float) xc, 0.0F, (float) zc));
+                    SimpleVector v = getVectorOnSphere(new SimpleVector((float) xc, 0.0F, (float) zc), 30);
                     bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, (float) radius));
                 }
             }
@@ -54,9 +59,9 @@ public class SimGenerator {
     /**
      * Parses a CSV into a list of bodies. The format must be comma-delimited, with fields:
      *
-     * x,y,z,vz,vy,vz,mass,radius
+     * x,y,z,vx,vy,vz,mass,radius
      * ... or:
-     * x,y,z,vz,vy,vz,mass,radius,true
+     * x,y,z,vx,vy,vz,mass,radius,true
      *
      * In the second form, the line specifies a sun. The first form specifies a non-sun body
      *
@@ -77,15 +82,15 @@ public class SimGenerator {
             while ((line = br.readLine()) != null) {
                 String[] fields = line.split(",");
                 try {
-                    double x = Double.parseDouble(fields[0]);
-                    double y = Double.parseDouble(fields[1]);
-                    double z = Double.parseDouble(fields[2]);
-                    double vx = Double.parseDouble(fields[3]);
-                    double vy = Double.parseDouble(fields[4]);
-                    double vz = Double.parseDouble(fields[5]);
-                    double mass = Double.parseDouble(fields[6]);
-                    float radius = Float.parseFloat(fields[7]);
-                    boolean isSun = fields.length == 9 && Boolean.parseBoolean(fields[8]);
+                    double x = Double.parseDouble(fields[0].trim());
+                    double y = Double.parseDouble(fields[1].trim());
+                    double z = Double.parseDouble(fields[2].trim());
+                    double vx = Double.parseDouble(fields[3].trim());
+                    double vy = Double.parseDouble(fields[4].trim());
+                    double vz = Double.parseDouble(fields[5].trim());
+                    double mass = Double.parseDouble(fields[6].trim());
+                    float radius = Float.parseFloat(fields[7].trim());
+                    boolean isSun = fields.length == 9 && Boolean.parseBoolean(fields[8].trim());
                     Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius);
                     if (isSun) {
                         b.setSun();
@@ -116,9 +121,9 @@ public class SimGenerator {
     }
 
     /**
-     * Generates a vector that is evenly distributed within a sphere around the vector defined in the
-     * passed param. Meaning - if called multiple times, the result will be a set of vectors evenly
-     * distributed within a sphere. This function is based on:
+     * Generates a vector that is evenly distributed within a virtual sphere around the vector defined
+     * in the passed param. Meaning - if called multiple times, the result will be a set of vectors
+     * evenly distributed within a sphere. This function is based on:
      *
      * https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/
      *
@@ -126,7 +131,7 @@ public class SimGenerator {
      *
      * @return a vector as as described
      */
-    private static Vector getVectorEven(Vector center) {
+    private static SimpleVector getVectorEven(SimpleVector center) {
         double d, x, y, z;
         do {
             x = Math.random() * 2.0 - 1.0;
@@ -134,7 +139,7 @@ public class SimGenerator {
             z = Math.random() * 2.0 - 1.0;
             d = x*x + y*y + z*z;
         } while (d > 1.0);
-        return new Vector((float) ((x * 100) + center.x), (float) ((y * 100) + center.y), (float) ((z * 100) + center.z));
+        return new SimpleVector((float) ((x * 100) + center.x), (float) ((y * 100) + center.y), (float) ((z * 100) + center.z));
     }
 
     /**
@@ -147,7 +152,7 @@ public class SimGenerator {
      *
      * @return a vector as as described
      */
-    private static Vector getVectorConcentrated(Vector center) {
+    private static SimpleVector getVectorConcentrated(SimpleVector center) {
         double x = Math.random() - 0.5;
         double y = Math.random() - 0.5;
         double z = Math.random() - 0.5;
@@ -156,6 +161,31 @@ public class SimGenerator {
         y /= mag;
         z /= mag;
         double d = Math.random() * 200;
-        return new Vector((float) ((x * d) + center.x), (float) ((y * d) + center.y), (float) ((z * d) + center.z));
+        return new SimpleVector((float) ((x * d) + center.x), (float) ((y * d) + center.y), (float) ((z * d) + center.z));
+    }
+
+    /**
+     * Generates a vector located on the surface of a virtual sphere centered at the passed point, having the
+     * passed radius. Based on:
+     * https://math.stackexchange.com/questions/1585975/how-to-generate-random-points-on-a-sphere/1586185#1586185
+     *
+     * @param center The center of the sphere
+     * @param radius The radius
+     *
+     * @return a randomly-generated point on the surface of the sphere
+     */
+    private static SimpleVector getVectorOnSphere(SimpleVector center, double radius) {
+        Random r = new Random();
+        double x = r.nextGaussian();
+        double y = r.nextGaussian();
+        double z = r.nextGaussian();
+        // normalize
+        x *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
+        y *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
+        z *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
+        x *= radius;
+        y *= radius;
+        z *= radius;
+        return new SimpleVector((float) (center.x + x), (float) (center.y + y), (float) (center.z + z));
     }
 }

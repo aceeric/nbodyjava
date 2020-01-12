@@ -10,10 +10,10 @@ The design is to separate the simulation from the rendering engine as much as po
 
 * Implement different options for collision behavior. Currently have subsume. Add bounce and fragment
 * Can't decrease size of thread pool
-* Get clear on the proper way to use radius for collision detection and replace `Body.accumulateForceFrom dist > 0.61F` hack
 * Add Prometheus "HELP" field to metric initializer
 * clean up the scripts directory - right now it's a collection of fragments
 * Add a guide to running the whole app
+* Comprehensive Javadocs
 
 ### The following classes comprise the N-Body package:
 

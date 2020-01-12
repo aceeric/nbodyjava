@@ -13,11 +13,11 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 /**
  * A queue of queues. The outer queue is a FIFO queue of nested queues.
  * <p>
- * The nested {@link ResultQueue} class holds the result of one computation cycle: the positions of all the bodies
- * in the sim. There can be multiple of these result queues enqueued in the outer class if the computation thread
- * is faster than the render thread. However there is a limit to the number of result queues the class can
- * hold. Once that limit is reached, the computation thread won't do any additional work until the render
- * thread draws the queue down to less than its max size. (This has the effect of pegging the number
+ * The nested {@link ResultQueueHolder.ResultQueue} class holds the result of one computation cycle: the positions
+ * of all the bodies in the sim. There can be multiple of these result queues enqueued in the outer class if the
+ * computation thread is faster than the render thread. However there is a limit to the number of result queues
+ * the class can hold. Once that limit is reached, the computation thread won't do any additional work until the
+ * render thread draws the queue down to less than its max size. (This has the effect of pegging the number
  * of n-body computations per second to the number of render cycles per second.)</p>
  * <p>
  * Storing the computation results outside of the bodies that are used to perform the calculation lets the rendering
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * and the rendering thread. Though there is the garbage collection expense of continually allocating and freeing
  * the storage.</p>
  */
-final class ResultQueueHolder {
+public final class ResultQueueHolder {
     private static final Logger logger = LogManager.getLogger(ResultQueueHolder.class);
     private static final Metric metricResultQueueMaxSizeGauge = InstrumentationManager.getInstrumentation()
             .registerGauge("nbody_result_queue_max_size");
@@ -118,7 +118,7 @@ final class ResultQueueHolder {
      *
      * @param maxQueues the maximum number of result queues that are allowed. (See {@link #newQueue})
      */
-    ResultQueueHolder(int maxQueues) {
+    public ResultQueueHolder(int maxQueues) {
         setMaxQueues(maxQueues);
         queues = new ConcurrentLinkedDeque<>();
     }
@@ -153,7 +153,7 @@ final class ResultQueueHolder {
     /**
      * @return the max queues allowed
      */
-    int getMaxQueues() {
+    public int getMaxQueues() {
         return maxQueues;
     }
 
@@ -162,7 +162,7 @@ final class ResultQueueHolder {
      *
      * @param maxQueues the value to set
      */
-    void setMaxQueues(int maxQueues) {
+    public void setMaxQueues(int maxQueues) {
         this.maxQueues = maxQueues;
         metricResultQueueMaxSizeGauge.setValue(maxQueues);
     }

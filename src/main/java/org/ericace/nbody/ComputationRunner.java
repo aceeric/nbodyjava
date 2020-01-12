@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  *
  * @see ComputationRunner#ComputationRunner(int, ConcurrentLinkedQueue, double, ResultQueueHolder) Constructor
  */
-class ComputationRunner implements Runnable {
+public final class ComputationRunner implements Runnable {
     private static final Logger logger = LogManager.getLogger(ComputationRunner.class);
     private static ComputationRunner instance;
 
@@ -93,7 +93,7 @@ class ComputationRunner implements Runnable {
      * @param timeScaling       "
      * @param resultQueueHolder "
      */
-    static void start(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
+    public static void start(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
                       ResultQueueHolder resultQueueHolder) {
         instance = new ComputationRunner(threadCount, bodyQueue, timeScaling, resultQueueHolder);
         new Thread(instance).start();
@@ -101,7 +101,7 @@ class ComputationRunner implements Runnable {
     /**
      * Stops the runner
      */
-    static void stop() {
+    public static void stop() {
         if (instance != null) {
             instance.running = false;
         }
@@ -110,14 +110,14 @@ class ComputationRunner implements Runnable {
     /**
      * @return the singleton
      */
-    static ComputationRunner getInstance() {
+    public static ComputationRunner getInstance() {
         return instance;
     }
 
     /**
      * @return the thread pool executor max pool size
      */
-    int getPoolSize() {
+    public int getPoolSize() {
         return executor.getMaximumPoolSize();
     }
 
@@ -126,7 +126,7 @@ class ComputationRunner implements Runnable {
      *
      * @param threadCount the new thread count
      */
-    void setPoolSize(int threadCount) {
+    public void setPoolSize(int threadCount) {
         executor.setMaximumPoolSize(threadCount);
         executor.setCorePoolSize(threadCount);
         metricComputationThreadsGauge.setValue(threadCount);
@@ -135,7 +135,7 @@ class ComputationRunner implements Runnable {
     /**
      * @return the current time scaling factor
      */
-    double getTimeScaling() {
+    public double getTimeScaling() {
         return timeScaling;
     }
 
@@ -143,7 +143,7 @@ class ComputationRunner implements Runnable {
      * sets the new time scaling factor
      * @param timeScaling the value to set
      */
-    void setTimeScaling(double timeScaling) {
+    public void setTimeScaling(double timeScaling) {
         this.timeScaling = timeScaling;
     }
 
