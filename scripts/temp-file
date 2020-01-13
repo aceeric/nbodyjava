@@ -24,15 +24,15 @@ grpc_cli call localhost:50051 SetSmoothing "factor: 9.9899999971718071e-10"
 grpc_cli call localhost:50051 SetComputationThreads "item_count: 8"
 
 
-for i in {1..300}; do\
-  x=$((RANDOM % 40));\
-  y=$((RANDOM % 40));\
-  z=$((RANDOM % 40));\
+for i in {1..30}; do\
+  x=$((RANDOM % 4));\
+  y=$((RANDOM % 4));\
+  z=$((RANDOM % 4));\
   x=$((600 + x));\
   y=$((600 + y));\
   z=$((600 - z));\
   grpc_cli call localhost:50051 AddBody "mass: 5.16676E+29 x: $x y: $y z: $z vx: -22321000 vy: -268000000 vz: 231558231 radius: 10";\
-  sleep .2;\
+  sleep 1;\
 done
 
 
@@ -46,6 +46,19 @@ for i in {1..100}; do\
   grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -412321000 vy: -18000000 vz: -12321000 radius: 5";\
   sleep .1;\
 done
+
+
+for i in {1..1}; do\
+  x=$((RANDOM % 5));\
+  y=$((RANDOM % 5));\
+  z=$((RANDOM % 5));\
+  x=$((150 + x));\
+  y=$((150 + y));\
+  z=$((150 - z));\
+  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -412321000 vy: -18000000 vz: -12321000 radius: 5";\
+  sleep .1;\
+done
+
 
 
 grpc_cli call localhost:50051 AddBody "mass: 5.96676E+29 x: 200 y: 200 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 10"
@@ -78,18 +91,6 @@ done
 
 
 
-for i in {1..500}; do\
-  x=$((RANDOM % 410));\
-  y=$((RANDOM % 410));\
-  z=$((RANDOM % 410));\
-  x=$((x + 600));\
-  y=$((y + 30 ));\
-  z=$((z + 600));\
-  radius=$((RANDOM % 2));\
-  mass=$((RANDOM % 5));\
-  grpc_cli call localhost:50051 AddBody "mass: $mass x: $x y: $y z: $z vx: 12321000 vy: -60000000 vz: -592210000 radius: $radius;"
-  sleep .2;\
-done
 
 
 for i in {1..150}; do\
@@ -118,7 +119,7 @@ for i in {1..100}; do\
   sleep 1;\
 done
 
-for i in {1..1500}; do\
+for i in {1..500}; do\
   x=$((RANDOM % 20));\
   y=$((RANDOM % 20));\
   z=$((RANDOM % 20));\
@@ -130,7 +131,7 @@ for i in {1..1500}; do\
 done
 
 
-for i in {1..1300}; do\
+for i in {1..300}; do\
   x=$((RANDOM % 20));\
   y=$((RANDOM % 20));\
   z=$((RANDOM % 20));\
@@ -139,7 +140,7 @@ for i in {1..1300}; do\
   sleep .1;\
 done
 
-for i in {1..1300}; do\
+for i in {1..300}; do\
   x=$((RANDOM % 20));\
   y=$((RANDOM % 20));\
   z=$((RANDOM % 20));\
@@ -148,7 +149,7 @@ for i in {1..1300}; do\
   sleep .1;\
 done
 
-for i in {1..1300}; do\
+for i in {1..300}; do\
   x=$((RANDOM % 20));\
   y=$((RANDOM % 20));\
   z=$((RANDOM % 20));\

@@ -32,8 +32,8 @@ public class SimGenerator {
     static List<Body> defaultSim() {
         List<Body> bodies = new ArrayList<>();
         double vx, vy, vz, radius, mass;
-        double V = 358000000D;
-        int bodyCount = 3000;
+        double V = 458000000D;
+        int bodyCount = 2000;
         for (int i = -1; i <= 1; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
                 double xc = 200 * i;
@@ -47,7 +47,7 @@ public class SimGenerator {
                     radius = c < bodyCount * .0025D ? 5.0 * Math.random() : 1.0 * Math.random();
                     mass = radius * SOLAR_MASS * .000005D;
                     //SimpleVector v = getVectorEven(new SimpleVector((float) xc, 0.0F, (float) zc));
-                    SimpleVector v = getVectorOnSphere(new SimpleVector((float) xc, 0.0F, (float) zc), 30);
+                    SimpleVector v = getVectorOnSphere(new SimpleVector((float) xc, 0.0F, (float) zc), 20);
                     bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, (float) radius));
                 }
             }
