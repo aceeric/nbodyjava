@@ -38,10 +38,13 @@ TODO
 TODO
 
 ### To run the application
+The latest successful version of Java that I have tested with is 10.0.2. I have not gotten the app to run under any later version. On my system, Java 10 is installed in `/opt/java-jdk/jdk-10.0.2`. So for me:
 
 ```
 mvn package
-java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar
+/opt/java-jdk/jdk-10.0.2/bin/java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
+
+The above command runs canned simulation, which consists of four spherical clusters of bodies orbiting a massive sun.
 
 

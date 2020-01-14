@@ -180,7 +180,7 @@ public final class JMEApp extends SimpleApplication {
     }
 
     /**
-     *  Handles the F12 key.
+     *  Handles the F12 key. (The JME window has to have focus to receive the keycode from the OS.)
      *  <p>
      *  If the fly cam is currently connected, then the F12 key disconnects the fly cam from the JME window so
      *  the user can tab into other windows while the sim is running.</p>

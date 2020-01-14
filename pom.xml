@@ -149,7 +149,7 @@
               <archive>
                 <manifest>
                   <mainClass>
-                    org.ericace.sim.NBodySim
+                    org.ericace.sim.Main
                   </mainClass>
                 </manifest>
               </archive>

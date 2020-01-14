@@ -392,7 +392,7 @@ public class Body {
      * https://www.plasmaphysics.org.uk/programs/coll3d_cpp.htm
      *
      * This method modifies the velocity of this - and the other - instance, if there is a collision. It also
-     * sets the {@link #collided} field in both instance which is checked elsewhere in the code. Once a collision
+     * sets the {@link #collided} field in both instances which is checked elsewhere in the code. Once a collision
      * happens, and the velocities are set, the instances are set aside from the force computation for this
      * cycle.
      *
