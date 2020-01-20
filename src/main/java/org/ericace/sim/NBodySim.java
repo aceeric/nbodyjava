@@ -18,9 +18,7 @@ class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
     private static final Instrumentation instrumentation = InstrumentationManager.getInstrumentation();
 
-    private static final int DEFAULT_THREAD_COUNT = 6;
     private static final int DEFAULT_MAX_RESULT_QUEUES = 10;
-    private static final double DEFAULT_TIME_SCALING = .000000001F; // slows the simulation
     private static final String JME_THREAD_NAME = "jME3 Main";
 
     /**
@@ -29,7 +27,7 @@ class NBodySim {
      * <ol>
      *     <li>Initializes instrumentation which - depending on JVM properties - could be
      *         NOP instrumentation, or Prometheus instrumentation</li>
-     *     <li>Initializes a queue to hold all the bodies in the simulation from the passed param</li>
+     *     <li>Initializes a queue to hold all the bodies in the simulation from the passed {@code bodies} param</li>
      *     <li>Initializes a result queue holder to hold computed results</li>
      *     <li>Initializes a computation runner and starts it, which perpetually computes the body forces in a thread,
      *         placing the computed results into the result queue holder</li>
@@ -41,14 +39,17 @@ class NBodySim {
      *     <li>Cleans up on exit</li>
      * </ol>
      *
-     * @param bodies a list of bodies to start the simulation with
+     * @param bodies     A list of bodies to run the simulation with
+     * @param threads    The number of threads to use for the computation runner
+     * @param scaling    The time scaling factor, which speeds or slows the sim
+     * @param initialCam The initial camera position
      */
-    void run(List<Body> bodies) {
+    void run(List<Body> bodies, int threads, double scaling, SimpleVector initialCam) {
         try {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
-            JMEApp.start(bodies.size(), resultQueueHolder, new SimpleVector(-100, 300, 1200));
-            ComputationRunner.start(DEFAULT_THREAD_COUNT, bodyQueue, DEFAULT_TIME_SCALING, resultQueueHolder);
+            JMEApp.start(bodies.size(), resultQueueHolder, initialCam);
+            ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder);
             NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));
             getJmeThread().join();
         } catch (Exception e) {

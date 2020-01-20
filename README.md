@@ -9,7 +9,9 @@ The design is to separate the simulation from the rendering engine as much as po
 ### This is an initial version with some cleanups still to do: 
 
 * Implement fragmentation collision behavior
-* Add ability to set initial params (thread, bodies, etc.) from the command line
+* implement collision behavior when different bodies have different collision configs
+* bug - use GRPC to try to remove more than the number of existing bodies
+* Add ability to set initial params (thread, bodies, screen dimensions, etc.) from the command line or a config file
 * Can't decrease size of thread pool
 * Add Prometheus "HELP" field to metric initializer
 * Clean up the scripts directory - right now it's a collection of fragments

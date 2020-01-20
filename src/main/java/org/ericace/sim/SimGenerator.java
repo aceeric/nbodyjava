@@ -6,19 +6,22 @@ import org.ericace.nbody.SimpleVector;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
- * Utility class to generate lists of bodies to start the simulation with. Two methods are provided so far:
- * <p>
- *     {@link #defaultSim()} Sets up a canned simulation</p>
- * <p> 
- *     {@link #fromCSV(String)} Loads body definitions from a file</p>
+ * Utility class to generate lists of bodies to start the simulation with. The following methods are provided:
+ *
+ * <p>{@link #defaultSim} -- A canned simulation</p>
+ * <p>{@link #sim2}       -- Another canned simulation</p>
+ * <p>{@link #fromCSV}    -- Loads body definitions from a CSV file</p>
  */
 public class SimGenerator {
     private static final double SOLAR_MASS = 1.98892e30;
+
+    /**
+     * defines CSV values to parse as True
+     */
+    private static final List<String> TRUES = Arrays.asList("t", "true", "1", "y", "yes");
 
     /**
      * Creates a Queue and populates it with Body instances. This particular initializer creates
@@ -27,13 +30,15 @@ public class SimGenerator {
      * that each clump will be captured by the sun. Each clump contains mostly small, similar-sized
      * bodies but also a few larger bodies are included for variety.
      *
+     * @param bodyCount         Max bodies
+     * @param collisionBehavior The collision behavior for each body
+     *
      * @return the Queue that was created and populated
      */
-    static List<Body> defaultSim() {
+    static List<Body> defaultSim(int bodyCount, Body.CollisionBehavior collisionBehavior) {
         List<Body> bodies = new ArrayList<>();
         double vx, vy, vz, radius, mass;
         double V = 458000000D;
-        int bodyCount = 2000;
         for (int i = -1; i <= 1; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
                 double xc = 200 * i;
@@ -46,40 +51,103 @@ public class SimGenerator {
                     else                         {vx = -V; vz = -V;}
                     radius = c < bodyCount * .0025D ? 5.0 * Math.random() : 1.0 * Math.random();
                     mass = radius * SOLAR_MASS * .000005D;
-                    //SimpleVector v = getVectorEven(new SimpleVector((float) xc, 0.0F, (float) zc));
-                    SimpleVector v = getVectorOnSphere(new SimpleVector((float) xc, 0.0F, (float) zc), 20);
-                    bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, (float) radius));
+                    //SimpleVector v = getVectorEven(new SimpleVector((float) xc, 0.0F, (float) zc), 30);
+                    SimpleVector v = getVectorOnSphere(new SimpleVector((float) xc, 0.0F, (float) zc), 10);
+                    bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, (float) radius,
+                            collisionBehavior));
                 }
             }
         }
-        createSunAndAddToQueue(bodies);
+        createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .1D, 25);
         return bodies;
     }
 
     /**
-     * Parses a CSV into a list of bodies. The format must be comma-delimited, with fields:
+     * Generates a body queue with sun at 0,0,0 and a cluster of bodies off-screen headed for a very close pass around
+     * with the sun at high velocity
      *
-     * x,y,z,vx,vy,vz,mass,radius
-     * ... or:
-     * x,y,z,vx,vy,vz,mass,radius,true
+     * @param bodyCount         Max bodies
+     * @param collisionBehavior The collision behavior for each body
      *
-     * In the second form, the line specifies a sun. The first form specifies a non-sun body
+     * @return the Queue that was created and populated
+     */
+    static List<Body> sim2(int bodyCount, Body.CollisionBehavior collisionBehavior) {
+        List<Body> bodies = new ArrayList<>();
+        createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .1D, 25);
+        for (int i = 0; i < bodyCount; ++i) {
+            SimpleVector v = getVectorEven(new SimpleVector(500.0F, 500.0F, 500.0F), 50);
+            double mass = 2 * Math.random() * SOLAR_MASS * .000005D;
+            double radius = Math.random() * 3;
+            bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, -1124500000D, -824500000D, -1124500000D, mass,
+                    (float) radius, collisionBehavior));
+        }
+        return bodies;
+    }
+
+    /**
+     * Generates a simulation with a sun far removed from the focus area just to serve as light source. Creates
+     * two clusters composed of many colliding spheres in close proximity. The two clusters exert gravitational
+     * attraction toward each other as if they were solids. They also exert gravitational force within themselves,
+     * preserving their spherical shape. The two clusters orbit a couple times then collide, merging into a single
+     * cluster of colliding spheres. This sim is dependent on body count - I run it with 500 bodies. Fewer, and
+     * the attraction isn't enough to bring the clusters together. More, and the two clusters quickly merge. This
+     * sim should be run with elastic collision. This example was useful to surface some subtleties with regard to
+     * how the simulation handles lots of concurrent collisions.
      *
-     * E.g.:
-     * 100.0,100.0,100.0,100.0,100.0,100.0,10.0,.5
-     * 1.0,1.0,1.0,1.0,1.0,1.0,10000.0,10,true
+     * @param bodyCount         Max bodies
+     * @param collisionBehavior The collision behavior for each body
      *
-     * The above example would load a simulation with one body and one sun
+     * @return the Queue that was created and populated
+     */
+    static List<Body> sim3(int bodyCount, Body.CollisionBehavior collisionBehavior) {
+        List<Body> bodies = new ArrayList<>();
+        createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500); // far away a light source minimal grav
+        for (int i = 0; i < bodyCount; ++i) {
+            for (float j = -1; j <= 1; j += 2) {
+                SimpleVector v = getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), 50);
+                bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, j * 111185000, j * 111185000, j * -111185000,
+                        90E25, 4F, collisionBehavior));
+            }
+        }
+        return bodies;
+    }
+
+
+    /**
+     * Parses a CSV file into a list of bodies. The format must be comma-delimited, with fields:
      *
-     * @param pathSpec path of the CSV
+     * x,y,z,vx,vy,vz,mass,radius,is_sun,collision_behavior
+     *
+     * Everything from 'x' through 'radius' is required - and is parsed as a double.
+     *
+     * If 'is_sun' is omitted, the loader defaults it to 'False' The following values are parsed as TRUE:
+     * 'true', 'T', 1, 'yes', 'y'. Anything else is parsed as FALSE. (E.g. 'potato'). Any case is allowed.
+     * E.g. FALSE, false, False, FaLsE, StringBean, etc.
+     *
+     * The following values are allowed for collision_behavior, also in any case: none, elastic, subsume, fragment.
+     * If no value is provided, then 'elastic' is defaulted.
+     *
+     * Example:
+     * 100,100,100,100,100,100,10,.5
+     * 1,1,1,1,1,1,10000,10,true,elastic
+     *
+     * The above example would load a simulation with one non-sun body, and one sun, both with elastic collision
+     * behavior.
+     *
+     * @param pathSpec                 Path of the CSV
+     * @param bodyCount                Max number of bodies to read from the CSV. To guarantee inclusion of
+     *                                 a body from the CSV, place it earlier in the file than this value.
+     * @param defaultCollisionBehavior The default collision behavior for each body, if not specified in the
+     *                                 CSV
      *
      * @return the parsed list of bodies
      */
-    static List<Body> fromCSV(String pathSpec) {
+    static List<Body> fromCSV(String pathSpec, int bodyCount, Body.CollisionBehavior defaultCollisionBehavior) {
         List<Body> bodies = new ArrayList<>();
         String line;
+        int lines = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(pathSpec))) {
-            while ((line = br.readLine()) != null) {
+            while ((line = br.readLine()) != null && ++lines <= bodyCount) {
                 String[] fields = line.split(",");
                 try {
                     double x = Double.parseDouble(fields[0].trim());
@@ -90,14 +158,17 @@ public class SimGenerator {
                     double vz = Double.parseDouble(fields[5].trim());
                     double mass = Double.parseDouble(fields[6].trim());
                     float radius = Float.parseFloat(fields[7].trim());
-                    boolean isSun = fields.length == 9 && Boolean.parseBoolean(fields[8].trim());
-                    Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius);
+                    boolean isSun = fields.length >= 9 && parseBoolean(fields[8].trim());
+                    Body.CollisionBehavior collisionBehavior = fields.length == 10 ?
+                            parseCollisionBehavior(fields[9].trim()) : defaultCollisionBehavior;
+                    Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, collisionBehavior);
                     if (isSun) {
                         b.setSun();
                     }
                     bodies.add(b);
                 } catch (NumberFormatException e) {
-                    // do nothing - load what is possible to load and ignore everything else
+                    // load what is possible to load and ignore everything else
+                    System.out.println("Ignoring line: " + line);
                 }
             }
         } catch (IOException e) {
@@ -107,15 +178,30 @@ public class SimGenerator {
     }
 
     /**
-     * Creates a sun body with larger mass, very low (non-zero) velocity, placed at 0, 0, 0 and
-     * places it into the passed body queue that holds the bodies in the simulation
-     *
-     * @param bodies a list of bodies in the simulation. The sun is appended
+     * @return the passed string parsed as a boolean, as defined by the {@link #TRUES} constant. Null
+     * parses as False.
      */
-    private static void createSunAndAddToQueue(List<Body> bodies) {
-        double tmpRadius = 25;
-        double tmpMass = tmpRadius * SOLAR_MASS * .1D;
-        Body theSun = new Body(Body.nextID(), 0, 0, 0, -3, -3, -5, tmpMass, (float) tmpRadius);
+    static boolean parseBoolean(String s) {
+        return s != null && TRUES.contains(s.toLowerCase());
+    }
+
+    /**
+     * @return the passed string as a {@link Body.CollisionBehavior} enum. Valid values are "elastic", "none",
+     * "fragment", and "subsume" (in any case) as defined by the referenced enum. Null parses as
+     * Body.CollisionBehavior.ELASTIC.
+     */
+    static Body.CollisionBehavior parseCollisionBehavior(String s) {
+        return s != null ? Body.CollisionBehavior.valueOf(s.toUpperCase()) : Body.CollisionBehavior.ELASTIC;
+    }
+
+    /**
+     * Creates a sun body with larger mass, very low (non-zero) velocity, placed at 0, 0, 0 and
+     * places it into the passed body queue
+     *
+     * @param bodies a list of bodies in the simulation. The sun is appended to the list
+     */
+    private static void createSunAndAddToQueue(List<Body> bodies, double x, double y, double z, double mass, double radius) {
+        Body theSun = new Body(Body.nextID(), x, y, z, -3, -3, -5, mass, (float) radius);
         theSun.setSun();
         bodies.add(theSun);
     }
@@ -131,7 +217,7 @@ public class SimGenerator {
      *
      * @return a vector as as described
      */
-    private static SimpleVector getVectorEven(SimpleVector center) {
+    private static SimpleVector getVectorEven(SimpleVector center, double radius) {
         double d, x, y, z;
         do {
             x = Math.random() * 2.0 - 1.0;
@@ -139,7 +225,8 @@ public class SimGenerator {
             z = Math.random() * 2.0 - 1.0;
             d = x*x + y*y + z*z;
         } while (d > 1.0);
-        return new SimpleVector((float) ((x * 100) + center.x), (float) ((y * 100) + center.y), (float) ((z * 100) + center.z));
+        return new SimpleVector((float) ((x * radius) + center.x), (float) ((y * radius) + center.y),
+                (float) ((z * radius) + center.z));
     }
 
     /**

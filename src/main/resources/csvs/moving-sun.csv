@@ -1,0 +1,2 @@
+ x, y, z,         vx, vy, vz,        mass, radius, is_sun
+ 0, 0, 0, -191547200,  0,  0, 5.99676E+29,     13, true

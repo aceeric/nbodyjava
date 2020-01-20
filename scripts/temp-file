@@ -17,7 +17,8 @@ grpc_cli call localhost:50051 AddBody "mass: 25.219723E+28 x: 150 y: 350 z: -150
 
 grpc_cli call localhost:50051 AddBody "mass: 5.96676E+29 x: 500 y: 10 z: -500 vx: 0 vy: -668000000 vz: -12321000 radius: 20"
 
-grpc_cli call localhost:50051 AddBody "mass: 2726720996.484641309 x: 400 y: 400 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 20"
+grpc_cli call localhost:50051 AddBody "mass: 2726720996.484641309 x: 100 y: 100 z: 100 vx: -668000000 vy: 0 vz: 42321000 radius: 10"
+grpc_cli call localhost:50051 AddBody "mass: 2726720996.484641309 x: 122 y: 102 z: 102 vx: -668000000 vy: 0 vz: 12321000 radius: 20"
 
 grpc_cli call localhost:50051 SetSmoothing "factor: 9.9899999971718071e-10"
 
@@ -35,17 +36,32 @@ for i in {1..30}; do\
   sleep 1;\
 done
 
-
-for i in {1..100}; do\
-  x=$((RANDOM % 50));\
-  y=$((RANDOM % 50));\
-  z=$((RANDOM % 50));\
+for i in {1..200}; do\
+  x=$((RANDOM % 5));\
+  y=$((RANDOM % 5));\
+  z=$((RANDOM % 5));\
   x=$((150 + x));\
   y=$((150 + y));\
   z=$((150 - z));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -412321000 vy: -18000000 vz: -12321000 radius: 5";\
+  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -412321000 vy: 518000000 vz: -412321000 radius: 3";\
   sleep .1;\
 done
+
+
+for i in {1..1000}; do\
+  x=$((RANDOM % 5));\
+  y=$((RANDOM % 5));\
+  z=$((RANDOM % 5));\
+  vx=$((-112321000 + x));\
+  vy=$((118000000  + y));\
+  vz=$((-112321000 + x));\
+  x=$((150 + x));\
+  y=$((150 + y));\
+  z=$((150 - z));\
+  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: $vx vy: $vy vz: $vz radius: 1";\
+  sleep .1;\
+done
+
 
 
 for i in {1..1}; do\
@@ -109,14 +125,13 @@ done
 
 
 for i in {1..100}; do\
-  x=$((RANDOM % 80));\
-  y=$((RANDOM % 80));\
-  z=$((RANDOM % 80));\
-  x=$((-600 + x));\
-  y=$((600 + y));\
+  x=$((RANDOM % 50));\
+  y=$((RANDOM % 50));\
+  z=$((RANDOM % 50));\
+  x=$((-400 + x));\
+  y=$((110 + y));\
   z=$(( 20 + z));\
-  grpc_cli call localhost:50051 AddBody "mass: 2.1116676E+15 x: $x y: $y z: $z vx: 212321000 vy: 423421200 vz: -3100 radius: 3";\
-  sleep 1;\
+  grpc_cli call localhost:50051 AddBody "mass: 2.1116676E+15 x: $x y: $y z: $z vx: 212321000 vy: 123421200 vz: -3100 radius: 3";\
 done
 
 for i in {1..500}; do\
@@ -144,18 +159,17 @@ for i in {1..300}; do\
   x=$((RANDOM % 20));\
   y=$((RANDOM % 20));\
   z=$((RANDOM % 20));\
-  x=$((x - 600));\
-  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: -212321000 vy: 0 vz: 316800000 radius: 1";\
+  x=$((x + 600));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: -212321000 vy: 0 vz: 316800000 radius: 4";\
   sleep .1;\
 done
 
-for i in {1..300}; do\
+for i in {1..100}; do\
   x=$((RANDOM % 20));\
   y=$((RANDOM % 20));\
   z=$((RANDOM % 20));\
-  y=$((y - 600));\
-  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: 0 vy: -212321000 vz: 316800000 radius: 1";\
-  sleep .1;\
+  y=$((y + 600));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: 10000 vy: -212321000 vz: 316800000 radius: 3";\
 done
 
 
@@ -190,4 +204,78 @@ for i in {1..1000}; do\
  radius=$(awk -v min=0 -v max=2 'BEGIN{srand(); print min+rand()*(max-min+1)}');\
  grpc_cli call localhost:50051 AddBody "mass: 2.93E+12 x: $x y: $y z: $z vx: -197827312 vy: 192344240 vz: 103464000 radius: $radius";\
  sleep .1;\
+done
+
+for i in {1..600}; do\
+ x=$((RANDOM % 28));\
+ y=$((RANDOM % 28));\
+ z=$((RANDOM % 28));\
+ x=$((-300 + x));\
+ y=$((-300 + y));\
+ z=$((-300 + z));\
+ grpc_cli call localhost:50051 AddBody "mass: 22.93E+25 x: $x y: $y z: $z vx: -400000 vy: -100000 vz: -300000 radius: 2";\
+done
+
+for i in {1..200}; do\
+ x=$((RANDOM % 68));\
+ y=$((RANDOM % 68));\
+ z=$((RANDOM % 68));\
+ x=$((200 - x));\
+ y=$((200 - y));\
+ z=$((200 - z));\
+ grpc_cli call localhost:50051 AddBody "mass: 22.93E+21 x: $x y: $y z: $z vx: -4000 vy: -1000 vz: -3400 radius: 2";\
+done
+
+for i in {1..500}; do\
+ x=$((RANDOM % 68));\
+ y=$((RANDOM % 68));\
+ z=$((RANDOM % 68));\
+ x=$((x - 200));\
+ y=$((y - 200));\
+ z=$((z - 200));\
+ grpc_cli call localhost:50051 AddBody "mass: 22.93E+6 x: $x y: $y z: $z vx: -4000 vy: -1000 vz: -3400 radius: .2";\
+done
+
+for i in {1..1000}; do\
+ x=$((RANDOM % 8));\
+ y=$((RANDOM % 8));\
+ z=$((RANDOM % 8));\
+ x=$((-200  + x));\
+ y=$((-200  + y));\
+ z=$((-200 + z));\
+ radius=$(awk -v min=0 -v max=2 'BEGIN{srand(); print min+rand()*(max-min+1)}');\
+ grpc_cli call localhost:50051 AddBody "mass: 2.93E+12 x: $x y: $y z: $z vx: -17827312 vy: 12344240 vz: 13464000 radius: $radius";\
+ sleep .1;\
+done
+
+for i in {1..100}; do\
+  x=$((RANDOM % 20));\
+  y=$((RANDOM % 20));\
+  z=$((RANDOM % 20));\
+  x=$((x + 100 ));\
+  y=$((y + 400));\
+  z=$((z + 100));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+24 x: $x y: $y z: $z vx: -123405342 vy: -190000000 vz: -98000000 radius: 1";\
+  sleep .5;\
+done
+
+for i in {1..200}; do\
+  x=$((RANDOM % 4));\
+  y=$((RANDOM % 4));\
+  z=$((RANDOM % 4));\
+  x=$((x + 200 ));\
+  y=$((y + 200));\
+  z=$((z + 200));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: -223405342 vy: 995405342 vz: -223405342 radius: 2";\
+  sleep .2;\
+done
+for i in {1..200}; do\
+  x=$((RANDOM % 4));\
+  y=$((RANDOM % 4));\
+  z=$((RANDOM % 4));\
+  x=$((x - 250 ));\
+  y=$((y - 250));\
+  z=$((z - 250));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: 423405342 vy: 995405342 vz: 423405342 radius: 2";\
+  sleep .2;\
 done

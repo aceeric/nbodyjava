@@ -35,10 +35,9 @@ public class Body {
      */
     private static final double G = 6.673e-11;
 
-    /**
-     * pi
-     */
-    private static final double pi = Math.acos(-1.0E0);
+    // some PI-related constants
+    private static final double FOUR_THIRDS_PI = Math.PI * (4.0D/3.0D);
+    private static final double FOUR_PI = Math.PI * 4;
 
     /**
      * Coefficient of restitution
@@ -51,8 +50,7 @@ public class Body {
     private final int id;
 
     /**
-     * Set to True whenever this object collided with another and the collision was resolved
-     * via elastic collision
+     * Set to True whenever this object collided with another
      */
     private volatile boolean collided;
 
@@ -96,15 +94,16 @@ public class Body {
      * Defines the supported collision responses. SUBSUME means that two bodies merge into one
      * upon collision: the larger mass body subsumes the smaller. ELASTIC_COLLISION means that the
      * bodies bounce off each other. FRAGMENT means a body breaks into smaller bodies upon collision
+     * NONE means no collisions - bodies pass through each other
      */
-    enum CollisionBehavior {
-        SUBSUME, ELASTIC_COLLISION, FRAGMENT
+    public enum CollisionBehavior {
+        NONE, SUBSUME, ELASTIC, FRAGMENT
     }
 
     /**
-     * Defines the collision behavior. TODO: support per-instance behavior
+     * The collision behavior
      */
-    private final CollisionBehavior collisionBehavior = CollisionBehavior.ELASTIC_COLLISION;
+    private final CollisionBehavior collisionBehavior;
 
     /**
      * Monotonically increasing ID generator
@@ -153,21 +152,32 @@ public class Body {
     }
 
     /**
-     * Creates an instance with passed configuration
+     * Creates an instance configured for elastic collision
      *
-     * @param id     Every body should be created with a unique ID starting at zero with max < total
-     *               bodies because this ID is also used as an id by the rendering engine. (The class
-     *               does not enforce this)
-     * @param x      Position
-     * @param y      "
-     * @param z      "
-     * @param vx     Velocity
-     * @param vy     "
-     * @param vz     "
-     * @param mass   Mass
-     * @param radius Radius
+     * @see Body#Body(int, double, double, double, double, double, double, double, float, CollisionBehavior)
      */
     public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius) {
+        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC);
+    }
+
+    /**
+     * Creates an instance with passed configuration
+     *
+     * @param id                Every body should be created with a unique ID starting at zero with max < total
+     *                          bodies because this ID is also used as an id by the rendering engine. (The class
+     *                          does not enforce this)
+     * @param x                 Position
+     * @param y                 "
+     * @param z                 "
+     * @param vx                Velocity
+     * @param vy                "
+     * @param vz                "
+     * @param mass              Mass
+     * @param radius            Radius
+     * @param collisionBehavior The collision behavior for the body
+     */
+    public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius,
+                CollisionBehavior collisionBehavior) {
         exists      = true;
         this.id     = id;
         this.x      = x;
@@ -178,6 +188,7 @@ public class Body {
         this.vz     = vz;
         this.mass   = mass;
         this.radius = radius;
+        this.collisionBehavior = collisionBehavior;
         lock = new ReentrantLock();
     }
 
@@ -203,7 +214,7 @@ public class Body {
      * Intended to be called such that the calling thread has exclusive access to the body. Therefore,
      * no concurrency control.
      *
-     * @param timeScaling a smoothing factor. Larger numbers speed up the sim, and smaller number slow it down
+     * @param timeScaling a smoothing factor. Larger numbers speed up the sim; smaller numbers slow it down
      *
      * @return see {@link BodyRenderInfo}
      */
@@ -212,18 +223,14 @@ public class Body {
             // creates an instance with exists=false so the graphics engine will remove it from the scene
             return new BodyRenderInfo(id);
         }
-        // only update velocity from accumulated force if this body didn't collide with another during this cycle.
-        // If this body *did* collide with another, then its velocity was calculated and assigned by the collision
-        // resolution code
-        if (!collided) {
-            vx += timeScaling * fx / mass;
-            vy += timeScaling * fy / mass;
-            vz += timeScaling * fz / mass;
-        }
+        vx += timeScaling * fx / mass;
+        vy += timeScaling * fy / mass;
+        vz += timeScaling * fz / mass;
         x += timeScaling * vx;
         y += timeScaling * vy;
         z += timeScaling * vz;
-        collided = false; // for next time through
+        // clear collided flag for next cycle
+        collided = false;
         return getRenderInfo();
     }
 
@@ -269,8 +276,7 @@ public class Body {
         /**
          * Calculates the force on this instance from all other instances in the simulation. The body could
          * be set to not exist, or, could collide with another body at any time. If the body becomes non-existent
-         * then stop the calculation. Similarly, if an elastic collision occurred, also stop the calculation
-         * because the collision resolution method handles velocity computation.
+         * then stop the calculation.
          *
          * @return always null
          */
@@ -279,7 +285,7 @@ public class Body {
             try {
                 fx = fy = fz = 0;
                 for (Body otherBody : bodyQueue) {
-                    if (!exists || collided) {
+                    if (!exists) {
                         break;
                     }
                     if (Body.this != otherBody && otherBody.exists) {
@@ -323,11 +329,12 @@ public class Body {
                 if (otherLock) {
                     thisMass = mass;
                     otherMass = otherBody.mass;
-                    double volume = (4.1888D * radius*radius*radius) +
-                            (4.1888D * otherBody.radius*otherBody.radius*otherBody.radius);
-                    double newRadius = (Math.pow(0.62035D * volume, .333D) - radius) * .125D;
+                    double volume = (FOUR_THIRDS_PI * radius * radius * radius) +
+                            (FOUR_THIRDS_PI * otherBody.radius * otherBody.radius * otherBody.radius);
+                    double newRadius = Math.pow((volume * 3.0D) / FOUR_PI, 1.0D / 3.0D);
                     logger.info("old radius: {} -- new radius: {}", radius, newRadius);
-                    radius = newRadius;
+                    //radius = newRadius;
+                    //radius *= 1.2D;
                     mass += otherBody.mass;
                     otherBody.setNotExists();
                     subsumed = true;
@@ -345,8 +352,7 @@ public class Body {
     }
 
     /**
-     * Calculates force on this body from another body. If the bodies collide, resolves
-     * the collision
+     * Calculates force on this body from another body. If the bodies collide, resolves the collision
      *
      * @param otherBody the other body to calculate force from
      */
@@ -355,13 +361,18 @@ public class Body {
         double dy = otherBody.y - y;
         double dz = otherBody.z - z;
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-        if (dist > (radius + otherBody.radius)) {
+        // Only allow one collision per body per cycle. Once a collision happens, continue to apply gravitational
+        // force to the collided body
+        if (collided || dist > (radius + otherBody.radius)) {
+        //if (dist > (radius + otherBody.radius)) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body
             // were subsumed and mass set to zero then the result will be a NOP here
             fx += force * dx / dist;
             fy += force * dy / dist;
             fz += force * dz / dist;
+        //} else if (!collided && !otherBody.collided) {
+        //} else if (!collided) {
         } else {
             logger.info("distance: {} -- this radius {}: -- other radius: {}", dist, radius, otherBody.radius);
             resolveCollision(otherBody);
@@ -370,7 +381,9 @@ public class Body {
 
     /**
      * Resolves collisions between two bodies according to the {@link #collisionBehavior}
-     * field
+     * field. If collision type is NONE, then nothing happens and the bodies pass through each other. While
+     * impossible in the real world, it provides some interesting effects.
+     *
      * @param otherBody the other body being collided with
      */
     private void resolveCollision(Body otherBody) {
@@ -380,7 +393,7 @@ public class Body {
             } else {
                 otherBody.subsume(this);
             }
-        } else if (collisionBehavior == CollisionBehavior.ELASTIC_COLLISION) {
+        } else if (collisionBehavior == CollisionBehavior.ELASTIC) {
             elasticCollision(otherBody);
         }
     }
@@ -392,9 +405,7 @@ public class Body {
      * https://www.plasmaphysics.org.uk/programs/coll3d_cpp.htm
      *
      * This method modifies the velocity of this - and the other - instance, if there is a collision. It also
-     * sets the {@link #collided} field in both instances which is checked elsewhere in the code. Once a collision
-     * happens, and the velocities are set, the instances are set aside from the force computation for this
-     * cycle.
+     * sets the {@link #collided} field in both instances.
      *
      * @param otherBody the other body being collided with
      */
@@ -489,7 +500,7 @@ public class Body {
         dr = d * Math.sin(thetav) / r12;
 
         // if balls do not collide, do nothing
-        if (thetav > pi / 2 || Math.abs(dr) > 1) {
+        if (thetav > Math.PI / 2 || Math.abs(dr) > 1) {
             return;
         }
 
@@ -503,12 +514,12 @@ public class Body {
         t = (d * Math.cos(thetav) - r12 * Math.sqrt(1 - dr * dr)) / v;
 
         // update positions and reverse the coordinate shift
-        x2 = x2 + vx2 * t + x1;
-        y2 = y2 + vy2 * t + y1;
-        z2 = z2 + vz2 * t + z1;
-        x1 = (vx1 + vx2) * t + x1;
-        y1 = (vy1 + vy2) * t + y1;
-        z1 = (vz1 + vz2) * t + z1;
+        // x2 = x2 + vx2 * t + x1;
+        // y2 = y2 + vy2 * t + y1;
+        // z2 = z2 + vz2 * t + z1;
+        // x1 = (vx1 + vx2) * t + x1;
+        // y1 = (vy1 + vy2) * t + y1;
+        // z1 = (vz1 + vz2) * t + z1;
 
         // update velocities
 
@@ -533,10 +544,7 @@ public class Body {
         vy2 = ct * sp * vx2r + cp * vy2r + st * sp * vz2r + vy2;
         vz2 = ct * vz2r - st * vx2r                       + vz2;
 
-        // update  velocity in each instance and set the collided flag so no further gravitational
-        // force gets calculated for either instance in this compute cycle. Only do this if locks can
-        // be obtained on both instances.
-        // TODO consider enclosing the entire method in locks
+        // update  velocity in each instance and set the collided flag
         if (tryLock()) {
             boolean otherLock = false;
             try {

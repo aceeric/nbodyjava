@@ -16,7 +16,7 @@ class BodyRenderInfo {
     final boolean exists;
     final double radius;
     final double x, y, z;
-    boolean isSun;
+    final boolean isSun;
 
     /**
      * Creates an instance representing a body that exists
@@ -49,7 +49,7 @@ class BodyRenderInfo {
     BodyRenderInfo(int id) {
         logger.info("New non-existent BodyRenderInfo ID={}", id);
         this.id = id;
-        exists = false;
+        exists = isSun = false;
         radius = x = y = z = 0;
     }
 
