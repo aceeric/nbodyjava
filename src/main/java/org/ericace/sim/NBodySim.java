@@ -175,8 +175,8 @@ class NBodySim {
 
         @Override
         public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz,
-                            double radius, boolean isSun)  {
-            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, (float) radius);
+                            double radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor)  {
+            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, (float) radius, behavior, bodyColor);
             if (isSun) {
                 b.setSun();
             }

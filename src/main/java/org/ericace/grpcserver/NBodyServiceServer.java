@@ -3,9 +3,12 @@ package org.ericace.grpcserver;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
+import org.ericace.nbody.Body;
 import org.ericace.nbody.Configurables;
 
 import java.io.IOException;
+
+import static org.ericace.nbody.Body.Color.*;
 
 /**
  * Provides a gRPC server singleton on port 50051. Handles requests from external entities
@@ -166,10 +169,49 @@ public class NBodyServiceServer {
             double vz = request.getVz();
             double radius = request.getRadius();
             boolean isSun = request.getIsSun();
-            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun);
+            Body.CollisionBehavior behavior = xlatCollisionBehavior(request.getCollisionBehavior());
+            Body.Color bodyColor = xlatColor(request.getBodyColor());
+
+            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor);
             ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
             responseObserver.onNext(resultCode);
             responseObserver.onCompleted();
+        }
+
+        private Body.Color xlatColor(org.ericace.grpcserver.BodyColorEnum bodyColorEnum) {
+            switch (bodyColorEnum.getNumber()) {
+                case 1: return RANDOM;
+                case 2: return BLACK;
+                case 3: return WHITE;
+                case 4: return DARKGRAY;
+                case 5: return GRAY;
+                case 6: return LIGHTGRAY;
+                case 7: return RED;
+                case 8: return GREEN;
+                case 9: return BLUE;
+                case 10: return YELLOW;
+                case 11: return MAGENTA;
+                case 12: return CYAN;
+                case 13: return ORANGE;
+                case 14: return BROWN;
+                case 15: return PINK;
+                case 0: default: return null;
+            }
+        }
+
+        private Body.CollisionBehavior xlatCollisionBehavior(
+                org.ericace.grpcserver.CollisionBehaviorEnum behaviorEnum) {
+            switch (behaviorEnum) {
+                case NONE:
+                    return Body.CollisionBehavior.NONE;
+                case SUBSUME:
+                    return Body.CollisionBehavior.SUBSUME;
+                case FRAGMENT:
+                    return Body.CollisionBehavior.FRAGMENT;
+                case ELASTIC:
+                default:
+                    return Body.CollisionBehavior.ELASTIC;
+            }
         }
     }
 
@@ -219,6 +261,6 @@ public class NBodyServiceServer {
 
         @Override
         public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius,
-                            boolean isSun)  {}
+                            boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor)  {}
     }
 }

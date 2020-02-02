@@ -167,7 +167,7 @@ public final class JMEApp extends SimpleApplication {
             mat.setFloat("Shininess", 25);
             mat.setBoolean("UseMaterialColors", true);
             mat.setColor("Ambient", ColorRGBA.Black);
-            mat.setColor("Diffuse", ColorRGBA.randomColor());
+            mat.setColor("Diffuse", xlatColor(b.color));
             mat.setColor("Specular", ColorRGBA.Yellow);
         }
         Geometry geo = new Geometry(String.valueOf(b.id), sphere);
@@ -177,6 +177,29 @@ public final class JMEApp extends SimpleApplication {
         rootNode.attachChild(geo);
         geos.put(b.id, geo);
         return geo;
+    }
+
+    private static ColorRGBA xlatColor(Body.Color color) {
+        if (color == null) {
+            return ColorRGBA.randomColor();
+        }
+        switch (color) {
+            case BLACK: return ColorRGBA.Black;
+            case WHITE: return ColorRGBA.White;
+            case DARKGRAY: return ColorRGBA.DarkGray;
+            case GRAY: return ColorRGBA.Gray;
+            case LIGHTGRAY: return ColorRGBA.LightGray;
+            case RED: return ColorRGBA.Red;
+            case GREEN: return ColorRGBA.Green;
+            case BLUE: return ColorRGBA.Blue;
+            case YELLOW: return ColorRGBA.Yellow;
+            case MAGENTA: return ColorRGBA.Magenta;
+            case CYAN: return ColorRGBA.Cyan;
+            case ORANGE: return ColorRGBA.Orange;
+            case BROWN: return ColorRGBA.Brown;
+            case PINK: return ColorRGBA.Pink;
+            case RANDOM: default: return ColorRGBA.randomColor();
+        }
     }
 
     /**

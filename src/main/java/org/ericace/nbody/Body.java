@@ -62,12 +62,12 @@ public class Body {
     /**
      * current coordinates of the body
      */
-    private double x, y, z;
+    private volatile double x, y, z;
 
     /**
      * cumulative velocity
      */
-    private double vx, vy, vz;
+    private volatile double vx, vy, vz;
 
     /**
      * force on this body from all other bodies - zeroed and re-computed once per sim cycle
@@ -104,6 +104,18 @@ public class Body {
      * The collision behavior
      */
     private final CollisionBehavior collisionBehavior;
+
+    /**
+     * Defines supported colors
+     */
+    public enum Color {
+        RANDOM, BLACK, WHITE, DARKGRAY, GRAY, LIGHTGRAY, RED, GREEN, BLUE, YELLOW, MAGENTA, CYAN, ORANGE, BROWN, PINK
+    }
+
+    /**
+     * Body color
+     */
+    private final Color color;
 
     /**
      * Monotonically increasing ID generator
@@ -154,10 +166,10 @@ public class Body {
     /**
      * Creates an instance configured for elastic collision
      *
-     * @see Body#Body(int, double, double, double, double, double, double, double, float, CollisionBehavior)
+     * @see Body#Body(int, double, double, double, double, double, double, double, float, CollisionBehavior, Color)
      */
     public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius) {
-        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC);
+        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC, Color.RANDOM);
     }
 
     /**
@@ -177,7 +189,7 @@ public class Body {
      * @param collisionBehavior The collision behavior for the body
      */
     public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius,
-                CollisionBehavior collisionBehavior) {
+                CollisionBehavior collisionBehavior, Color color) {
         exists      = true;
         this.id     = id;
         this.x      = x;
@@ -189,6 +201,7 @@ public class Body {
         this.mass   = mass;
         this.radius = radius;
         this.collisionBehavior = collisionBehavior;
+        this.color = color;
         lock = new ReentrantLock();
     }
 
@@ -223,9 +236,11 @@ public class Body {
             // creates an instance with exists=false so the graphics engine will remove it from the scene
             return new BodyRenderInfo(id);
         }
-        vx += timeScaling * fx / mass;
-        vy += timeScaling * fy / mass;
-        vz += timeScaling * fz / mass;
+        if (!collided) { // TEST TEST TEST
+            vx += timeScaling * fx / mass;
+            vy += timeScaling * fy / mass;
+            vz += timeScaling * fz / mass;
+        }
         x += timeScaling * vx;
         y += timeScaling * vy;
         z += timeScaling * vz;
@@ -241,7 +256,7 @@ public class Body {
      * @return see {@link BodyRenderInfo}
      */
     BodyRenderInfo getRenderInfo() {
-        return new BodyRenderInfo(id, x, y, z, radius, isSun);
+        return new BodyRenderInfo(id, x, y, z, radius, isSun, color);
     }
 
     /**
@@ -317,9 +332,14 @@ public class Body {
      * is guaranteed to avoid a race condition. And - the only place that updates those values is here
      * and the write is guarded to there will never be contention on the writes.
      *
+     * @param dist      The distance between the bodies
      * @param otherBody the other body to subsume into this body
      */
-    private void subsume(Body otherBody) {
+    private void subsume(double dist, Body otherBody) {
+        if (dist + otherBody.radius >= radius * 1.2) {
+            // only if  most of the other body is inside this body
+            return;
+        }
         boolean subsumed = false;
         double thisMass=0, otherMass=0;
         if (tryLock()) {
@@ -333,6 +353,7 @@ public class Body {
                             (FOUR_THIRDS_PI * otherBody.radius * otherBody.radius * otherBody.radius);
                     double newRadius = Math.pow((volume * 3.0D) / FOUR_PI, 1.0D / 3.0D);
                     logger.info("old radius: {} -- new radius: {}", radius, newRadius);
+                    // TEST put this back
                     //radius = newRadius;
                     //radius *= 1.2D;
                     mass += otherBody.mass;
@@ -362,20 +383,20 @@ public class Body {
         double dz = otherBody.z - z;
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
         // Only allow one collision per body per cycle. Once a collision happens, continue to apply gravitational
-        // force to the collided body
+        // force to the collided body. Allowing a body to collide multiple times caused odd things to happen
+        // when many bodies were tightly compacted (not sure why) and it also impacts performance - lots of additional
+        // calculations
         if (collided || dist > (radius + otherBody.radius)) {
-        //if (dist > (radius + otherBody.radius)) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body
             // were subsumed and mass set to zero then the result will be a NOP here
             fx += force * dx / dist;
             fy += force * dy / dist;
             fz += force * dz / dist;
-        //} else if (!collided && !otherBody.collided) {
-        //} else if (!collided) {
-        } else {
-            logger.info("distance: {} -- this radius {}: -- other radius: {}", dist, radius, otherBody.radius);
-            resolveCollision(otherBody);
+        } else if (dist <= (radius + otherBody.radius)) {
+            logger.info("collision: distance: {} -- this radius {}: -- other radius: {} -- this id: {} -- other id: {}",
+                    dist, radius, otherBody.radius, id, otherBody.id);
+            resolveCollision(dist, otherBody);
         }
     }
 
@@ -384,16 +405,19 @@ public class Body {
      * field. If collision type is NONE, then nothing happens and the bodies pass through each other. While
      * impossible in the real world, it provides some interesting effects.
      *
+     * @param dist      distance between bodies
      * @param otherBody the other body being collided with
      */
-    private void resolveCollision(Body otherBody) {
-        if (collisionBehavior == CollisionBehavior.SUBSUME) {
-            if (mass > otherBody.mass) {
-                subsume(otherBody);
+    private void resolveCollision(double dist, Body otherBody) {
+        if (collisionBehavior == CollisionBehavior.SUBSUME ||
+                otherBody.collisionBehavior == CollisionBehavior.SUBSUME) {
+            if (radius > otherBody.radius) {
+                subsume(dist, otherBody);
             } else {
-                otherBody.subsume(this);
+                otherBody.subsume(dist, this);
             }
-        } else if (collisionBehavior == CollisionBehavior.ELASTIC) {
+        } else if (collisionBehavior == CollisionBehavior.ELASTIC &&
+                otherBody.collisionBehavior == CollisionBehavior.ELASTIC) {
             elasticCollision(otherBody);
         }
     }
@@ -449,10 +473,11 @@ public class Body {
         v = Math.sqrt(vx21*vx21 + vy21*vy21 + vz21*vz21);
 
         // return if distance between balls smaller than sum of radii
-        // if (d<r12) {error=2; return;}
+        //if (d < r12) {return;}
 
         // return if relative speed = 0
         if (v == 0) {
+            logger.info("Exit elastic collision: v == 0. This id: {} -- other id: {}", id, otherBody.id);
             return;
         }
 
@@ -501,6 +526,7 @@ public class Body {
 
         // if balls do not collide, do nothing
         if (thetav > Math.PI / 2 || Math.abs(dr) > 1) {
+            logger.info("Bodies do not collide. This id: {} -- other id: {}", id, otherBody.id);
             return;
         }
 
@@ -510,9 +536,9 @@ public class Body {
         sbeta = Math.sin(beta);
         cbeta = Math.cos(beta);
 
+        // comment out - position is assigned in the update method
         // calculate time to collision
-        t = (d * Math.cos(thetav) - r12 * Math.sqrt(1 - dr * dr)) / v;
-
+        //t = (d * Math.cos(thetav) - r12 * Math.sqrt(1 - dr * dr)) / v;
         // update positions and reverse the coordinate shift
         // x2 = x2 + vx2 * t + x1;
         // y2 = y2 + vy2 * t + y1;
@@ -544,7 +570,7 @@ public class Body {
         vy2 = ct * sp * vx2r + cp * vy2r + st * sp * vz2r + vy2;
         vz2 = ct * vz2r - st * vx2r                       + vz2;
 
-        // update  velocity in each instance and set the collided flag
+        // update velocity in each instance and set the collided flag
         if (tryLock()) {
             boolean otherLock = false;
             try {

@@ -45,6 +45,7 @@ message CurrentConfig {
   int64  result_queue_size = 2;
   int64  computation_threads = 3;
   double smoothing_factor = 4;
+  // default collision behavior
   CollisionBehaviorEnum collision_behavior = 5;
 }
 
@@ -59,6 +60,8 @@ message BodyDescription {
   double vz = 7;
   double radius = 8;
   bool is_sun = 9;
+  CollisionBehaviorEnum collision_behavior = 10;
+  BodyColorEnum body_color = 11;
 }
 
 // Allows for setting collision behavior
@@ -88,18 +91,36 @@ message ResultCode {
 // Defines the behavior when bodies reach a certain proximity. Currently, only SUBSUME
 // is supported:
 //
-// - UNDEF   - Because protobuf handles zero enum values oddly - like it doesn't display a value
-//             in the cli tool if it is zero
-// - SUBSUME - (default) Larger bodies subsume smaller bodies within a defined proximity. The
-//             proximity is currently hard-coded. Future: make configurable
-// - BOUNCE  - Not currently supported - Future: bodies bounce off each other
-// - FRAG    - Not currently supported - Future: bodies fragment
-// - NOOP    - Not currently supported - Future: nothing - allows bodies to occupy the same space (can
-//             result in extreme slingshot kinds of behaviors)
+// - UNDEF    - Because protobuf handles zero enum values oddly - like it doesn't display a value
+//              in the cli tool if it is zero
+// - NONE     - Bodies pass through each other
+// - SUBSUME  - (default) Larger bodies subsume smaller bodies within a defined proximity
+// - ELASTIC  - Elastic collision (bodies bounce off each other)
+// - FRAGMENT - If force is sufficient, a body can fragment into smaller bodies
+
 enum CollisionBehaviorEnum {
   UNDEF = 0;
-  SUBSUME = 1;
-  BOUNCE = 2;
-  FRAG = 3;
-  NOOP = 99;
+  NONE = 1;
+  SUBSUME = 2;
+  ELASTIC = 3;
+  FRAGMENT = 4;
+}
+
+enum BodyColorEnum {
+  NOCOLOR = 0;
+  RANDOM = 1;
+  BLACK = 2;
+  WHITE = 3;
+  DARKGRAY = 4;
+  GRAY = 5;
+  LIGHTGRAY = 6;
+  RED = 7;
+  GREEN = 8;
+  BLUE = 9;
+  YELLOW = 10;
+  MAGENTA = 11;
+  CYAN = 12;
+  ORANGE = 13;
+  BROWN = 14;
+  PINK = 15;
 }

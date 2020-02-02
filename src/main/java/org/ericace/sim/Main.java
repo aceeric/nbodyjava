@@ -19,6 +19,7 @@ public class Main {
     private static Body.CollisionBehavior defaultCollisionBehavior = Body.CollisionBehavior.ELASTIC;
     private static int bodyCount = 1000;
     private static String csvPath = null;
+    private static Body.Color defaultBodyColor = null;
     private static SimpleVector initialCam = new SimpleVector(-100, 300, 1200);
 
     /**
@@ -37,17 +38,17 @@ public class Main {
         }
         List<Body> bodies = null;
         if (csvPath != null) {
-            bodies = SimGenerator.fromCSV(csvPath, bodyCount, defaultCollisionBehavior);
+            bodies = SimGenerator.fromCSV(csvPath, bodyCount, defaultCollisionBehavior, defaultBodyColor);
         } else {
             switch (simName.toLowerCase()) {
                 case "default":
-                    bodies = SimGenerator.defaultSim(bodyCount, defaultCollisionBehavior);
+                    bodies = SimGenerator.defaultSim(bodyCount, defaultCollisionBehavior, defaultBodyColor);
                     break;
                 case "sim2":
-                    bodies = SimGenerator.sim2(bodyCount, defaultCollisionBehavior);
+                    bodies = SimGenerator.sim2(bodyCount, defaultCollisionBehavior, defaultBodyColor);
                     break;
                 case "sim3":
-                    bodies = SimGenerator.sim3(bodyCount, defaultCollisionBehavior);
+                    bodies = SimGenerator.sim3(bodyCount, defaultCollisionBehavior, defaultBodyColor);
                     break;
                 default:
                     System.out.println("ERROR: Unknown sim specified on the command line: " + simName);
@@ -102,6 +103,9 @@ public class Main {
                     break;
                 case "-f": case "--csv":
                     csvPath = argQueue.poll();
+                    break;
+                case "-l": case "--body-color":
+                    defaultBodyColor = SimGenerator.parseColor(argQueue.poll());
                     break;
                 case "-i": case "--initial-cam":
                     initialCam = parseVector(argQueue.poll());

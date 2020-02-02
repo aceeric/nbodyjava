@@ -17,6 +17,7 @@ class BodyRenderInfo {
     final double radius;
     final double x, y, z;
     final boolean isSun;
+    final Body.Color color;
 
     /**
      * Creates an instance representing a body that exists
@@ -27,8 +28,9 @@ class BodyRenderInfo {
      * @param z      z "
      * @param radius radius
      * @param isSun  true if this is a sun (the rendering engine should create a light source for it)
+     * @param color  body color
      */
-    BodyRenderInfo(int id, double x, double y, double z, double radius, boolean isSun) {
+    BodyRenderInfo(int id, double x, double y, double z, double radius, boolean isSun, Body.Color color) {
         logger.info("New existent BodyRenderInfo ID={}", id);
         this.id = id;
         this.x = x;
@@ -37,6 +39,7 @@ class BodyRenderInfo {
         this.radius = radius;
         exists = true;
         this.isSun = isSun;
+        this.color = color;
     }
 
     /**
@@ -51,6 +54,7 @@ class BodyRenderInfo {
         this.id = id;
         exists = isSun = false;
         radius = x = y = z = 0;
+        this.color = null;
     }
 
     @Override
