@@ -14,7 +14,6 @@ The design is to separate the simulation from the rendering engine as much as po
 * Add ability to set initial params (screen characteristics, etc.) from the command line or a config file
 * Can't decrease size of thread pool
 * Add Prometheus "HELP" field to metric initializer
-* Ability to specify body color
 * Clean up the scripts directory - right now it's a collection of fragments
 * Add a guide to running the whole app
 * Comprehensive Javadocs

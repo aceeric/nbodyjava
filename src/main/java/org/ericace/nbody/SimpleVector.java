@@ -3,7 +3,7 @@ package org.ericace.nbody;
 /**
  * A simple value class. Rather than pulling the JME <i>Vector3f</i> class
  * into this package, define our own vector class. Reduces coupling between the
- * simulation and the rendering engine. TODO double instead of float?
+ * simulation and the rendering engine.
  */
 public class SimpleVector {
     /**

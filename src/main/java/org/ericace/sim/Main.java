@@ -12,6 +12,10 @@ import java.util.Queue;
  */
 public class Main {
 
+    private static final String DEFAULT_SIM_NAME = "default";
+    private static final String SIM2_NAME = "sim2";
+    private static final String SIM3_NAME = "sim3";
+
     private static boolean render = true;
     private static int threads = 5;
     private static double scaling = .000000001D;
@@ -21,6 +25,7 @@ public class Main {
     private static String csvPath = null;
     private static Body.Color defaultBodyColor = null;
     private static SimpleVector initialCam = new SimpleVector(-100, 300, 1200);
+    private static String simArgs = null;
 
     /**
      * Entry point. Instantiates and runs the simulation class: {@link NBodySim}. Parses args to set params,
@@ -36,26 +41,27 @@ public class Main {
         if (!parseArgs(args)) {
             return;
         }
-        List<Body> bodies = null;
+        Sim t;
         if (csvPath != null) {
-            bodies = SimGenerator.fromCSV(csvPath, bodyCount, defaultCollisionBehavior, defaultBodyColor);
+            List<Body> bodies = SimGenerator.fromCSV(csvPath, bodyCount, defaultCollisionBehavior, defaultBodyColor);
+            t = new Sim(bodies, null);
         } else {
             switch (simName.toLowerCase()) {
-                case "default":
-                    bodies = SimGenerator.defaultSim(bodyCount, defaultCollisionBehavior, defaultBodyColor);
+                case DEFAULT_SIM_NAME:
+                    t = SimGenerator.defaultSim(bodyCount, defaultCollisionBehavior, defaultBodyColor);
                     break;
-                case "sim2":
-                    bodies = SimGenerator.sim2(bodyCount, defaultCollisionBehavior, defaultBodyColor);
+                case SIM2_NAME:
+                    t = SimGenerator.sim2(bodyCount, defaultCollisionBehavior, defaultBodyColor);
                     break;
-                case "sim3":
-                    bodies = SimGenerator.sim3(bodyCount, defaultCollisionBehavior, defaultBodyColor);
+                case SIM3_NAME:
+                    t = SimGenerator.sim3(bodyCount, defaultCollisionBehavior, defaultBodyColor, simArgs);
                     break;
                 default:
                     System.out.println("ERROR: Unknown sim specified on the command line: " + simName);
-                    break;
+                    return;
             }
         }
-        new NBodySim().run(bodies, threads, scaling, initialCam);
+        new NBodySim().run(t.bodies, threads, scaling, initialCam, t.thread);
     }
 
     /**
@@ -63,7 +69,7 @@ public class Main {
      * Accepts this form: -t 1 and --threads 1, as well as this form -t=1 and --threads=1. Does not accept
      * concatenated short form opts in cases where such opts don't accept params. E.g. doesn't handle: -ot=1 where
      * -o is a parameterless option, and -t takes a value (one in this example.) Doesn't have any error handling
-     * so - is fragile with respect to parsing errors. TODO improve error handling.
+     * so - is fragile with respect to parsing errors.
      *
      * Sets class static fields corresponding to command line args.
      *
@@ -82,37 +88,55 @@ public class Main {
         }
         String arg;
         while ((arg = argQueue.poll()) != null) {
-            switch (arg.toLowerCase()) {
-                case "-r": case "--no-render":
-                    render = false;
-                    break;
-                case "-n": case "--sim-name":
-                    simName = argQueue.poll();
-                    break;
-                case "-c": case "--collision":
-                    defaultCollisionBehavior = SimGenerator.parseCollisionBehavior(argQueue.poll());
-                    break;
-                case "-b": case "--bodies":
-                    bodyCount = Integer.parseInt(argQueue.poll());
-                    break;
-                case "-t": case "--threads":
-                    threads = Integer.parseInt(argQueue.poll());
-                    break;
-                case "-m": case "--scaling":
-                    scaling = Double.parseDouble(argQueue.poll());
-                    break;
-                case "-f": case "--csv":
-                    csvPath = argQueue.poll();
-                    break;
-                case "-l": case "--body-color":
-                    defaultBodyColor = SimGenerator.parseColor(argQueue.poll());
-                    break;
-                case "-i": case "--initial-cam":
-                    initialCam = parseVector(argQueue.poll());
-                    break;
-                default:
-                    System.out.println("ERROR: unknown arg: " + arg);
-                    return false;
+            try {
+                switch (arg.toLowerCase()) {
+                    case "-r":
+                    case "--no-render":
+                        render = false;
+                        break;
+                    case "-n":
+                    case "--sim-name":
+                        simName = argQueue.poll();
+                        break;
+                    case "-a":
+                    case "--sim-args":
+                        simArgs = argQueue.poll();
+                        break;
+                    case "-c":
+                    case "--collision":
+                        defaultCollisionBehavior = SimGenerator.parseCollisionBehavior(argQueue.poll());
+                        break;
+                    case "-b":
+                    case "--bodies":
+                        bodyCount = Integer.parseInt(argQueue.poll());
+                        break;
+                    case "-t":
+                    case "--threads":
+                        threads = Integer.parseInt(argQueue.poll());
+                        break;
+                    case "-m":
+                    case "--scaling":
+                        scaling = Double.parseDouble(argQueue.poll());
+                        break;
+                    case "-f":
+                    case "--csv":
+                        csvPath = argQueue.poll();
+                        break;
+                    case "-l":
+                    case "--body-color":
+                        defaultBodyColor = SimGenerator.parseColor(argQueue.poll());
+                        break;
+                    case "-i":
+                    case "--initial-cam":
+                        initialCam = parseVector(argQueue.poll());
+                        break;
+                    default:
+                        System.out.println("ERROR: unknown option: " + arg);
+                        return false;
+                }
+            } catch (Exception e) {
+                System.out.println("ERROR parsing the command line: invalid or missing option?");
+                return false;
             }
         }
         if (simName != null && csvPath != null) {
@@ -120,13 +144,13 @@ public class Main {
             return false;
         }
         if (simName == null && csvPath == null) {
-            simName = "default";
+            simName = DEFAULT_SIM_NAME;
         }
         return true;
     }
 
     /**
-     * Parses a string like 1,2,3 into a SimpleVector with values x=1, y=2, z=3
+     * Parses a string like "1,2,3" into a SimpleVector with values x=1, y=2, z=3
      *
      * @param s The string to parse
      *

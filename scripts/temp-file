@@ -234,7 +234,7 @@ for i in {1..1500}; do\
  printf "%s,%s,%s,-497827312,392344240,403464000,2.93E+12,%s\n" $x $y $z $radius >> /home/eace/IdeaProjects/nbodyjava/src/main/resources/csvs/test.csv; \
 done
 
-for i in {1..800}; do\
+for i in {1..1800}; do\
  x=$((RANDOM % 8));\
  y=$((RANDOM % 8));\
  z=$((RANDOM % 8));\
@@ -242,8 +242,8 @@ for i in {1..800}; do\
  y=$(( 400  + y));\
  z=$((-200 + z));\
  radius=$(awk -v min=0 -v max=2 'BEGIN{srand(); print min+rand()*(max-min+1)}');\
- grpc_cli call localhost:50051 AddBody "body_color: LIGHTGRAY mass: 2.93E+12 x: $x y: $y z: $z vx: -197827312 vy: 12344240 vz: 163464000 radius: $radius";\
- sleep .3;\
+ grpc_cli call localhost:50051 AddBody "body_color: BLUE mass: 2.93E+12 x: $x y: $y z: $z vx: -99827312 vy: 112344240 vz: 223464000 radius: $radius";\
+ sleep .5;\
 done
 
 for i in {1..600}; do\

@@ -43,23 +43,39 @@ class NBodySim {
      * @param threads    The number of threads to use for the computation runner
      * @param scaling    The time scaling factor, which speeds or slows the sim
      * @param initialCam The initial camera position
+     * @param simThread  If not null, then the method will call the {@code start} method on the instance after
+     *                   the sim is started. The {@code start} method is expected to start a thread which will
+     *                   then modify the body queue while the sim is running.
      */
-    void run(List<Body> bodies, int threads, double scaling, SimpleVector initialCam) {
+    void run(List<Body> bodies, int threads, double scaling, SimpleVector initialCam, SimThread simThread) {
         try {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
             JMEApp.start(bodies.size(), resultQueueHolder, initialCam);
             ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder);
             NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));
+            if (simThread != null) {
+                simThread.start(bodyQueue);
+            }
             getJmeThread().join();
         } catch (Exception e) {
             logger.error("Simulation error", e);
         } finally {
+            if (simThread != null) {
+                simThread.stop();
+            }
             NBodyServiceServer.stop();
             ComputationRunner.stop();
             instrumentation.stop();
         }
         logger.info("Exiting the simulation");
+    }
+
+    /**
+     * Runs a sim without a callback. See {@link #run(List, int, double, SimpleVector, SimThread)} for details
+     */
+    void run(List<Body> bodies, int threads, double scaling, SimpleVector initialCam) {
+        run(bodies, threads, scaling, initialCam, null);
     }
 
     /**

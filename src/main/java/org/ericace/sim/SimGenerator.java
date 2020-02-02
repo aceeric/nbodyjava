@@ -7,13 +7,14 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Utility class to generate lists of bodies to start the simulation with. The following methods are provided:
  *
  * <p>{@link #defaultSim} -- A canned simulation</p>
  * <p>{@link #sim2}       -- Another canned simulation</p>
- * <p>{@link #sim3}       -- Another canned simulation</p>
+ * <p>{@link #sim3}       -- And another canned simulation</p>
  * <p>{@link #fromCSV}    -- Loads body definitions from a CSV file</p>
  */
 public class SimGenerator {
@@ -33,10 +34,11 @@ public class SimGenerator {
      *
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
+     * @param defaultBodyColor  Default body color
      *
-     * @return the Queue that was created and populated
+     * @return a simulation instance containing a list of bodies
      */
-    static List<Body> defaultSim(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor) {
+    static Sim defaultSim(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor) {
         List<Body> bodies = new ArrayList<>();
         double vx, vy, vz, radius, mass;
         double V = 458000000D;
@@ -60,19 +62,20 @@ public class SimGenerator {
             }
         }
         createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .1D, 25);
-        return bodies;
+        return new Sim(bodies, null);
     }
 
     /**
      * Generates a body queue with sun at 0,0,0 and a cluster of bodies off-screen headed for a very close pass around
-     * with the sun at high velocity
+     * with the sun at high velocity. Typically, a few bodies are captured by the sun but most travel away
      *
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
+     * @param defaultBodyColor  Default body color
      *
-     * @return the Queue that was created and populated
+     * @return a simulation instance containing a list of bodies
      */
-    static List<Body> sim2(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor) {
+    static Sim sim2(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor) {
         List<Body> bodies = new ArrayList<>();
         createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .1D, 25);
         for (int i = 0; i < bodyCount; ++i) {
@@ -82,29 +85,39 @@ public class SimGenerator {
             bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, -1124500000D, -824500000D, -1124500000D, mass,
                     (float) radius, collisionBehavior, defaultBodyColor));
         }
-        return bodies;
+        return new Sim(bodies, null);
     }
 
     /**
      * Generates a simulation with a sun far removed from the focus area just to serve as light source. Creates
      * two clusters composed of many colliding spheres in close proximity. The two clusters exert gravitational
      * attraction toward each other as if they were solids. They also exert gravitational force within themselves,
-     * preserving their spherical shape. The two clusters orbit a couple times then collide, merging into a single
-     * cluster of colliding spheres. This sim is dependent on body count - I run it with ~555 bodies. Fewer, and
-     * the attraction isn't enough to bring the clusters together. More, and the two clusters quickly merge. This
-     * sim should be run with elastic collision. This example was useful to surface some subtleties with regard to
-     * how the simulation handles lots of concurrent collisions.
+     * preserving their spherical shape. The two clusters orbit and then collide, merging into a single cluster
+     * of colliding spheres.
+     *
+     * <p>After the sim starts, the {@link SimThread} instance returned by the method injects a series of bodies
+     * gradually into the simulation. The additional bodies come in over a period of a few minutes.</p>
+     *
+     * <p>This sim is dependent on body count - I run it with ~1000 bodies. Fewer, and the attraction isn't enough
+     * to bring the clusters together. More, and the two clusters merge too soon. This sim should be run with
+     * elastic collision. This example was useful to surface some subtleties with regard to how the simulation
+     * handles lots of concurrent collisions.</p>
      *
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
+     * @param defaultBodyColor  Default body color
+     * @param simArgs           The number of additional bodies to inject after the sim starts. Defaults to 700
      *
-     * @return the Queue that was created and populated
+     * @return a simulation instance containing a list of bodies and a {@link SimThread} instance for injecting
+     * additional bodies after the sim starts.
      */
-    static List<Body> sim3(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor) {
+    static Sim sim3(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
+                    String simArgs) {
         List<Body> bodies = new ArrayList<>();
-        createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500); // far away a light source minimal grav
-        for (int i = 0; i < bodyCount; ++i) {
-            for (float j = -1; j <= 1; j += 2) {
+        // far away light source with minimal mass/grav
+        createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
+        for (float j = -1; j <= 1; j += 2) {
+            for (int i = 0; i < bodyCount / 2; ++i) {
                 Body.Color bodyColor = defaultBodyColor != null ? defaultBodyColor:
                     j == -1 ? Body.Color.YELLOW : Body.Color.RED;
                 SimpleVector v = getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), 50);
@@ -112,9 +125,62 @@ public class SimGenerator {
                         90E25, 5F, collisionBehavior, bodyColor));
             }
         }
-        return bodies;
+        return new Sim(bodies, new sim3Thread(defaultBodyColor, collisionBehavior, simArgs));
     }
 
+    /**
+     * Injects bodies into the sim3 body queue after the sim starts
+     */
+    private static class sim3Thread implements SimThread, Runnable {
+        private boolean running = true;
+        private ConcurrentLinkedQueue<Body> bodyQueue;
+        private final Body.CollisionBehavior collisionBehavior;
+        private final Body.Color defaultBodyColor;
+        private final String simArgs;
+
+        public sim3Thread(Body.Color defaultBodyColor, Body.CollisionBehavior collisionBehavior, String simArgs) {
+            this.defaultBodyColor = defaultBodyColor;
+            this.collisionBehavior = collisionBehavior;
+            this.simArgs = simArgs;
+        }
+        @Override
+        public void stop() {
+            running = false;
+        }
+
+        @Override
+        public void start(ConcurrentLinkedQueue<Body> bodyQueue) {
+            this.bodyQueue = bodyQueue;
+            new Thread(this).start();
+        }
+        @Override
+        public void run() {
+            int cnt = 0;
+            int max = simArgs == null ? 500 : Integer.parseInt(simArgs);
+            while (running) {
+                try {
+                    if (cnt > max) {
+                        running = false;
+                        System.out.println("Done: added " + max + " bodies");
+                    } else {
+                        ++cnt;
+                        double x = Math.random() * 5 - 200;
+                        double y = Math.random() * 5 + 400;
+                        double z = Math.random() * 5 - 200;
+                        double radius = Math.random() * 5;
+                        double mass = radius * 2.93E+12;
+                        Body.Color color = defaultBodyColor == null ? Body.Color.BLUE : defaultBodyColor;
+                        Body b = new Body(Body.nextID(), x, y, z, -99827312, 112344240, 323464000, mass, (float) radius,
+                                collisionBehavior, color);
+                        bodyQueue.add(b);
+                        Thread.sleep(500);
+                    }
+                } catch (Exception e) {
+                    running = false;
+                }
+            }
+        }
+    }
 
     /**
      * Parses a CSV file into a list of bodies. The format must be comma-delimited, with fields:
@@ -131,10 +197,10 @@ public class SimGenerator {
      * If no value is provided, then 'elastic' is defaulted.
      *
      * Refer to the {@link Body.Color} enum for color values. They can be provided in any case. If not provided,
-     * a random color is selected
+     * a random color is selected for each body in the CSV
      *
      * Example:
-     * 100,100,100,100,100,100,10,.5
+     * 100,100,100,100,100,100,10,.5,,,blue
      * 1,1,1,1,1,1,10000,10,true,elastic
      *
      * The above example would load a simulation with one non-sun body, and one sun, both with elastic collision
@@ -211,7 +277,7 @@ public class SimGenerator {
 
     /**
      * Creates a sun body with larger mass, very low (non-zero) velocity, placed at 0, 0, 0 and
-     * places it into the passed body queue
+     * places it into the passed body list
      *
      * @param bodies a list of bodies in the simulation. The sun is appended to the list
      */
