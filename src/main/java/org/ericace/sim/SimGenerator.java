@@ -12,10 +12,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Utility class to generate lists of bodies to start the simulation with. The following methods are provided:
  *
- * <p>{@link #defaultSim} -- A canned simulation</p>
- * <p>{@link #sim2}       -- Another canned simulation</p>
- * <p>{@link #sim3}       -- And another canned simulation</p>
- * <p>{@link #fromCSV}    -- Loads body definitions from a CSV file</p>
+ * <p>{@link #sim1}    -- A canned simulation</p>
+ * <p>{@link #sim2}    -- Another canned simulation</p>
+ * <p>{@link #sim3}    -- And another canned simulation</p>
+ * <p>{@link #fromCSV} -- Loads body definitions from a CSV file</p>
  */
 public class SimGenerator {
     private static final double SOLAR_MASS = 1.98892e30;
@@ -35,29 +35,31 @@ public class SimGenerator {
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
      * @param defaultBodyColor  Default body color
+     * @param simArgs           Unused by this generator
      *
      * @return a simulation instance containing a list of bodies
      */
-    static Sim defaultSim(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor) {
+    static Sim sim1(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
+                    String simArgs) {
         List<Body> bodies = new ArrayList<>();
         double vx, vy, vz, radius, mass;
-        double V = 458000000D;
+        double V = 958000000D;
         for (int i = -1; i <= 1; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
                 double xc = 200 * i;
                 double zc = 200 * j;
+                Body.Color color;
+                if      (i == -1 && j == -1) {vx = -V; vz =  V; color = defaultBodyColor == null ? Body.Color.RED : defaultBodyColor;}
+                else if (i == -1 && j ==  1) {vx =  V; vz =  V; color = defaultBodyColor == null ? Body.Color.YELLOW : defaultBodyColor;}
+                else if (i ==  1 && j ==  1) {vx =  V; vz = -V; color = defaultBodyColor == null ? Body.Color.LIGHTGRAY : defaultBodyColor;}
+                else                         {vx = -V; vz = -V; color = defaultBodyColor == null ? Body.Color.CYAN : defaultBodyColor;}
                 for (int c = 0; c < bodyCount / 4; ++c) {
                     vy = .5 - Math.random(); // mostly in the same y plane
-                    if      (i == -1 && j == -1) {vx = -V; vz =  V;}
-                    else if (i == -1 && j ==  1) {vx =  V; vz =  V;}
-                    else if (i ==  1 && j ==  1) {vx =  V; vz = -V;}
-                    else                         {vx = -V; vz = -V;}
-                    radius = c < bodyCount * .0025D ? 5.0 * Math.random() : 1.0 * Math.random();
+                    radius = c < bodyCount * .0025D ? 9.0 * Math.random() : 2.0 * Math.random();
                     mass = radius * SOLAR_MASS * .000005D;
-                    SimpleVector v = getVectorEven(new SimpleVector((float) xc, 0.0F, (float) zc), 30);
-                    //SimpleVector v = getVectorOnSphere(new SimpleVector((float) xc, 0.0F, (float) zc), 30);
+                    SimpleVector v = SimpleVector.getVectorEven(new SimpleVector((float) xc, 0.0F, (float) zc), 30);
                     bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, (float) radius,
-                            collisionBehavior, defaultBodyColor));
+                            collisionBehavior, color, 1));
                 }
             }
         }
@@ -72,18 +74,21 @@ public class SimGenerator {
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
      * @param defaultBodyColor  Default body color
+     * @param simArgs           Unused by this generator
      *
      * @return a simulation instance containing a list of bodies
      */
-    static Sim sim2(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor) {
+    @SuppressWarnings("unused")
+    static Sim sim2(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
+                    String simArgs) {
         List<Body> bodies = new ArrayList<>();
         createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .1D, 25);
         for (int i = 0; i < bodyCount; ++i) {
-            SimpleVector v = getVectorEven(new SimpleVector(500.0F, 500.0F, 500.0F), 50);
+            SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(500.0F, 500.0F, 500.0F), 50);
             double mass = 2 * Math.random() * SOLAR_MASS * .000005D;
             double radius = Math.random() * 4;
             bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, -1124500000D, -824500000D, -1124500000D, mass,
-                    (float) radius, collisionBehavior, defaultBodyColor));
+                    (float) radius, collisionBehavior, defaultBodyColor, 1));
         }
         return new Sim(bodies, null);
     }
@@ -111,18 +116,19 @@ public class SimGenerator {
      * @return a simulation instance containing a list of bodies and a {@link SimThread} instance for injecting
      * additional bodies after the sim starts.
      */
+    @SuppressWarnings("unused")
     static Sim sim3(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
                     String simArgs) {
         List<Body> bodies = new ArrayList<>();
-        // far away light source with minimal mass/grav
+        // far away light source with minimal mass & gravity
         createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
         for (float j = -1; j <= 1; j += 2) {
             for (int i = 0; i < bodyCount / 2; ++i) {
                 Body.Color bodyColor = defaultBodyColor != null ? defaultBodyColor:
                     j == -1 ? Body.Color.YELLOW : Body.Color.RED;
-                SimpleVector v = getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), 50);
+                SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), 50);
                 bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, j * 121185000, j * 121185000, j * -121185000,
-                        90E25, 5F, collisionBehavior, bodyColor));
+                        90E25, 5F, collisionBehavior, bodyColor, 1));
             }
         }
         return new Sim(bodies, new sim3Thread(defaultBodyColor, collisionBehavior, simArgs));
@@ -171,7 +177,7 @@ public class SimGenerator {
                         double mass = radius * 2.93E+12;
                         Body.Color color = defaultBodyColor == null ? Body.Color.BLUE : defaultBodyColor;
                         Body b = new Body(Body.nextID(), x, y, z, -99827312, 112344240, 323464000, mass, (float) radius,
-                                collisionBehavior, color);
+                                collisionBehavior, color, 1);
                         bodyQueue.add(b);
                         Thread.sleep(500);
                     }
@@ -183,11 +189,37 @@ public class SimGenerator {
     }
 
     /**
+     * Generates a simulation with a sun and a line of bodies along the x axis all in the same plane
+     *
+     * @param bodyCount         Max bodies
+     * @param collisionBehavior The collision behavior for each body
+     * @param defaultBodyColor  Default body color
+     * @param simArgs           The number of additional bodies to inject after the sim starts. Defaults to 700
+     *
+     * @return a simulation instance containing a list of bodies
+     */
+    @SuppressWarnings("unused")
+    static Sim sim4(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
+                    String simArgs) {
+        List<Body> bodies = new ArrayList<>();
+        createSunAndAddToQueue(bodies, 0, 0, 0, SOLAR_MASS, 30);
+        for (int i = 0; i < bodyCount; ++i) {
+            double mass = 9e5;
+            double radius = 2;
+            bodies.add(new Body(Body.nextID(), (i*4) + 100, 0, 0, // x,y,z
+                    0, 0, -824500000 + (i * 1E6), // vx, vy, vz
+                    mass, (float) radius, collisionBehavior, defaultBodyColor, 1));
+        }
+        return new Sim(bodies, null);
+    }
+
+    /**
      * Parses a CSV file into a list of bodies. The format must be comma-delimited, with fields:
      *
-     * x,y,z,vx,vy,vz,mass,radius,is_sun,collision_behavior,color
+     * x,y,z,vx,vy,vz,mass,radius,is_sun,collision_behavior,color,fragmentation_factor
      *
-     * Everything from 'x' through 'radius' is required - and is parsed as a double.
+     * Everything from 'x' through 'radius' is required - and is parsed as a double. Everything else is optional.
+     * Comments are allowed: any line where '#' is the first character
      *
      * If 'is_sun' is omitted, the loader defaults it to 'False' The following values are parsed as TRUE:
      * 'true', 'T', 1, 'yes', 'y'. Anything else is parsed as FALSE. (E.g. 'potato'). Any case is allowed.
@@ -221,6 +253,7 @@ public class SimGenerator {
         int lines = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(pathSpec))) {
             while ((line = br.readLine()) != null && ++lines <= bodyCount) {
+                if (line.startsWith("#")) continue;
                 String[] fields = line.split(",");
                 try {
                     double x = Double.parseDouble(fields[0].trim());
@@ -235,7 +268,9 @@ public class SimGenerator {
                     Body.CollisionBehavior collisionBehavior = fields.length >= 10 ?
                             parseCollisionBehavior(fields[9].trim()) : defaultCollisionBehavior;
                     Body.Color color = fields.length >= 11 ? parseColor(fields[10].trim()) : defaultBodyColor;
-                    Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, collisionBehavior, color);
+                    double fragFactor = fields.length >= 12 ? Double.parseDouble(fields[12].trim()) : 1;
+                    Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, collisionBehavior, color,
+                            fragFactor);
                     if (isSun) {
                         b.setSun();
                     }
@@ -284,81 +319,8 @@ public class SimGenerator {
     private static void createSunAndAddToQueue(List<Body> bodies, double x, double y, double z, double mass,
                                                double radius) {
         Body theSun = new Body(Body.nextID(), x, y, z, -3, -3, -5, mass, (float) radius, Body.CollisionBehavior.SUBSUME,
-                null);
+                null, 1);
         theSun.setSun();
         bodies.add(theSun);
-    }
-
-    /**
-     * Generates a vector that is evenly distributed within a virtual sphere around the vector defined
-     * in the passed param. Meaning - if called multiple times, the result will be a set of vectors
-     * evenly distributed within a sphere. This function is based on:
-     *
-     * https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/
-     *
-     * @param center The Vector around which to center the generated vector
-     *
-     * @return a vector as as described
-     */
-    @SuppressWarnings("unused")
-    private static SimpleVector getVectorEven(SimpleVector center, double radius) {
-        double d, x, y, z;
-        do {
-            x = Math.random() * 2.0 - 1.0;
-            y = Math.random() * 2.0 - 1.0;
-            z = Math.random() * 2.0 - 1.0;
-            d = x*x + y*y + z*z;
-        } while (d > 1.0);
-        return new SimpleVector((float) ((x * radius) + center.x), (float) ((y * radius) + center.y),
-                (float) ((z * radius) + center.z));
-    }
-
-    /**
-     * Similar to {@link #getVectorEven} except is more likely to return a vector closer toward the center of the
-     * sphere. This function is based on:
-     *
-     * https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/
-     *
-     * @param center The Vector around which to center the generated vector
-     *
-     * @return a vector as as described
-     */
-    @SuppressWarnings("unused")
-    private static SimpleVector getVectorConcentrated(SimpleVector center) {
-        double x = Math.random() - 0.5;
-        double y = Math.random() - 0.5;
-        double z = Math.random() - 0.5;
-        double mag = Math.sqrt(x * x + y * y + z * z);
-        x /= mag;
-        y /= mag;
-        z /= mag;
-        double d = Math.random() * 200;
-        return new SimpleVector((float) ((x * d) + center.x), (float) ((y * d) + center.y), (float) ((z * d) + center.z));
-    }
-
-    /**
-     * Generates a vector located on the surface of a virtual sphere centered at the passed point, having the
-     * passed radius. Based on:
-     * https://math.stackexchange.com/questions/1585975/how-to-generate-random-points-on-a-sphere/1586185#1586185
-     *
-     * @param center The center of the sphere
-     * @param radius The radius
-     *
-     * @return a randomly-generated point on the surface of the sphere
-     */
-    @SuppressWarnings("unused")
-    private static SimpleVector getVectorOnSphere(SimpleVector center, double radius) {
-        Random r = new Random();
-        double x = r.nextGaussian();
-        double y = r.nextGaussian();
-        double z = r.nextGaussian();
-        // normalize
-        x *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
-        y *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
-        z *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
-        x *= radius;
-        y *= radius;
-        z *= radius;
-        return new SimpleVector((float) (center.x + x), (float) (center.y + y), (float) (center.z + z));
     }
 }

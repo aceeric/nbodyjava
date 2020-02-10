@@ -73,12 +73,24 @@ public interface Configurables {
     CollisionBehavior getCollisionBehavior();
 
     /**
+     * Sets the coefficient of restitution for elastic collisions
+     *
+     * @param R the value to set
+     */
+    void setRestitutionCoefficient(double R);
+
+    /**
+     * @return the current coefficient of restition
+     */
+    double getRestitutionCoefficient();
+
+    /**
      * Removes bodies from the simulation. The interface does not attempt to specify how bodies are selected
      * for removal
      *
-     * @param bodyCount the number of bodies to remove
+     * @param countToRemove the number of bodies to remove
      */
-    void removeBodies(int bodyCount);
+    void removeBodies(int countToRemove);
 
     /**
      * @return the current number of bodies in the simulation
@@ -89,5 +101,5 @@ public interface Configurables {
      * Adds a body to the simulation. Params are not documented, as they appear to be relatively self-explanatory
      */
     void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius,
-                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor);
+                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, double fragFactor);
 }

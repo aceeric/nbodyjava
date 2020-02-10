@@ -62,16 +62,16 @@ done
 
 
 for i in {1..200}; do\
-  x=$((RANDOM % 60));\
-  y=$((RANDOM % 60));\
-  z=$((RANDOM % 60));\
+  x=$((RANDOM % 90));\
+  y=$((RANDOM % 90));\
+  z=$((RANDOM % 90));\
   vx=$((10 + x));\
-  vy=$((218000000 + y));\
-  vz=$((1234233351 + z));\
-  x=$((-350 + x));\
-  y=$((-350 + y));\
-  z=$((-350 - z));\
-  grpc_cli call localhost:50051 AddBody "mass: 5.16676E+25 x: $x y: $y z: $z vx: $vx vy: $vy vz: $vz radius: 3 body_color: YELLOW";\
+  vy=$((-1000000 + y));\
+  vz=$((-14233351 + z));\
+  x=$(( 350 + x));\
+  y=$(( 350 - y));\
+  z=$(( 350 - z));\
+  grpc_cli call localhost:50051 AddBody "mass: 5E28 x: $x y: $y z: $z vx: $vx vy: $vy vz: $vz radius: 10 body_color: WHITE";\
 done
 
 
@@ -89,7 +89,7 @@ done
 
 
 
-grpc_cli call localhost:50051 AddBody "mass: 5.96676E+29 x: 200 y: 200 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 10"
+grpc_cli call localhost:50051 AddBody "mass: 5.96676E+29 x: 200 y: 200 z: 500 vx: -668000000 vy: 0 vz: 12321000 radius: 10 collision_behavior: FRAGMENT body_color: RED"
 
 
 for i in {1..300}; do\
@@ -217,7 +217,7 @@ for i in {1..40}; do\
   x=$((x + 300));\
   y=$((y + 300));\
   z=$((z + 300));\
-  grpc_cli call localhost:50051 AddBody "mass: 1.5E+27 x: $x y: $y z: $z vx: 113454320 vy: 30 vz: -756800000 radius: 5";\
+  grpc_cli call localhost:50051 AddBody "mass: 1.5E27 x: $x y: $y z: $z vx: 113454320 vy: 30 vz: -456800000 radius: 5 body_color: RED";\
 done
 
 grpc_cli call localhost:50051 AddBody "mass: 1.9E+27 x: 200 y: 50 z: 0 vx: 113454320 vy: 30 vz: -756800000 radius: 15"
@@ -246,14 +246,14 @@ for i in {1..1800}; do\
  sleep .5;\
 done
 
-for i in {1..600}; do\
+for i in {1..300}; do\
  x=$((RANDOM % 28));\
  y=$((RANDOM % 28));\
  z=$((RANDOM % 28));\
- x=$((-300 + x));\
- y=$((-300 + y));\
- z=$((-300 + z));\
- grpc_cli call localhost:50051 AddBody "mass: 22.93E+25 x: $x y: $y z: $z vx: -400000 vy: -100000 vz: -300000 radius: 2";\
+ x=$((-200 + x));\
+ y=$((-200 + y));\
+ z=$((-200 + z));\
+ grpc_cli call localhost:50051 AddBody "mass: 22E11 x: $x y: $y z: $z vx: -40000000 vy: 967000000 vz: -30000000 radius: 2 body_color: RED";\
 done
 
 for i in {1..200}; do\
@@ -321,3 +321,19 @@ for i in {1..200}; do\
   grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: 423405342 vy: 995405342 vz: 423405342 radius: 2";\
   sleep .2;\
 done
+
+grpc_cli call localhost:50051 GetCurrentConfig ""
+grpc_cli call localhost:50051 RemoveBodies "item_count: 200"
+
+grpc_cli call localhost:50051 SetRestitutionCoefficient "restitution_coefficient: .8"
+
+grpc_cli call localhost:50051 AddBody "mass: 9E15  x:  100 y: 0 z: -300 vx: -990000000 vy: 0       vz: -600000 radius: 10 body_color: YELLOW"
+grpc_cli call localhost:50051 AddBody "mass: 90000 x: -100 y: 0 z: -300 vx:  500000000 vy: 5000000 vz: -600000 radius: 8 collision_behavior: FRAGMENT body_color: RED frag_factor: 1e10"
+
+grpc_cli call localhost:50051 AddBody "mass: 90000 x:  100 y: 0 z: -100 vx: -500000000 vy: 0 vz: 0 radius: 10"
+grpc_cli call localhost:50051 AddBody "mass: 90000 x: -100 y: 0 z: -100 vx:  800000000 vy: 0 vz: -50040000 radius: 10"
+
+grpc_cli call localhost:50051 AddBody "mass: 9E12     x:  100 y: 0 z: -300 vx: -400000000 vy:         0 vz: -592312232 radius: 25 body_color: GREEN"
+grpc_cli call localhost:50051 AddBody "mass: 90000    x: -100 y: 0 z: -300 vx:  500000000 vy: 182100000 vz: -592312232 radius: 30 collision_behavior: FRAGMENT body_color: RED"
+
+grpc_cli call localhost:50051 AddBody "mass: 9E15 x: 300 y: 0 z: 0 vx:  -500000000 vy: 500000000 vz: 0 radius: 8 collision_behavior: FRAGMENT"

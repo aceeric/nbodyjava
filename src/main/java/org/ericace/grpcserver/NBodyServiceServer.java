@@ -135,6 +135,15 @@ public class NBodyServiceServer {
         }
 
         @Override
+        public void setRestitutionCoefficient(org.ericace.grpcserver.RestitutionCoefficient request,
+                                 io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode> responseObserver) {
+            configurables.setRestitutionCoefficient(request.getRestitutionCoefficient());
+            ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
+            responseObserver.onNext(resultCode);
+            responseObserver.onCompleted();
+        }
+
+        @Override
         public void getCurrentConfig(com.google.protobuf.Empty request,
                                      io.grpc.stub.StreamObserver<org.ericace.grpcserver.CurrentConfig> responseObserver) {
             CurrentConfig currentConfig = CurrentConfig.newBuilder()
@@ -143,6 +152,7 @@ public class NBodyServiceServer {
                     .setResultQueueSize(configurables.getResultQueueSize())
                     .setSmoothingFactor(configurables.getSmoothing())
                     .setCollisionBehaviorValue(configurables.getCollisionBehavior().value())
+                    .setRestitutionCoefficient(configurables.getRestitutionCoefficient())
                     .build();
             responseObserver.onNext(currentConfig);
             responseObserver.onCompleted();
@@ -169,10 +179,11 @@ public class NBodyServiceServer {
             double vz = request.getVz();
             double radius = request.getRadius();
             boolean isSun = request.getIsSun();
+            double fragFactor = request.getFragFactor();
             Body.CollisionBehavior behavior = xlatCollisionBehavior(request.getCollisionBehavior());
             Body.Color bodyColor = xlatColor(request.getBodyColor());
 
-            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor);
+            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor, fragFactor);
             ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
             responseObserver.onNext(resultCode);
             responseObserver.onCompleted();
@@ -252,7 +263,13 @@ public class NBodyServiceServer {
         }
 
         @Override
-        public void removeBodies(int bodyCount)  {}
+        public void setRestitutionCoefficient(double R)  {}
+
+        @Override
+        public double getRestitutionCoefficient() { return 1;}
+
+        @Override
+        public void removeBodies(int countToRemove)  {}
 
         @Override
         public int getBodyCount() {
@@ -261,6 +278,6 @@ public class NBodyServiceServer {
 
         @Override
         public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius,
-                            boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor)  {}
+                            boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, double fragFactor)  {}
     }
 }

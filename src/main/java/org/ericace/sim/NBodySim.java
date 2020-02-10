@@ -166,22 +166,41 @@ class NBodySim {
         }
 
         @Override
-        public void removeBodies(int bodyCount)  {
-            Random r = new Random();
-            int modCount = 0;
-            while (modCount < bodyCount) {
-                int idx = r.nextInt(bodyQueue.size());
-                for (Body b : bodyQueue) {
-                    if (idx-- <= 0) {
-                        if (!b.isSun() && b.exists()) {
-                            b.setNotExists();
-                            modCount++;
-                        }
+        public void setRestitutionCoefficient(double R) {
+            Body.setRestitutionCoefficient(R);
+        }
+
+        @Override
+        public double getRestitutionCoefficient() {
+            return Body.getRestitutionCoefficient();
+        }
+
+        /**
+         * Makes a best effort to remove the passed number of bodies from the simulation, with the removals
+         * distributed evenly across the body queue. Suns aren't removed. Since the queue can be changing con
+         * concurrently it might not be possible to remove exactly the specified number of bodies.
+         *
+         * @param countToRemove the number of bodies to remove
+         */
+        @Override
+        public void removeBodies(int countToRemove)  {
+            int removedCnt = 0;
+            int step = countToRemove < 0 || countToRemove > bodyQueue.size() ? 1 : bodyQueue.size() / countToRemove;
+            int iter = 0;
+            boolean shouldRemove = false;
+            for (Body b : bodyQueue) {
+                if (iter++ % step == 0) {
+                    shouldRemove = true;
+                }
+                if (shouldRemove && !b.isSun() && b.exists()) {
+                    b.setNotExists();
+                    shouldRemove = false;
+                    if (++removedCnt >= countToRemove) {
                         break;
                     }
                 }
             }
-            logger.info("Set {} bodies to not exist", modCount);
+            logger.info("Set {} bodies to not exist", removedCnt);
         }
 
         @Override
@@ -191,8 +210,9 @@ class NBodySim {
 
         @Override
         public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz,
-                            double radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor)  {
-            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, (float) radius, behavior, bodyColor);
+                            double radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
+                            double fragFactor)  {
+            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, (float) radius, behavior, bodyColor, fragFactor);
             if (isSun) {
                 b.setSun();
             }

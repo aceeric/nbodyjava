@@ -29,6 +29,9 @@ service NBodyService {
   // Sets the collision behavior. See the message enum for explanation
   rpc SetCollisionBehavior (CollisionBehavior) returns (ResultCode) {}
 
+  // Sets the coefficient of restitution for elastic collisions
+  rpc SetRestitutionCoefficient (RestitutionCoefficient) returns (ResultCode) {}
+
   // Removes the specified number of bodies from the sim
   rpc RemoveBodies (ItemCount) returns (ResultCode) {}
 
@@ -47,6 +50,7 @@ message CurrentConfig {
   double smoothing_factor = 4;
   // default collision behavior
   CollisionBehaviorEnum collision_behavior = 5;
+  double restitution_coefficient = 6;
 }
 
 // All the params required to represent a body in the simulation
@@ -62,6 +66,7 @@ message BodyDescription {
   bool is_sun = 9;
   CollisionBehaviorEnum collision_behavior = 10;
   BodyColorEnum body_color = 11;
+  double frag_factor = 12;
 }
 
 // Allows for setting collision behavior
@@ -77,6 +82,11 @@ message ItemCount {
 // A smoothing  factor
 message Factor {
   double factor = 1;
+}
+
+// Coefficient of restitution
+message RestitutionCoefficient {
+  double restitution_coefficient = 1;
 }
 
 // Returned to clients

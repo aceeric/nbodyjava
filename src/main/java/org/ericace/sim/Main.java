@@ -3,6 +3,7 @@ package org.ericace.sim;
 import org.ericace.nbody.Body;
 import org.ericace.nbody.SimpleVector;
 
+import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -12,9 +13,7 @@ import java.util.Queue;
  */
 public class Main {
 
-    private static final String DEFAULT_SIM_NAME = "default";
-    private static final String SIM2_NAME = "sim2";
-    private static final String SIM3_NAME = "sim3";
+    private static final String DEFAULT_SIM_NAME = "sim1";
 
     private static boolean render = true;
     private static int threads = 5;
@@ -33,7 +32,7 @@ public class Main {
      * method for the expected CSV format
      *
      * If no command-line arg is provided then a default (built-in) simulation is run, as defined by
-     * {@link SimGenerator#defaultSim}.
+     * {@link SimGenerator#sim1}.
      *
      * @param args command-line args
      */
@@ -46,22 +45,35 @@ public class Main {
             List<Body> bodies = SimGenerator.fromCSV(csvPath, bodyCount, defaultCollisionBehavior, defaultBodyColor);
             t = new Sim(bodies, null);
         } else {
-            switch (simName.toLowerCase()) {
-                case DEFAULT_SIM_NAME:
-                    t = SimGenerator.defaultSim(bodyCount, defaultCollisionBehavior, defaultBodyColor);
-                    break;
-                case SIM2_NAME:
-                    t = SimGenerator.sim2(bodyCount, defaultCollisionBehavior, defaultBodyColor);
-                    break;
-                case SIM3_NAME:
-                    t = SimGenerator.sim3(bodyCount, defaultCollisionBehavior, defaultBodyColor, simArgs);
-                    break;
-                default:
-                    System.out.println("ERROR: Unknown sim specified on the command line: " + simName);
-                    return;
+            Method method = getSimMethodFor(simName);
+            if (method == null) {
+                System.out.println("ERROR: Unknown sim specified on the command line: " + simName);
+                return;
+            }
+            try {
+                t = (Sim) method.invoke(null, bodyCount, defaultCollisionBehavior, defaultBodyColor, simArgs);
+            } catch (Exception e) {
+                System.out.println("ERROR: Could not generate sim: " + simName);
+                return;
             }
         }
         new NBodySim().run(t.bodies, threads, scaling, initialCam, t.thread);
+    }
+
+    /**
+     * Gets the simulation method from the {@link SimGenerator} class matching the passed name
+     *
+     * @param simName the sim method name
+     *
+     * @return the sim method, or null if no matching method
+     */
+    private static Method getSimMethodFor(String simName) {
+        for (Method method : SimGenerator.class.getDeclaredMethods()) {
+            if (method.getName().equals(simName)) {
+                return method;
+            }
+        }
+        return null;
     }
 
     /**
@@ -135,7 +147,7 @@ public class Main {
                         return false;
                 }
             } catch (Exception e) {
-                System.out.println("ERROR parsing the command line: invalid or missing option?");
+                System.out.println("ERROR parsing the command line: " + e.getMessage());
                 return false;
             }
         }
@@ -154,12 +166,13 @@ public class Main {
      *
      * @param s The string to parse
      *
-     * @return the vector from the components of the passed string
+     * @return the vector from the components of the passed string, or null if the number of components is
+     * not three
      */
     private static SimpleVector parseVector(String s) {
         String [] components = s.split(",");
         if (components.length != 3) {
-            return initialCam;
+            throw new RuntimeException("Invalid vector format: " + s);
         }
         return new SimpleVector(Float.parseFloat(components[0].trim()), Float.parseFloat(components[1].trim()),
                 Float.parseFloat(components[2].trim()));

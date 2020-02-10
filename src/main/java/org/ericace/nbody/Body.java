@@ -2,6 +2,7 @@ package org.ericace.nbody;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Level;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -30,6 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Body {
     private static final Logger logger = LogManager.getLogger(Body.class);
 
+    private static final Level CUSTOM = Level.getLevel("CUSTOM");
     /**
      * The gravitational constant
      */
@@ -42,7 +44,13 @@ public class Body {
     /**
      * Coefficient of restitution
      */
-    private static final double R = 1;
+    private volatile static double R = 1;
+
+    /**
+     * When a body is fragmented, this is set to false for one compute cycle so the simulation
+     * doesn't get caught trying to successively fragment bodies
+     */
+    private boolean allowCollision = true;
 
     /**
      * A unique ID value for each instance
@@ -58,6 +66,16 @@ public class Body {
      * Radius and mass
      */
     private volatile double radius, mass;
+
+    /**
+     * TODO make configurable
+     */
+    private final double fragmentationStep = 200;
+
+    /**
+     * Fragmentation factor
+     */
+    private double fragFactor = 1;
 
     /**
      * current coordinates of the body
@@ -164,12 +182,29 @@ public class Body {
     }
 
     /**
+     * Sets the coefficient of restitution
+     *
+     * @param R the new coefficient
+     */
+
+    public static void setRestitutionCoefficient(double R) {
+        Body.R = R;
+    }
+
+    /**
+     * @return the  coefficient of restitution
+     */
+    public static double getRestitutionCoefficient() {
+        return Body.R;
+    }
+
+    /**
      * Creates an instance configured for elastic collision
      *
-     * @see Body#Body(int, double, double, double, double, double, double, double, float, CollisionBehavior, Color)
+     * @see Body#Body(int, double, double, double, double, double, double, double, float, CollisionBehavior, Color, double)
      */
     public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius) {
-        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC, Color.RANDOM);
+        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC, Color.RANDOM, 1);
     }
 
     /**
@@ -187,9 +222,11 @@ public class Body {
      * @param mass              Mass
      * @param radius            Radius
      * @param collisionBehavior The collision behavior for the body
+     * @param color             Body color
+     * @param fragFactor        Fragmentation factor
      */
     public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius,
-                CollisionBehavior collisionBehavior, Color color) {
+                CollisionBehavior collisionBehavior, Color color, double fragFactor) {
         exists      = true;
         this.id     = id;
         this.x      = x;
@@ -201,7 +238,8 @@ public class Body {
         this.mass   = mass;
         this.radius = radius;
         this.collisionBehavior = collisionBehavior;
-        this.color = color;
+        this.color             = color;
+        this.fragFactor        = fragFactor;
         lock = new ReentrantLock();
     }
 
@@ -246,6 +284,7 @@ public class Body {
         z += timeScaling * vz;
         // clear collided flag for next cycle
         collided = false;
+        allowCollision = true;
         return getRenderInfo();
     }
 
@@ -303,8 +342,12 @@ public class Body {
                     if (!exists) {
                         break;
                     }
+//                    if (Body.this != otherBody && otherBody.exists && !skipComputation && !otherBody.skipComputation) {
                     if (Body.this != otherBody && otherBody.exists) {
-                        calcForceFrom(otherBody);
+                        ForceCalcResult result = calcForceFrom(otherBody);
+                        if (result.collided) {
+                            resolveCollision(result.dist, otherBody, bodyQueue);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -353,7 +396,7 @@ public class Body {
                             (FOUR_THIRDS_PI * otherBody.radius * otherBody.radius * otherBody.radius);
                     double newRadius = Math.pow((volume * 3.0D) / FOUR_PI, 1.0D / 3.0D);
                     logger.info("old radius: {} -- new radius: {}", radius, newRadius);
-                    // TEST put this back
+                    // TODO TEST put this back
                     //radius = newRadius;
                     //radius *= 1.2D;
                     mass += otherBody.mass;
@@ -377,7 +420,7 @@ public class Body {
      *
      * @param otherBody the other body to calculate force from
      */
-    private void calcForceFrom(Body otherBody) {
+    private ForceCalcResult calcForceFrom(Body otherBody) {
         double dx = otherBody.x - x;
         double dy = otherBody.y - y;
         double dz = otherBody.z - z;
@@ -393,11 +436,12 @@ public class Body {
             fx += force * dx / dist;
             fy += force * dy / dist;
             fz += force * dz / dist;
-        } else if (dist <= (radius + otherBody.radius)) {
+        } else if (allowCollision && otherBody.allowCollision && dist <= (radius + otherBody.radius)) {
             logger.info("collision: distance: {} -- this radius {}: -- other radius: {} -- this id: {} -- other id: {}",
                     dist, radius, otherBody.radius, id, otherBody.id);
-            resolveCollision(dist, otherBody);
+            return ForceCalcResult.collision(dist);
         }
+        return ForceCalcResult.noCollision();
     }
 
     /**
@@ -407,19 +451,64 @@ public class Body {
      *
      * @param dist      distance between bodies
      * @param otherBody the other body being collided with
+     * @param bodyQueue The body queue - in case the collision causes fragmentation resulting in  bodies being
+     *                  added to the queue
      */
-    private void resolveCollision(double dist, Body otherBody) {
+    private void resolveCollision(double dist, Body otherBody, ConcurrentLinkedQueue<Body> bodyQueue) {
         if (collisionBehavior == CollisionBehavior.SUBSUME ||
                 otherBody.collisionBehavior == CollisionBehavior.SUBSUME) {
+            // arbitrarily, larger bodies always subsume smaller bodies
             if (radius > otherBody.radius) {
                 subsume(dist, otherBody);
             } else {
                 otherBody.subsume(dist, this);
             }
-        } else if (collisionBehavior == CollisionBehavior.ELASTIC &&
-                otherBody.collisionBehavior == CollisionBehavior.ELASTIC) {
-            elasticCollision(otherBody);
+        } else if ((collisionBehavior == CollisionBehavior.ELASTIC || collisionBehavior == CollisionBehavior.FRAGMENT)
+                && (otherBody.collisionBehavior == CollisionBehavior.ELASTIC ||
+                otherBody.collisionBehavior == CollisionBehavior.FRAGMENT)) {
+            CollisionCalcResult r = calcElasticCollision(otherBody);
+            if (r.collided) {
+                if (tryLock()) {
+                    boolean otherLock = false;
+                    try {
+                        otherLock = otherBody.tryLock();
+                        if (otherLock && exists && otherBody.exists) {
+                            FragmentationCalcResult fr = shouldFragment(otherBody, r);
+                            if (fr.shouldFragment) {
+                                doFragment(otherBody, fr, bodyQueue);
+                            } else {
+                                doElastic(otherBody, r);
+                            }
+                        }
+                    } finally {
+                        unlock();
+                        if (otherLock) {
+                            otherBody.unlock();
+                        }
+                    }
+                }
+                if (collided) {
+                    logger.info("Body ID {} collided with ID {}", id, otherBody.id);
+                }
+            }
         }
+    }
+
+    /**
+     * Updates velocity in each instance and sets the collided flag
+     *
+     * @param otherBody the other body this body is colliding with
+     * @param r         the result of the elastic collision calc that establishes new velocities for
+     *                  colliding bodies
+     */
+    private void doElastic(Body otherBody, CollisionCalcResult r) {
+        vx = (r.vx1 - r.vx_cm) * R + r.vx_cm;
+        vy = (r.vy1 - r.vy_cm) * R + r.vy_cm;
+        vz = (r.vz1 - r.vz_cm) * R + r.vz_cm;
+        otherBody.vx = (r.vx2 - r.vx_cm) * R + r.vx_cm;
+        otherBody.vy = (r.vy2 - r.vy_cm) * R + r.vy_cm;
+        otherBody.vz = (r.vz2 - r.vz_cm) * R + r.vz_cm;
+        collided = otherBody.collided = true;
     }
 
     /**
@@ -428,12 +517,11 @@ public class Body {
      *
      * https://www.plasmaphysics.org.uk/programs/coll3d_cpp.htm
      *
-     * This method modifies the velocity of this - and the other - instance, if there is a collision. It also
-     * sets the {@link #collided} field in both instances.
-     *
      * @param otherBody the other body being collided with
+     *
+     * @return the result of the calculation
      */
-    private void elasticCollision(Body otherBody) {
+    /*private*/ CollisionCalcResult calcElasticCollision(Body otherBody) {
         double r12, m21, d, v, theta2, phi2, st, ct, sp, cp, vx1r, vy1r, vz1r, fvz1r,
                 thetav, phiv, dr, alpha, beta, sbeta, cbeta, t, a, dvz2,
                 vx2r, vy2r, vz2r, x21, y21, z21, vx21, vy21, vz21, vx_cm, vy_cm, vz_cm;
@@ -472,13 +560,14 @@ public class Body {
         d = Math.sqrt(x21*x21 + y21*y21 + z21*z21);
         v = Math.sqrt(vx21*vx21 + vy21*vy21 + vz21*vz21);
 
+        // comment out - if the radii overlap run the calc anyway
         // return if distance between balls smaller than sum of radii
         //if (d < r12) {return;}
 
         // return if relative speed = 0
         if (v == 0) {
             logger.info("Exit elastic collision: v == 0. This id: {} -- other id: {}", id, otherBody.id);
-            return;
+            return CollisionCalcResult.noCollision();
         }
 
         // shift coordinate system so that ball 1 is at the origin
@@ -527,7 +616,7 @@ public class Body {
         // if balls do not collide, do nothing
         if (thetav > Math.PI / 2 || Math.abs(dr) > 1) {
             logger.info("Bodies do not collide. This id: {} -- other id: {}", id, otherBody.id);
-            return;
+            return CollisionCalcResult.noCollision();
         }
 
         // calculate impact angles if balls do collide
@@ -563,36 +652,104 @@ public class Body {
         // rotate the velocity vectors back and add the initial velocity
         // vector of ball 2 to retrieve the original coordinate system
 
-        vx1 = ct * cp * vx1r - sp * vy1r + st * cp * vz1r + vx2;
-        vy1 = ct * sp * vx1r + cp * vy1r + st * sp * vz1r + vy2;
-        vz1 = ct * vz1r - st * vx1r                       + vz2;
-        vx2 = ct * cp * vx2r - sp * vy2r + st * cp * vz2r + vx2;
-        vy2 = ct * sp * vx2r + cp * vy2r + st * sp * vz2r + vy2;
-        vz2 = ct * vz2r - st * vx2r                       + vz2;
+        return CollisionCalcResult.collision(
+          ct * cp * vx1r - sp * vy1r + st * cp * vz1r + vx2,
+          ct * sp * vx1r + cp * vy1r + st * sp * vz1r + vy2,
+          ct * vz1r - st * vx1r                       + vz2,
+          ct * cp * vx2r - sp * vy2r + st * cp * vz2r + vx2,
+          ct * sp * vx2r + cp * vy2r + st * sp * vz2r + vy2,
+          ct * vz2r - st * vx2r                       + vz2,
+          vx_cm, vy_cm, vz_cm);
+    }
 
-        // update velocity in each instance and set the collided flag
-        if (tryLock()) {
-            boolean otherLock = false;
-            try {
-                otherLock = otherBody.tryLock();
-                if (otherLock) {
-                    vx = (vx1 - vx_cm) * R + vx_cm;
-                    vy = (vy1 - vy_cm) * R + vy_cm;
-                    vz = (vz1 - vz_cm) * R + vz_cm;
-                    otherBody.vx = (vx2 - vx_cm) * R + vx_cm;
-                    otherBody.vy = (vy2 - vy_cm) * R + vy_cm;
-                    otherBody.vz = (vz2 - vz_cm) * R + vz_cm;
-                    collided = otherBody.collided = true;
-                }
-            } finally {
-                unlock();
-                if (otherLock) {
-                    otherBody.unlock();
-                }
-            }
+    /**
+     * If either body involved in a collision is configured for fragmentation collision, then determine if
+     * the force of the collision passes a threshold configured in the body. This enables bodies to be more - or
+     * less - likely to fragment. It's kind of a "hardness" factor. The logic looks at change in velocity: Two
+     * bodies with equal mass and velocity approaching from exact opposite directions will - in a pure elastic
+     * collision - exchange velocities resulting in a fragmentation factor of 1. If the body's fragmentation
+     * factor is also 1, then the collision will not cause fragmentation.
+     *
+     * Note that a very high speed body impacting a very low speed body will drastically change the slower body's
+     * speed resulting in a very high frag factor. E.g. a body could be traveling at -100 X and be collided with
+     * and move at 1e20 X.
+     *
+     * @param otherBody the other body being collided with
+     * @param r         the result of the collision calculation
+     *
+     * @return the result of the calculation
+     */
+    /*private*/ FragmentationCalcResult shouldFragment(Body otherBody, CollisionCalcResult r) {
+        if (!(collisionBehavior == CollisionBehavior.FRAGMENT ||
+                otherBody.collisionBehavior == CollisionBehavior.FRAGMENT)) {
+            return FragmentationCalcResult.noFragmentation();
         }
-        if (collided) {
-            logger.info("Body ID {} collided with ID {}", id, otherBody.id);
+        double vThis = vx + vy + vz;
+        double dvThis =
+                Math.abs(vx - ((r.vx1 - r.vx_cm) * R + r.vx_cm)) +
+                Math.abs(vy - ((r.vy1 - r.vy_cm) * R + r.vy_cm)) +
+                Math.abs(vz - ((r.vz1 - r.vz_cm) * R + r.vz_cm));
+        double vThisFactor = dvThis / Math.abs(vThis);
+        double vOther = otherBody.vx + otherBody.vy + otherBody.vz;
+        double dvOther =
+                Math.abs(otherBody.vx - ((r.vx2 - r.vx_cm) * R + r.vx_cm)) +
+                Math.abs(otherBody.vy - ((r.vy2 - r.vy_cm) * R + r.vy_cm)) +
+                Math.abs(otherBody.vz - ((r.vz2 - r.vz_cm) * R + r.vz_cm));
+        double vOtherFactor = dvOther / Math.abs(vOther);
+        //logger.log(CUSTOM, "this.id={} vThis=({},{},{})", id, vx, vy, vz);
+        if ((collisionBehavior == CollisionBehavior.FRAGMENT && vThisFactor > fragFactor) ||
+                (otherBody.collisionBehavior == CollisionBehavior.FRAGMENT && vOtherFactor > otherBody.fragFactor)) {
+            return FragmentationCalcResult.fragmentation(vThisFactor, vOtherFactor);
+        }
+        return FragmentationCalcResult.noFragmentation();
+    }
+
+    /**
+     * Handles a collision where one of the bodies is configured for fragmentation
+     *
+     * @param otherBody the other body being collided with
+     * @param fr        results of fragmentation calc
+     * @param bodyQueue the body queue in case new bodies need to be added
+     */
+    private void doFragment(Body otherBody, FragmentationCalcResult fr, ConcurrentLinkedQueue<Body> bodyQueue) {
+        if (collisionBehavior == CollisionBehavior.FRAGMENT && fr.thisFactor > fragFactor) {
+            implementFragmentation(fr.thisFactor, bodyQueue);
+        }
+        if (otherBody.collisionBehavior == CollisionBehavior.FRAGMENT && fr.otherFactor > otherBody.fragFactor) {
+            otherBody.implementFragmentation(fr.otherFactor, bodyQueue);
+        }
+    }
+
+    /**
+     * TODO - WIP - Occasionally creates too many bodies too quickly and swamps the sim
+     *
+     * Sets this body to not exist, and creates a number of smaller bodies occupying the same space, thus
+     * appearing to fragment the instance into smaller bodies
+     *
+     * @param fragFactor The calculated fragmentation factor based on velocity change for this body
+     * @param bodyQueue  the body queue to add new bodies to
+     */
+    private void implementFragmentation(double fragFactor, ConcurrentLinkedQueue<Body> bodyQueue) {
+        exists = false;
+        double volume = (FOUR_THIRDS_PI * radius * radius * radius);
+        double fragDelta = fragFactor - this.fragFactor;
+        if (fragDelta > 10) fragDelta = 10;
+        int fragments = (int) (fragDelta * fragmentationStep);
+        if (fragments > 200) {
+            // just a hard-coded limit to avoid swamping the sim with too many bodies
+            fragments = 200;
+        }
+        volume /= fragments;
+        double newRadius = Math.pow((volume * 3.0D) / FOUR_PI, 1.0D / 3.0D);
+        for (int i = 0; i < fragments; ++i) {
+            SimpleVector v = SimpleVector.getVectorEven(new SimpleVector((float) x, (float) y, (float) z), radius * .9);
+            // as we add bodies, we increase the frag factor so bodies become harder to sub-divide and also,
+            // we don't subdivide smaller than a certain size (don't create a sim filled with dust)
+            CollisionBehavior ncb = newRadius <= .25 ? CollisionBehavior.ELASTIC : CollisionBehavior.FRAGMENT;
+            Body b = new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass / fragments, (float) newRadius, ncb,
+                    color, fragFactor * 30);
+            b.allowCollision = false;
+            bodyQueue.add(b);
         }
     }
 
@@ -603,6 +760,92 @@ public class Body {
         private volatile static int id = 0;
         static synchronized int nextID() {
             return id++;
+        }
+    }
+
+    /**
+     * Helper that holds values associated with calculating fragmentation during body collision
+     */
+    /*private*/ static class FragmentationCalcResult {
+        final boolean shouldFragment;
+        final double thisFactor;
+        final double otherFactor;
+        private FragmentationCalcResult(boolean shouldFragment, double thisFactor, double otherFactor) {
+            this.shouldFragment = shouldFragment;
+            this.thisFactor     = thisFactor;
+            this.otherFactor    = otherFactor;
+        }
+        static FragmentationCalcResult noFragmentation() {
+            return new FragmentationCalcResult(false, 0, 0);
+        }
+        static FragmentationCalcResult fragmentation(double thisFactor, double otherFactor) {
+            return new FragmentationCalcResult(true, thisFactor, otherFactor);
+        }
+    }
+
+    /**
+     * Helper that holds values associated with calculating gravitational force between two bodies.
+     */
+    private static class ForceCalcResult {
+        /**
+         * Distance between bodies
+         */
+        final double dist;
+
+        /**
+         * True if force calculation determined that the bodies are colliding (radii overlap), else False
+         */
+        final boolean collided;
+
+        private ForceCalcResult(double dist, boolean collided) {
+            this.dist = dist;
+            this.collided = collided;
+        }
+        static ForceCalcResult noCollision() {
+            return new ForceCalcResult(0, false);
+        }
+        static ForceCalcResult collision(double dist) {
+            return new ForceCalcResult(dist, true);
+        }
+    }
+
+    /**
+     * Helper that holds values associated with the elastic collision calculation
+     */
+    /*private*/ static class CollisionCalcResult {
+        final boolean collided;
+        final double vx1;
+        final double vy1;
+        final double vz1;
+        final double vx2;
+        final double vy2;
+        final double vz2;
+        final double vx_cm;
+        final double vy_cm;
+        final double vz_cm;
+        private CollisionCalcResult() {
+            collided = false;
+            vx1 = vy1 = vz1 = vx2 = vy2 = vz2 = vx_cm = vy_cm = vz_cm = 0;
+        }
+        private CollisionCalcResult(double vx1, double vy1, double vz1, double vx2, double vy2, double vz2,
+                                    double vx_cm, double vy_cm, double vz_cm) {
+            collided = true;
+            this.vx1   = vx1;
+            this.vy1   = vy1;
+            this.vz1   = vz1;
+            this.vx2   = vx2;
+            this.vy2   = vy2;
+            this.vz2   = vz2;
+            this.vx_cm = vx_cm;
+            this.vy_cm = vy_cm;
+            this.vz_cm = vz_cm;
+        }
+        static CollisionCalcResult noCollision() {
+            return new CollisionCalcResult();
+        }
+        static CollisionCalcResult collision(double vx1, double vy1, double vz1, double vx2, double vy2, double vz2,
+                                      double vx_cm, double vy_cm, double vz_cm) {
+            return new CollisionCalcResult(vx1, vy1, vz1, vx2, vy2, vz2, vx_cm, vy_cm, vz_cm);
         }
     }
 }
