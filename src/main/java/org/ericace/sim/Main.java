@@ -14,8 +14,9 @@ import java.util.Queue;
 public class Main {
 
     private static final String DEFAULT_SIM_NAME = "sim1";
+    private static final String NONE_SIM_NAME = "none";
 
-    private static boolean render = true;
+    private static boolean render = true; // TODO run with no rendering to test sim computation performance limits
     private static int threads = 5;
     private static double scaling = .000000001D;
     private static String simName = null;
@@ -44,6 +45,8 @@ public class Main {
         if (csvPath != null) {
             List<Body> bodies = SimGenerator.fromCSV(csvPath, bodyCount, defaultCollisionBehavior, defaultBodyColor);
             t = new Sim(bodies, null);
+        } else if (NONE_SIM_NAME.equalsIgnoreCase(simName)) {
+            t = new Sim();
         } else {
             Method method = getSimMethodFor(simName);
             if (method == null) {
@@ -108,6 +111,7 @@ public class Main {
                         break;
                     case "-n":
                     case "--sim-name":
+                        // "none" is a special sim name that means start the simulator with an empty sim
                         simName = argQueue.poll();
                         break;
                     case "-a":

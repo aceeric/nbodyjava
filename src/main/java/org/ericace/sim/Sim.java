@@ -2,6 +2,7 @@ package org.ericace.sim;
 
 import org.ericace.nbody.Body;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -9,13 +10,21 @@ import java.util.List;
  * that allows the simulation body queue to be manipulated concurrently while the simulation is running. The use
  * case is - an initial sim state is defined in the list of bodies, and then once the sim runner starts the simulation,
  * it calls the {@code start} method on the {@code SimThread} member which can then add/remove bodies to/from
- * the body queue.
+ * the body queue or make other changes to the bodies in the sim.
  *
  * <p>This is a simple value class so - no getters</p>
  */
 public class Sim {
     final List<Body> bodies;
     final SimThread thread;
+
+    /**
+     * Constructor for an empty sim: no bodies and no thread
+     */
+    Sim() {
+        bodies = new ArrayList<>();
+        thread = null;
+    }
 
     /**
      * Constructor

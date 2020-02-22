@@ -67,6 +67,7 @@ message BodyDescription {
   CollisionBehaviorEnum collision_behavior = 10;
   BodyColorEnum body_color = 11;
   double frag_factor = 12;
+  double frag_step = 13;
 }
 
 // Allows for setting collision behavior

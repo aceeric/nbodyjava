@@ -6,6 +6,8 @@ import org.apache.logging.log4j.Level;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -42,15 +44,14 @@ public class Body {
     private static final double FOUR_PI = Math.PI * 4;
 
     /**
+     * Used to create bodies when a body fragments from a collision
+     */
+    private static ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+
+    /**
      * Coefficient of restitution
      */
     private volatile static double R = 1;
-
-    /**
-     * When a body is fragmented, this is set to false for one compute cycle so the simulation
-     * doesn't get caught trying to successively fragment bodies
-     */
-    private boolean allowCollision = true;
 
     /**
      * A unique ID value for each instance
@@ -68,9 +69,10 @@ public class Body {
     private volatile double radius, mass;
 
     /**
-     * TODO make configurable
+     * TODO handle in gRPC and SimGenerator
+     * When the body fragments, how many sub-bodies are created per frag factor
      */
-    private final double fragmentationStep = 200;
+    private final double fragmentationStep;
 
     /**
      * Fragmentation factor
@@ -98,10 +100,15 @@ public class Body {
     private boolean isSun = false;
 
     /**
-     * If this body is collapsed into another then this flag is set to false
-     * and it will be removed from the simulation
+     * If set to false the body will be removed from the simulation and the rendering scene graph
      */
     private volatile boolean exists;
+
+    /**
+     * When a body fragments, this is a temporary setting that allows the body to exist in the same space
+     * as the fragments replacing it until all the fragments are generated
+     */
+    private volatile boolean ignore = false;
 
     /**
      * Supports modifying the instance from multiple threads
@@ -121,7 +128,7 @@ public class Body {
     /**
      * The collision behavior
      */
-    private final CollisionBehavior collisionBehavior;
+    private CollisionBehavior collisionBehavior;
 
     /**
      * Defines supported colors
@@ -147,7 +154,7 @@ public class Body {
     /**
      * @return the body ID
      */
-    int getId() {
+    public int getId() {
         return id;
     }
 
@@ -167,6 +174,9 @@ public class Body {
         exists = false;
     }
 
+    public void setCollisionBehavior(CollisionBehavior behavior) {
+        this.collisionBehavior = behavior;
+    }
     /**
      * Sets this instance to a sun - the render engine should create an associated light source
      */
@@ -199,12 +209,18 @@ public class Body {
     }
 
     /**
+     * TODO this needs to be done differently
+     */
+    public static void stop() {
+        executor.shutdownNow();
+    }
+    /**
      * Creates an instance configured for elastic collision
      *
-     * @see Body#Body(int, double, double, double, double, double, double, double, float, CollisionBehavior, Color, double)
+     * @see Body#Body(int, double, double, double, double, double, double, double, float, CollisionBehavior, Color, double, double)
      */
     public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius) {
-        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC, Color.RANDOM, 1);
+        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC, Color.RANDOM, 1, 10);
     }
 
     /**
@@ -224,9 +240,10 @@ public class Body {
      * @param collisionBehavior The collision behavior for the body
      * @param color             Body color
      * @param fragFactor        Fragmentation factor
+     * @param fragmentationStep The number of bodies to fragment into
      */
     public Body(int id, double x, double y, double z, double vx, double vy, double vz, double mass, float radius,
-                CollisionBehavior collisionBehavior, Color color, double fragFactor) {
+                CollisionBehavior collisionBehavior, Color color, double fragFactor, double fragmentationStep) {
         exists      = true;
         this.id     = id;
         this.x      = x;
@@ -240,6 +257,7 @@ public class Body {
         this.collisionBehavior = collisionBehavior;
         this.color             = color;
         this.fragFactor        = fragFactor;
+        this.fragmentationStep = fragmentationStep;
         lock = new ReentrantLock();
     }
 
@@ -274,7 +292,10 @@ public class Body {
             // creates an instance with exists=false so the graphics engine will remove it from the scene
             return new BodyRenderInfo(id);
         }
-        if (!collided) { // TEST TEST TEST
+        if (!collided) {
+            // the collision occurs in parallel with force computation so the force computation may not apply
+            // to the velocity established by the collision calc. So - if this body collided, don't adjust the
+            // velocity based on gravitational force. This is a fudge but - can't think of a better way to do it
             vx += timeScaling * fx / mass;
             vy += timeScaling * fy / mass;
             vz += timeScaling * fz / mass;
@@ -284,7 +305,6 @@ public class Body {
         z += timeScaling * vz;
         // clear collided flag for next cycle
         collided = false;
-        allowCollision = true;
         return getRenderInfo();
     }
 
@@ -339,11 +359,10 @@ public class Body {
             try {
                 fx = fy = fz = 0;
                 for (Body otherBody : bodyQueue) {
-                    if (!exists) {
+                    if (!exists || ignore) {
                         break;
                     }
-//                    if (Body.this != otherBody && otherBody.exists && !skipComputation && !otherBody.skipComputation) {
-                    if (Body.this != otherBody && otherBody.exists) {
+                    if (Body.this != otherBody && otherBody.exists && !otherBody.ignore) {
                         ForceCalcResult result = calcForceFrom(otherBody);
                         if (result.collided) {
                             resolveCollision(result.dist, otherBody, bodyQueue);
@@ -392,13 +411,17 @@ public class Body {
                 if (otherLock) {
                     thisMass = mass;
                     otherMass = otherBody.mass;
+                    // TODO:
+                    // If I allow the radius to grow it occasionally causes a runaway condition in which a body
+                    // swallows the entire simulation. Need to figure this out
+                    /*
                     double volume = (FOUR_THIRDS_PI * radius * radius * radius) +
                             (FOUR_THIRDS_PI * otherBody.radius * otherBody.radius * otherBody.radius);
                     double newRadius = Math.pow((volume * 3.0D) / FOUR_PI, 1.0D / 3.0D);
                     logger.info("old radius: {} -- new radius: {}", radius, newRadius);
-                    // TODO TEST put this back
                     //radius = newRadius;
-                    //radius *= 1.2D;
+                    radius *= 1.2D; // ?
+                    */
                     mass += otherBody.mass;
                     otherBody.setNotExists();
                     subsumed = true;
@@ -427,8 +450,8 @@ public class Body {
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
         // Only allow one collision per body per cycle. Once a collision happens, continue to apply gravitational
         // force to the collided body. Allowing a body to collide multiple times caused odd things to happen
-        // when many bodies were tightly compacted (not sure why) and it also impacts performance - lots of additional
-        // calculations
+        // when many bodies were tightly compacted (not sure why) and it also impacts performance - the collision
+        // calculation is expensive
         if (collided || dist > (radius + otherBody.radius)) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body
@@ -436,7 +459,7 @@ public class Body {
             fx += force * dx / dist;
             fy += force * dy / dist;
             fz += force * dz / dist;
-        } else if (allowCollision && otherBody.allowCollision && dist <= (radius + otherBody.radius)) {
+        } else if (dist <= (radius + otherBody.radius)) {
             logger.info("collision: distance: {} -- this radius {}: -- other radius: {} -- this id: {} -- other id: {}",
                     dist, radius, otherBody.radius, id, otherBody.id);
             return ForceCalcResult.collision(dist);
@@ -560,7 +583,9 @@ public class Body {
         d = Math.sqrt(x21*x21 + y21*y21 + z21*z21);
         v = Math.sqrt(vx21*vx21 + vy21*vy21 + vz21*vz21);
 
-        // comment out - if the radii overlap run the calc anyway
+        // commented this out from the original - if the radii overlap run the calc anyway because the sim doesn't
+        // prevent bodies overlapping - that would take way too much compute power
+
         // return if distance between balls smaller than sum of radii
         //if (d < r12) {return;}
 
@@ -625,7 +650,8 @@ public class Body {
         sbeta = Math.sin(beta);
         cbeta = Math.cos(beta);
 
-        // comment out - position is assigned in the update method
+        // commented out from original - position is assigned in the update method
+
         // calculate time to collision
         //t = (d * Math.cos(thetav) - r12 * Math.sqrt(1 - dr * dr)) / v;
         // update positions and reverse the coordinate shift
@@ -721,36 +747,34 @@ public class Body {
     }
 
     /**
-     * TODO - WIP - Occasionally creates too many bodies too quickly and swamps the sim
-     *
      * Sets this body to not exist, and creates a number of smaller bodies occupying the same space, thus
-     * appearing to fragment the instance into smaller bodies
+     * appearing to fragment the instance into smaller bodies. This only looks good when a reasonable number of
+     * bodies are created. One sphere splitting into two looks kind of silly.
      *
      * @param fragFactor The calculated fragmentation factor based on velocity change for this body
      * @param bodyQueue  the body queue to add new bodies to
      */
     private void implementFragmentation(double fragFactor, ConcurrentLinkedQueue<Body> bodyQueue) {
-        exists = false;
+        double fragDelta = fragFactor - this.fragFactor > 10 ? 10 : fragFactor - this.fragFactor;
+        final int fragments = Math.min((int) (fragDelta * fragmentationStep), 2000);
+        if (fragments <= 1) {
+            collisionBehavior = CollisionBehavior.ELASTIC;
+            return;
+        }
+        // this body is destroyed and replaced by fragments filling the same volume
         double volume = (FOUR_THIRDS_PI * radius * radius * radius);
-        double fragDelta = fragFactor - this.fragFactor;
-        if (fragDelta > 10) fragDelta = 10;
-        int fragments = (int) (fragDelta * fragmentationStep);
-        if (fragments > 200) {
-            // just a hard-coded limit to avoid swamping the sim with too many bodies
-            fragments = 200;
-        }
         volume /= fragments;
-        double newRadius = Math.pow((volume * 3.0D) / FOUR_PI, 1.0D / 3.0D);
-        for (int i = 0; i < fragments; ++i) {
-            SimpleVector v = SimpleVector.getVectorEven(new SimpleVector((float) x, (float) y, (float) z), radius * .9);
-            // as we add bodies, we increase the frag factor so bodies become harder to sub-divide and also,
-            // we don't subdivide smaller than a certain size (don't create a sim filled with dust)
-            CollisionBehavior ncb = newRadius <= .25 ? CollisionBehavior.ELASTIC : CollisionBehavior.FRAGMENT;
-            Body b = new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass / fragments, (float) newRadius, ncb,
-                    color, fragFactor * 30);
-            b.allowCollision = false;
-            bodyQueue.add(b);
-        }
+        final double newRadius = Math.max(Math.pow((volume * 3.0D) / FOUR_PI, 1.0D / 3.0D), .1);
+        executor.execute(() -> {
+            this.ignore = true;
+            for (int i = 0; i < fragments; ++i) {
+                SimpleVector v = SimpleVector.getVectorEven(new SimpleVector((float) x, (float) y, (float) z), radius * .9);
+                Body b = new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass / fragments, (float) newRadius,
+                        CollisionBehavior.ELASTIC, color, 0, 0);
+                bodyQueue.add(b);
+            }
+            this.exists = false;
+        });
     }
 
     /**

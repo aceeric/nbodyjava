@@ -52,7 +52,7 @@ for i in {1..50}; do\
   x=$((RANDOM % 5));\
   y=$((RANDOM % 5));\
   z=$((RANDOM % 5));\
-  x=$((100 + x));\
+  x=$((500 + x));\
   y=$((10  + y));\
   z=$((10  - z));\
   grpc_cli call localhost:50051 AddBody "mass: 5.16676E+5 x: $x y: $y z: $z vx: -312321000 vy: 30 vz: -1912321000 radius: 1.5 body_color: PINK";\
@@ -195,17 +195,17 @@ for i in {1..150}; do\
   x=$((RANDOM % 5));\
   y=$((RANDOM % 5));\
   z=$((RANDOM % 5));\
-  z=$((z + 600));\
-  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: 0 vy: 73453453 vz: -316800000 radius: 6";\
-  sleep .5;\
+  z=$((z + 900));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: 0 vy: 73453453 vz: 316800000 radius: 6 body_color: ORANGE";\
+  sleep 1;\
 done
 
 for i in {1..150}; do\
   x=$((RANDOM % 5));\
   y=$((RANDOM % 5));\
   z=$((RANDOM % 5));\
-  x=$((x + 200));\
-  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+22 x: $x y: $y z: $z vx: 15430000 vy: 1153453453 vz: 123 radius: 3";\
+  x=$((x + 500));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: 15430000 vy: 853453453 vz: 123 radius: 3 body_color: ORANGE";\
   sleep .2;\
 done
 
@@ -253,7 +253,7 @@ for i in {1..300}; do\
  x=$((-200 + x));\
  y=$((-200 + y));\
  z=$((-200 + z));\
- grpc_cli call localhost:50051 AddBody "mass: 22E11 x: $x y: $y z: $z vx: -40000000 vy: 967000000 vz: -30000000 radius: 2 body_color: RED";\
+ grpc_cli call localhost:50051 AddBody "mass: 22E11 x: $x y: $y z: $z vx: -40000000 vy: 967000000 vz: -30000000 radius: 2 body_color: BLUE";\
 done
 
 for i in {1..200}; do\
@@ -323,12 +323,12 @@ for i in {1..200}; do\
 done
 
 grpc_cli call localhost:50051 GetCurrentConfig ""
-grpc_cli call localhost:50051 RemoveBodies "item_count: 200"
+grpc_cli call localhost:50051 RemoveBodies "item_count: 2000"
 
 grpc_cli call localhost:50051 SetRestitutionCoefficient "restitution_coefficient: .8"
 
-grpc_cli call localhost:50051 AddBody "mass: 9E15  x:  100 y: 0 z: -300 vx: -990000000 vy: 0       vz: -600000 radius: 10 body_color: YELLOW"
-grpc_cli call localhost:50051 AddBody "mass: 90000 x: -100 y: 0 z: -300 vx:  500000000 vy: 5000000 vz: -600000 radius: 8 collision_behavior: FRAGMENT body_color: RED frag_factor: 1e10"
+grpc_cli call localhost:50051 AddBody "mass: 9E15  x:  100 y: 0 z: -300 vx: -990000000 vy: 0         vz: -600000 radius: 20 body_color: YELLOW"
+grpc_cli call localhost:50051 AddBody "mass: 9E5   x: -100 y: 0 z: -300 vx:  500000000 vy: 315000000 vz: -600000 radius: 8 collision_behavior: FRAGMENT body_color: RED frag_factor: 2"
 
 grpc_cli call localhost:50051 AddBody "mass: 90000 x:  100 y: 0 z: -100 vx: -500000000 vy: 0 vz: 0 radius: 10"
 grpc_cli call localhost:50051 AddBody "mass: 90000 x: -100 y: 0 z: -100 vx:  800000000 vy: 0 vz: -50040000 radius: 10"
@@ -337,3 +337,15 @@ grpc_cli call localhost:50051 AddBody "mass: 9E12     x:  100 y: 0 z: -300 vx: -
 grpc_cli call localhost:50051 AddBody "mass: 90000    x: -100 y: 0 z: -300 vx:  500000000 vy: 182100000 vz: -592312232 radius: 30 collision_behavior: FRAGMENT body_color: RED"
 
 grpc_cli call localhost:50051 AddBody "mass: 9E15 x: 300 y: 0 z: 0 vx:  -500000000 vy: 500000000 vz: 0 radius: 8 collision_behavior: FRAGMENT"
+
+grpc_cli call localhost:50051 AddBody "mass: 5E12 x: 200 y: 200 z: 200 vx: -53100000 vy: 73100000 vz: -53100000 radius: 12 body_color: YELLOW collision_behavior: FRAGMENT frag_factor: .5"
+
+
+vy 710000000
+
+grpc_cli call localhost:50051 AddBody "x: 100000 y: 100000 z: 100000 vx: 0 vy: 0 vz: 0 mass: 1 radius: 500 is_sun: true"
+grpc_cli call localhost:50051 AddBody "x: 0 y: 0 z: 0 vx: 12 vy: 12 vz: 12 mass: 9E30 radius: 145F  collision_behavior: ELASTIC body_color: RED"
+grpc_cli call localhost:50051 AddBody "x: 50 y: 0 z: -420 vx: -1300000000 vy: 12 vz: -500000000 mass: 9E10 radius: 15F \
+collision_behavior: ELASTIC body_color: BLUE"
+grpc_cli call localhost:50051 AddBody "x: 900 y: -900 z: 900 vx: -450000000 vy: 723000000 vz: -350000000 mass: 9E12 \
+radius: 10F  collision_behavior: FRAGMENT body_color: YELLOW frag_factor: .01 frag_step: 5500"

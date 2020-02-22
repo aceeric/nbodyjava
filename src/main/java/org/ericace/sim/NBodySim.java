@@ -8,7 +8,6 @@ import org.ericace.instrumentation.InstrumentationManager;
 import org.ericace.nbody.*;
 
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -64,6 +63,7 @@ class NBodySim {
             if (simThread != null) {
                 simThread.stop();
             }
+            Body.stop();
             NBodyServiceServer.stop();
             ComputationRunner.stop();
             instrumentation.stop();
@@ -177,7 +177,7 @@ class NBodySim {
 
         /**
          * Makes a best effort to remove the passed number of bodies from the simulation, with the removals
-         * distributed evenly across the body queue. Suns aren't removed. Since the queue can be changing con
+         * distributed evenly across the body queue. Suns aren't removed. Since the queue can be changing
          * concurrently it might not be possible to remove exactly the specified number of bodies.
          *
          * @param countToRemove the number of bodies to remove
@@ -211,8 +211,9 @@ class NBodySim {
         @Override
         public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz,
                             double radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
-                            double fragFactor)  {
-            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, (float) radius, behavior, bodyColor, fragFactor);
+                            double fragFactor, double fragStep)  {
+            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, (float) radius, behavior, bodyColor, fragFactor,
+                    fragStep);
             if (isSun) {
                 b.setSun();
             }

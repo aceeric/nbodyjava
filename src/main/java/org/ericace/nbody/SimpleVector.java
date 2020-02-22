@@ -30,6 +30,7 @@ public class SimpleVector {
      * https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/
      *
      * @param center The Vector around which to center the generated vector
+     * @param radius The radius within which to generate the vector
      *
      * @return a vector as as described
      */
@@ -53,11 +54,12 @@ public class SimpleVector {
      * https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/
      *
      * @param center The Vector around which to center the generated vector
+     * @param radius The radius within which to generate the vector
      *
      * @return a vector as as described
      */
     @SuppressWarnings("unused")
-    public static SimpleVector getVectorConcentrated(SimpleVector center) {
+    public static SimpleVector getVectorConcentrated(SimpleVector center, double radius) {
         double x = Math.random() - 0.5;
         double y = Math.random() - 0.5;
         double z = Math.random() - 0.5;
@@ -65,17 +67,18 @@ public class SimpleVector {
         x /= mag;
         y /= mag;
         z /= mag;
-        double d = Math.random() * 200;
+        double d = Math.random() * radius;
         return new SimpleVector((float) ((x * d) + center.x), (float) ((y * d) + center.y), (float) ((z * d) + center.z));
     }
 
     /**
      * Generates a vector located on the surface of a virtual sphere centered at the passed point, having the
      * passed radius. Based on:
+     *
      * https://math.stackexchange.com/questions/1585975/how-to-generate-random-points-on-a-sphere/1586185#1586185
      *
      * @param center The center of the sphere
-     * @param radius The radius
+     * @param radius The radius within which to generate the vector
      *
      * @return a randomly-generated point on the surface of the sphere
      */

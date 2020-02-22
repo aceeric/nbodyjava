@@ -101,5 +101,6 @@ public interface Configurables {
      * Adds a body to the simulation. Params are not documented, as they appear to be relatively self-explanatory
      */
     void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius,
-                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, double fragFactor);
+                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, double fragFactor,
+                 double fragStep);
 }

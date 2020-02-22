@@ -13,8 +13,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Utility class to generate lists of bodies to start the simulation with. The following methods are provided:
  *
  * <p>{@link #sim1}    -- A canned simulation</p>
- * <p>{@link #sim2}    -- Another canned simulation</p>
- * <p>{@link #sim3}    -- And another canned simulation</p>
+ * <p>{@link #sim2}    -- "</p>
+ * <p>{@link #sim3}    -- "</p>
+ * <p>{@link #sim4}    -- "</p>
+ * <p>{@link #sim5}    -- "</p>
  * <p>{@link #fromCSV} -- Loads body definitions from a CSV file</p>
  */
 public class SimGenerator {
@@ -26,8 +28,7 @@ public class SimGenerator {
     private static final List<String> TRUES = Arrays.asList("t", "true", "1", "y", "yes");
 
     /**
-     * Creates a Queue and populates it with Body instances. This particular initializer creates
-     * four clumps of bodies centered at "left, right, front, and back", with each clump organized
+     * Creates four clumps of bodies centered at "left, right, front, and back", with each clump organized
      * spherically, around that center point. The velocity of the bodies in each clump is set so
      * that each clump will be captured by the sun. Each clump contains mostly small, similar-sized
      * bodies but also a few larger bodies are included for variety.
@@ -42,33 +43,33 @@ public class SimGenerator {
     static Sim sim1(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
                     String simArgs) {
         List<Body> bodies = new ArrayList<>();
-        double vx, vy, vz, radius, mass;
+        double vx, vy, vz, radius, mass, y;
         double V = 958000000D;
         for (int i = -1; i <= 1; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
                 double xc = 200 * i;
                 double zc = 200 * j;
                 Body.Color color;
-                if      (i == -1 && j == -1) {vx = -V; vz =  V; color = defaultBodyColor == null ? Body.Color.RED : defaultBodyColor;}
-                else if (i == -1 && j ==  1) {vx =  V; vz =  V; color = defaultBodyColor == null ? Body.Color.YELLOW : defaultBodyColor;}
-                else if (i ==  1 && j ==  1) {vx =  V; vz = -V; color = defaultBodyColor == null ? Body.Color.LIGHTGRAY : defaultBodyColor;}
-                else                         {vx = -V; vz = -V; color = defaultBodyColor == null ? Body.Color.CYAN : defaultBodyColor;}
+                if      (i == -1 && j == -1) {vx = -V; vz =  V; y = +100; color = defaultBodyColor == null ? Body.Color.RED : defaultBodyColor;}
+                else if (i == -1 && j ==  1) {vx =  V; vz =  V; y = -100; color = defaultBodyColor == null ? Body.Color.YELLOW : defaultBodyColor;}
+                else if (i ==  1 && j ==  1) {vx =  V; vz = -V; y = +100; color = defaultBodyColor == null ? Body.Color.LIGHTGRAY : defaultBodyColor;}
+                else                         {vx = -V; vz = -V; y = -100; color = defaultBodyColor == null ? Body.Color.CYAN : defaultBodyColor;}
                 for (int c = 0; c < bodyCount / 4; ++c) {
                     vy = .5 - Math.random(); // mostly in the same y plane
-                    radius = c < bodyCount * .0025D ? 9.0 * Math.random() : 2.0 * Math.random();
+                    radius = c < bodyCount * .0025D ? 8.0 * Math.random() : 3.0 * Math.random();
                     mass = radius * SOLAR_MASS * .000005D;
-                    SimpleVector v = SimpleVector.getVectorEven(new SimpleVector((float) xc, 0.0F, (float) zc), 30);
+                    SimpleVector v = SimpleVector.getVectorEven(new SimpleVector((float) xc, (float) y, (float) zc), 30);
                     bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, (float) radius,
-                            collisionBehavior, color, 1));
+                            collisionBehavior, color, 1, 1));
                 }
             }
         }
-        createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .1D, 25);
+        createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .11, 35);
         return new Sim(bodies, null);
     }
 
     /**
-     * Generates a body queue with sun at 0,0,0 and a cluster of bodies off-screen headed for a very close pass around
+     * Generates a sun at 0,0,0 and a cluster of bodies off-screen headed for a very close pass around
      * with the sun at high velocity. Typically, a few bodies are captured by the sun but most travel away
      *
      * @param bodyCount         Max bodies
@@ -88,7 +89,7 @@ public class SimGenerator {
             double mass = 2 * Math.random() * SOLAR_MASS * .000005D;
             double radius = Math.random() * 4;
             bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, -1124500000D, -824500000D, -1124500000D, mass,
-                    (float) radius, collisionBehavior, defaultBodyColor, 1));
+                    (float) radius, collisionBehavior, defaultBodyColor, 1, 1));
         }
         return new Sim(bodies, null);
     }
@@ -106,7 +107,7 @@ public class SimGenerator {
      * <p>This sim is dependent on body count - I run it with ~1000 bodies. Fewer, and the attraction isn't enough
      * to bring the clusters together. More, and the two clusters merge too soon. This sim should be run with
      * elastic collision. This example was useful to surface some subtleties with regard to how the simulation
-     * handles lots of concurrent collisions.</p>
+     * handles lots of concurrent elastic collisions.</p>
      *
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
@@ -128,7 +129,7 @@ public class SimGenerator {
                     j == -1 ? Body.Color.YELLOW : Body.Color.RED;
                 SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), 50);
                 bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, j * 121185000, j * 121185000, j * -121185000,
-                        90E25, 5F, collisionBehavior, bodyColor, 1));
+                        90E25, 5F, collisionBehavior, bodyColor, 1, 1));
             }
         }
         return new Sim(bodies, new sim3Thread(defaultBodyColor, collisionBehavior, simArgs));
@@ -177,7 +178,7 @@ public class SimGenerator {
                         double mass = radius * 2.93E+12;
                         Body.Color color = defaultBodyColor == null ? Body.Color.BLUE : defaultBodyColor;
                         Body b = new Body(Body.nextID(), x, y, z, -99827312, 112344240, 323464000, mass, (float) radius,
-                                collisionBehavior, color, 1);
+                                collisionBehavior, color, 1, 1);
                         bodyQueue.add(b);
                         Thread.sleep(500);
                     }
@@ -189,14 +190,16 @@ public class SimGenerator {
     }
 
     /**
-     * Generates a simulation with a sun and a line of bodies along the x axis all in the same plane
+     * Generates a sun and a line of bodies along the x axis all in the same plane moving at the same
+     * velocity showing that nearer objects are captured more quickly than farther objects
      *
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
      * @param defaultBodyColor  Default body color
      * @param simArgs           The number of additional bodies to inject after the sim starts. Defaults to 700
      *
-     * @return a simulation instance containing a list of bodies
+     * @return a simulation instance containing a list of bodies and a {@link SimThread} instance for modifying
+     * the collision behavior of the planet after the collision with the impactor occurs.
      */
     @SuppressWarnings("unused")
     static Sim sim4(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
@@ -208,15 +211,93 @@ public class SimGenerator {
             double radius = 2;
             bodies.add(new Body(Body.nextID(), (i*4) + 100, 0, 0, // x,y,z
                     0, 0, -824500000 + (i * 1E6), // vx, vy, vz
-                    mass, (float) radius, collisionBehavior, defaultBodyColor, 1));
+                    mass, (float) radius, collisionBehavior, defaultBodyColor, 1, 1));
         }
         return new Sim(bodies, null);
     }
 
     /**
+     * Generates a sun far removed from the focus area just to serve as light source. Creates a large
+     * planet at the center of the sim orbited by two moons moon. Creates a small impactor headed for
+     * the large planet. The impactor is configured to fragment into many smaller bodies on impact.
+     *
+     * <p>After the sim starts, the {@link SimThread} instance returned by the method monitors the simulation
+     * and when the impact occurs it changes the planet's collision behavior from ELASTIC to SUBSUME. As a
+     * result, any of the smaller fragments that subsequently strike the planet are absorbed into the planet.</p>
+     *
+     * @param bodyCount         Ignored
+     * @param collisionBehavior Ignored
+     * @param defaultBodyColor  Ignored
+     * @param simArgs           Ignored
+     *
+     * @return a simulation instance containing a list of bodies
+     **/
+     @SuppressWarnings("unused")
+    static Sim sim5(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
+                    String simArgs) {
+        List<Body> bodies = new ArrayList<>();
+        // far away light source with minimal mass & gravity
+        createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
+        // planet
+        bodies.add(new Body(Body.nextID(), 0, 0, 0, 12, 12, 12, 9E30, 145F, Body.CollisionBehavior.ELASTIC,
+                Body.Color.RED, 0, 0));
+        // moons
+        bodies.add(new Body(Body.nextID(), 50, 0, -420, -1300000000, 12, -500000000, 9E10, 25F,
+                Body.CollisionBehavior.SUBSUME, Body.Color.BLUE, 0, 0));
+        bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E8, 5F,
+                 Body.CollisionBehavior.SUBSUME, Body.Color.WHITE, 0, 0));
+        // impactor
+        bodies.add(new Body(Body.nextID(), 900, -900, 900, -450000000, 723000000, -350000000, 9E12, 10F,
+                Body.CollisionBehavior.FRAGMENT, Body.Color.ORANGE, .01, 5500));
+        return new Sim(bodies, new sim5Thread());
+    }
+
+    /**
+     * Changes the planet from ELASTIC to SUBSUME after the impactor collides so the planet absorbs
+     * the fragments if they subsequently impact the planet again
+     */
+    private static class sim5Thread implements SimThread, Runnable {
+        private boolean running = true;
+        private ConcurrentLinkedQueue<Body> bodyQueue;
+        private Body planet;
+
+        @Override
+        public void stop() {
+            running = false;
+        }
+
+        @Override
+        public void start(ConcurrentLinkedQueue<Body> bodyQueue) {
+            this.bodyQueue = bodyQueue;
+            for (Body b : bodyQueue) {
+                if (b.getId() == 1) {
+                    planet = b;
+                    break;
+                }
+            }
+            new Thread(this).start();
+        }
+        @Override
+        public void run() {
+            while (running) {
+                try {
+                    if (bodyQueue.size() > 5) {
+                        planet.setCollisionBehavior(Body.CollisionBehavior.SUBSUME);
+                        running = false;
+                    } else {
+                        Thread.sleep(5000);
+                    }
+                } catch (Exception e) {
+                    running = false;
+                }
+            }
+        }
+    }
+
+    /**
      * Parses a CSV file into a list of bodies. The format must be comma-delimited, with fields:
      *
-     * x,y,z,vx,vy,vz,mass,radius,is_sun,collision_behavior,color,fragmentation_factor
+     * x,y,z,vx,vy,vz,mass,radius,is_sun,collision_behavior,color,fragmentation_factor,fragmentation_step
      *
      * Everything from 'x' through 'radius' is required - and is parsed as a double. Everything else is optional.
      * Comments are allowed: any line where '#' is the first character
@@ -269,8 +350,9 @@ public class SimGenerator {
                             parseCollisionBehavior(fields[9].trim()) : defaultCollisionBehavior;
                     Body.Color color = fields.length >= 11 ? parseColor(fields[10].trim()) : defaultBodyColor;
                     double fragFactor = fields.length >= 12 ? Double.parseDouble(fields[12].trim()) : 1;
+                    double fragStep = fields.length >= 13 ? Double.parseDouble(fields[13].trim()) : 1;
                     Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, collisionBehavior, color,
-                            fragFactor);
+                            fragFactor, fragStep);
                     if (isSun) {
                         b.setSun();
                     }
@@ -319,7 +401,7 @@ public class SimGenerator {
     private static void createSunAndAddToQueue(List<Body> bodies, double x, double y, double z, double mass,
                                                double radius) {
         Body theSun = new Body(Body.nextID(), x, y, z, -3, -3, -5, mass, (float) radius, Body.CollisionBehavior.SUBSUME,
-                null, 1);
+                null, 1, 1);
         theSun.setSun();
         bodies.add(theSun);
     }
