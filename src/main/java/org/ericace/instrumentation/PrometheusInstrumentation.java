@@ -192,7 +192,7 @@ public class PrometheusInstrumentation extends Instrumentation {
          * @throws RuntimeException if the metric is not a summary metric or a gauge metric
          */
         @Override
-        public void setValue(double amt) {
+        public void setValue(float amt) {
             if (metricType == MetricType.SUMMARY) {
                 if (label == null) {
                     ((Summary) collector).observe(amt);

@@ -349,3 +349,5 @@ grpc_cli call localhost:50051 AddBody "x: 50 y: 0 z: -420 vx: -1300000000 vy: 12
 collision_behavior: ELASTIC body_color: BLUE"
 grpc_cli call localhost:50051 AddBody "x: 900 y: -900 z: 900 vx: -450000000 vy: 723000000 vz: -350000000 mass: 9E12 \
 radius: 10F  collision_behavior: FRAGMENT body_color: YELLOW frag_factor: .01 frag_step: 5500"
+
+--initial-cam=-100,50,1200

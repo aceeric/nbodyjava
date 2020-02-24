@@ -46,7 +46,7 @@ class NBodySim {
      *                   the sim is started. The {@code start} method is expected to start a thread which will
      *                   then modify the body queue while the sim is running.
      */
-    void run(List<Body> bodies, int threads, double scaling, SimpleVector initialCam, SimThread simThread) {
+    void run(List<Body> bodies, int threads, float scaling, SimpleVector initialCam, SimThread simThread) {
         try {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
@@ -72,9 +72,9 @@ class NBodySim {
     }
 
     /**
-     * Runs a sim without a callback. See {@link #run(List, int, double, SimpleVector, SimThread)} for details
+     * Runs a sim without a callback. See {@link #run(List, int, float, SimpleVector, SimThread)} for details
      */
-    void run(List<Body> bodies, int threads, double scaling, SimpleVector initialCam) {
+    void run(List<Body> bodies, int threads, float scaling, SimpleVector initialCam) {
         run(bodies, threads, scaling, initialCam, null);
     }
 
@@ -136,12 +136,12 @@ class NBodySim {
         }
 
         @Override
-        public void setSmoothing(double smoothing)  {
+        public void setSmoothing(float smoothing)  {
             computationRunner.setTimeScaling(smoothing);
         }
 
         @Override
-        public double getSmoothing() {
+        public float getSmoothing() {
             return computationRunner.getTimeScaling();
         }
 
@@ -166,12 +166,12 @@ class NBodySim {
         }
 
         @Override
-        public void setRestitutionCoefficient(double R) {
+        public void setRestitutionCoefficient(float R) {
             Body.setRestitutionCoefficient(R);
         }
 
         @Override
-        public double getRestitutionCoefficient() {
+        public float getRestitutionCoefficient() {
             return Body.getRestitutionCoefficient();
         }
 
@@ -209,10 +209,10 @@ class NBodySim {
         }
 
         @Override
-        public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz,
-                            double radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
-                            double fragFactor, double fragStep)  {
-            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, (float) radius, behavior, bodyColor, fragFactor,
+        public void addBody(float mass, float x, float y, float z, float vx, float vy, float vz,
+                            float radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
+                            float fragFactor, float fragStep)  {
+            Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, behavior, bodyColor, fragFactor,
                     fragStep);
             if (isSun) {
                 b.setSun();

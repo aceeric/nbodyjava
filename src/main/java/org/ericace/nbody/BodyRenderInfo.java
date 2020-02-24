@@ -3,6 +3,8 @@ package org.ericace.nbody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static java.lang.Float.NaN;
+
 /**
  * A value class that holds the computed position of a body in the simulation, and other elements
  * needed by the graphics engine. The values are all copies from a Body instance. The ID matches the
@@ -14,8 +16,8 @@ class BodyRenderInfo {
 
     final int id;
     final boolean exists;
-    final double radius;
-    final double x, y, z;
+    final float radius;
+    final float x, y, z;
     final boolean isSun;
     final Body.Color color;
 
@@ -30,13 +32,16 @@ class BodyRenderInfo {
      * @param isSun  true if this is a sun (the rendering engine should create a light source for it)
      * @param color  body color
      */
-    BodyRenderInfo(int id, double x, double y, double z, double radius, boolean isSun, Body.Color color) {
+    BodyRenderInfo(int id, float x, float y, float z, float radius, boolean isSun, Body.Color color) {
         logger.info("New existent BodyRenderInfo ID={}", id);
         this.id = id;
         this.x = x;
         this.y = y;
         this.z = z;
         this.radius = radius;
+        if (Float.isNaN(x) || Float.isNaN(y) || Float.isNaN(z)) {
+            logger.info("NaN values. ID={}", id);
+        }
         exists = true;
         this.isSun = isSun;
         this.color = color;

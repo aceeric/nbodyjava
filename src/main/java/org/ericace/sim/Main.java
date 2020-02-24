@@ -18,7 +18,7 @@ public class Main {
 
     private static boolean render = true; // TODO run with no rendering to test sim computation performance limits
     private static int threads = 5;
-    private static double scaling = .000000001D;
+    private static float scaling = .000000001F;
     private static String simName = null;
     private static Body.CollisionBehavior defaultCollisionBehavior = Body.CollisionBehavior.ELASTIC;
     private static int bodyCount = 1000;
@@ -132,7 +132,7 @@ public class Main {
                         break;
                     case "-m":
                     case "--scaling":
-                        scaling = Double.parseDouble(argQueue.poll());
+                        scaling = Float.parseFloat(argQueue.poll());
                         break;
                     case "-f":
                     case "--csv":

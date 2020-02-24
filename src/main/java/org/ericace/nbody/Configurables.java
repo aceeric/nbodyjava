@@ -41,12 +41,12 @@ public interface Configurables {
      *
      * @param smoothing larger is faster, smaller is slower
      */
-    void setSmoothing(double smoothing);
+    void setSmoothing(float smoothing);
 
     /**
      * @return the current smoothing factoer
      */
-    double getSmoothing();
+    float getSmoothing();
 
     /**
      * Sets the number of threads dedicated to computing force/position of all bodies in the simulation
@@ -77,12 +77,12 @@ public interface Configurables {
      *
      * @param R the value to set
      */
-    void setRestitutionCoefficient(double R);
+    void setRestitutionCoefficient(float R);
 
     /**
      * @return the current coefficient of restition
      */
-    double getRestitutionCoefficient();
+    float getRestitutionCoefficient();
 
     /**
      * Removes bodies from the simulation. The interface does not attempt to specify how bodies are selected
@@ -100,7 +100,7 @@ public interface Configurables {
     /**
      * Adds a body to the simulation. Params are not documented, as they appear to be relatively self-explanatory
      */
-    void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius,
-                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, double fragFactor,
-                 double fragStep);
+    void addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
+                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
+                 float fragStep);
 }

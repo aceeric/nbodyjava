@@ -35,16 +35,15 @@ public class SimpleVector {
      * @return a vector as as described
      */
     @SuppressWarnings("unused")
-    public static SimpleVector getVectorEven(SimpleVector center, double radius) {
-        double d, x, y, z;
+    public static SimpleVector getVectorEven(SimpleVector center, float radius) {
+        float d, x, y, z;
         do {
-            x = Math.random() * 2.0 - 1.0;
-            y = Math.random() * 2.0 - 1.0;
-            z = Math.random() * 2.0 - 1.0;
+            x = (float) Math.random() * 2F - 1F;
+            y = (float) Math.random() * 2F - 1F;
+            z = (float) Math.random() * 2F - 1F;
             d = x*x + y*y + z*z;
         } while (d > 1.0);
-        return new SimpleVector((float) ((x * radius) + center.x), (float) ((y * radius) + center.y),
-                (float) ((z * radius) + center.z));
+        return new SimpleVector(((x * radius) + center.x), ((y * radius) + center.y), ((z * radius) + center.z));
     }
 
     /**
@@ -59,16 +58,16 @@ public class SimpleVector {
      * @return a vector as as described
      */
     @SuppressWarnings("unused")
-    public static SimpleVector getVectorConcentrated(SimpleVector center, double radius) {
-        double x = Math.random() - 0.5;
-        double y = Math.random() - 0.5;
-        double z = Math.random() - 0.5;
-        double mag = Math.sqrt(x * x + y * y + z * z);
+    public static SimpleVector getVectorConcentrated(SimpleVector center, float radius) {
+        float x = (float) Math.random() - 0.5F;
+        float y = (float) Math.random() - 0.5F;
+        float z = (float) Math.random() - 0.5F;
+        float mag = (float) Math.sqrt(x * x + y * y + z * z);
         x /= mag;
         y /= mag;
         z /= mag;
-        double d = Math.random() * radius;
-        return new SimpleVector((float) ((x * d) + center.x), (float) ((y * d) + center.y), (float) ((z * d) + center.z));
+        float d = (float) Math.random() * radius;
+        return new SimpleVector(((x * d) + center.x), ((y * d) + center.y), ((z * d) + center.z));
     }
 
     /**
@@ -83,11 +82,11 @@ public class SimpleVector {
      * @return a randomly-generated point on the surface of the sphere
      */
     @SuppressWarnings("unused")
-    public static SimpleVector getVectorOnSphere(SimpleVector center, double radius) {
+    public static SimpleVector getVectorOnSphere(SimpleVector center, float radius) {
         Random r = new Random();
-        double x = r.nextGaussian();
-        double y = r.nextGaussian();
-        double z = r.nextGaussian();
+        float x = (float) r.nextGaussian();
+        float y = (float) r.nextGaussian();
+        float z = (float) r.nextGaussian();
         // normalize
         x *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
         y *= 1 / Math.sqrt((x*x) + (y*y) + (z*z));
@@ -95,6 +94,6 @@ public class SimpleVector {
         x *= radius;
         y *= radius;
         z *= radius;
-        return new SimpleVector((float) (center.x + x), (float) (center.y + y), (float) (center.z + z));
+        return new SimpleVector(center.x + x, center.y + y, center.z + z);
     }
 }

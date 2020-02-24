@@ -8,7 +8,6 @@ The design is to separate the simulation from the rendering engine as much as po
 
 ### This is an initial version with some cleanups still to do: 
 
-* Consider floats universally for performance comparison
 * Add ability to set initial params (screen characteristics, etc.) from the command line or a config file
 * Can't decrease size of thread pool
 * Add Prometheus "HELP" field to metric initializer

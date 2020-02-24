@@ -14,5 +14,5 @@ public interface Metric {
      *
      * @param amt the value to set the metric to
      */
-    void setValue(double amt);
+    void setValue(float amt);
 }

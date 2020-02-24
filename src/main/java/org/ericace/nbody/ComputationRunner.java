@@ -17,7 +17,7 @@ import java.util.concurrent.*;
  * scheduled, the computation thread waits for all threads in the pool to complete, and then adds the result
  * to a result queue. The result queue is used by the rendering thread to render the result of the computation.</p>
  *
- * @see ComputationRunner#ComputationRunner(int, ConcurrentLinkedQueue, double, ResultQueueHolder) Constructor
+ * @see ComputationRunner#ComputationRunner(int, ConcurrentLinkedQueue, float, ResultQueueHolder) Constructor
  */
 public final class ComputationRunner implements Runnable {
     private static final Logger logger = LogManager.getLogger(ComputationRunner.class);
@@ -53,9 +53,9 @@ public final class ComputationRunner implements Runnable {
     private final ConcurrentLinkedQueue<Body> bodyQueue;
 
     /**
-     * A fudge factor that smooths and slows the simulation
+     * Defines the time unit
      */
-    private double timeScaling;
+    private float timeScaling;
 
     /**
      * Holds the  results of each computation cycle. The result of each computation cycle is a queue
@@ -75,7 +75,7 @@ public final class ComputationRunner implements Runnable {
      *
      * @see #run
      */
-    private ComputationRunner(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
+    private ComputationRunner(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, float timeScaling,
                               ResultQueueHolder resultQueueHolder) {
         executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadCount);
         completionService = new ExecutorCompletionService<>(executor);
@@ -93,8 +93,8 @@ public final class ComputationRunner implements Runnable {
      * @param timeScaling       "
      * @param resultQueueHolder "
      */
-    public static void start(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, double timeScaling,
-                      ResultQueueHolder resultQueueHolder) {
+    public static void start(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, float timeScaling,
+                             ResultQueueHolder resultQueueHolder) {
         instance = new ComputationRunner(threadCount, bodyQueue, timeScaling, resultQueueHolder);
         new Thread(instance).start();
     }
@@ -135,7 +135,7 @@ public final class ComputationRunner implements Runnable {
     /**
      * @return the current time scaling factor
      */
-    public double getTimeScaling() {
+    public float getTimeScaling() {
         return timeScaling;
     }
 
@@ -143,7 +143,7 @@ public final class ComputationRunner implements Runnable {
      * sets the new time scaling factor
      * @param timeScaling the value to set
      */
-    public void setTimeScaling(double timeScaling) {
+    public void setTimeScaling(float timeScaling) {
         this.timeScaling = timeScaling;
     }
 

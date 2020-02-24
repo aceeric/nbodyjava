@@ -14,7 +14,7 @@ public class NoopInstrumentation extends Instrumentation {
         public void incValue() {}
 
         @Override
-        public void setValue(double amt) {}
+        public void setValue(float amt) {}
     };
 
     /**

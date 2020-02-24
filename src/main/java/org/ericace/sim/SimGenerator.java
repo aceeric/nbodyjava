@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * <p>{@link #fromCSV} -- Loads body definitions from a CSV file</p>
  */
 public class SimGenerator {
-    private static final double SOLAR_MASS = 1.98892e30;
+    private static final float SOLAR_MASS = 1.98892e30F;
 
     /**
      * defines CSV values to parse as True
@@ -43,28 +43,28 @@ public class SimGenerator {
     static Sim sim1(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
                     String simArgs) {
         List<Body> bodies = new ArrayList<>();
-        double vx, vy, vz, radius, mass, y;
-        double V = 958000000D;
+        float vx, vy, vz, y, mass, radius, V = 958000000;
         for (int i = -1; i <= 1; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
-                double xc = 200 * i;
-                double zc = 200 * j;
+                float xc = 200 * i;
+                float zc = 200 * j;
                 Body.Color color;
                 if      (i == -1 && j == -1) {vx = -V; vz =  V; y = +100; color = defaultBodyColor == null ? Body.Color.RED : defaultBodyColor;}
                 else if (i == -1 && j ==  1) {vx =  V; vz =  V; y = -100; color = defaultBodyColor == null ? Body.Color.YELLOW : defaultBodyColor;}
                 else if (i ==  1 && j ==  1) {vx =  V; vz = -V; y = +100; color = defaultBodyColor == null ? Body.Color.LIGHTGRAY : defaultBodyColor;}
                 else                         {vx = -V; vz = -V; y = -100; color = defaultBodyColor == null ? Body.Color.CYAN : defaultBodyColor;}
                 for (int c = 0; c < bodyCount / 4; ++c) {
-                    vy = .5 - Math.random(); // mostly in the same y plane
-                    radius = c < bodyCount * .0025D ? 8.0 * Math.random() : 3.0 * Math.random();
-                    mass = radius * SOLAR_MASS * .000005D;
-                    SimpleVector v = SimpleVector.getVectorEven(new SimpleVector((float) xc, (float) y, (float) zc), 30);
-                    bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, (float) radius,
-                            collisionBehavior, color, 1, 1));
+                    vy = .5F - (float) Math.random(); // mostly in the same y plane
+                    float f = (float) Math.random();
+                    radius = c < bodyCount * .0025 ? 8 * f : 3 * f;
+                    mass = radius * SOLAR_MASS * .000005F;
+                    SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(xc, y, zc), 30);
+                    bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, radius, collisionBehavior,
+                            color, 1, 1));
                 }
             }
         }
-        createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .11, 35);
+        createSunAndAddToQueue(bodies, 0, 0, 0, 25F * SOLAR_MASS * .11F, 35);
         return new Sim(bodies, null);
     }
 
@@ -83,13 +83,13 @@ public class SimGenerator {
     static Sim sim2(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
                     String simArgs) {
         List<Body> bodies = new ArrayList<>();
-        createSunAndAddToQueue(bodies, 0, 0, 0, 25 * SOLAR_MASS * .1D, 25);
+        createSunAndAddToQueue(bodies, 0, 0, 0, 25F * SOLAR_MASS * .1F, 25);
         for (int i = 0; i < bodyCount; ++i) {
             SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(500.0F, 500.0F, 500.0F), 50);
-            double mass = 2 * Math.random() * SOLAR_MASS * .000005D;
-            double radius = Math.random() * 4;
-            bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, -1124500000D, -824500000D, -1124500000D, mass,
-                    (float) radius, collisionBehavior, defaultBodyColor, 1, 1));
+            float mass = 2 * ((float) Math.random()) * SOLAR_MASS * .000005F;
+            float radius = (float) Math.random() * 4;
+            bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, -1124500000F, -824500000F, -1124500000F, mass,
+                    radius, collisionBehavior, defaultBodyColor, 1, 1));
         }
         return new Sim(bodies, null);
     }
@@ -123,13 +123,13 @@ public class SimGenerator {
         List<Body> bodies = new ArrayList<>();
         // far away light source with minimal mass & gravity
         createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
-        for (float j = -1; j <= 1; j += 2) {
+        for (int j = -1; j <= 1; j += 2) {
             for (int i = 0; i < bodyCount / 2; ++i) {
                 Body.Color bodyColor = defaultBodyColor != null ? defaultBodyColor:
                     j == -1 ? Body.Color.YELLOW : Body.Color.RED;
                 SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), 50);
                 bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, j * 121185000, j * 121185000, j * -121185000,
-                        90E25, 5F, collisionBehavior, bodyColor, 1, 1));
+                        90E25F, 5F, collisionBehavior, bodyColor, 1, 1));
             }
         }
         return new Sim(bodies, new sim3Thread(defaultBodyColor, collisionBehavior, simArgs));
@@ -171,13 +171,13 @@ public class SimGenerator {
                         System.out.println("Done: added " + max + " bodies");
                     } else {
                         ++cnt;
-                        double x = Math.random() * 5 - 200;
-                        double y = Math.random() * 5 + 400;
-                        double z = Math.random() * 5 - 200;
-                        double radius = Math.random() * 5;
-                        double mass = radius * 2.93E+12;
+                        float x = (float) Math.random() * 5 - 200;
+                        float y = (float) Math.random() * 5 + 400;
+                        float z = (float) Math.random() * 5 - 200;
+                        float radius = (float) Math.random() * 5;
+                        float mass = radius * 2.93E+12F;
                         Body.Color color = defaultBodyColor == null ? Body.Color.BLUE : defaultBodyColor;
-                        Body b = new Body(Body.nextID(), x, y, z, -99827312, 112344240, 323464000, mass, (float) radius,
+                        Body b = new Body(Body.nextID(), x, y, z, -99827312, 112344240, 323464000, mass, radius,
                                 collisionBehavior, color, 1, 1);
                         bodyQueue.add(b);
                         Thread.sleep(500);
@@ -207,11 +207,11 @@ public class SimGenerator {
         List<Body> bodies = new ArrayList<>();
         createSunAndAddToQueue(bodies, 0, 0, 0, SOLAR_MASS, 30);
         for (int i = 0; i < bodyCount; ++i) {
-            double mass = 9e5;
-            double radius = 2;
+            float mass = 9e5F;
+            float radius = 2;
             bodies.add(new Body(Body.nextID(), (i*4) + 100, 0, 0, // x,y,z
-                    0, 0, -824500000 + (i * 1E6), // vx, vy, vz
-                    mass, (float) radius, collisionBehavior, defaultBodyColor, 1, 1));
+                    0, 0, -824500000 + (i * 1E6F), // vx, vy, vz
+                    mass, radius, collisionBehavior, defaultBodyColor, 1, 1));
         }
         return new Sim(bodies, null);
     }
@@ -239,16 +239,16 @@ public class SimGenerator {
         // far away light source with minimal mass & gravity
         createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
         // planet
-        bodies.add(new Body(Body.nextID(), 0, 0, 0, 12, 12, 12, 9E30, 145F, Body.CollisionBehavior.ELASTIC,
+        bodies.add(new Body(Body.nextID(), 0, 0, 0, 12, 12, 12, 9E30F, 145F, Body.CollisionBehavior.ELASTIC,
                 Body.Color.RED, 0, 0));
         // moons
-        bodies.add(new Body(Body.nextID(), 50, 0, -420, -1300000000, 12, -500000000, 9E10, 25F,
+        bodies.add(new Body(Body.nextID(), 50, 0, -420, -1300000000, 12, -500000000, 9E10F, 25F,
                 Body.CollisionBehavior.SUBSUME, Body.Color.BLUE, 0, 0));
-        bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E8, 5F,
+        bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E8F, 5F,
                  Body.CollisionBehavior.SUBSUME, Body.Color.WHITE, 0, 0));
         // impactor
-        bodies.add(new Body(Body.nextID(), 900, -900, 900, -450000000, 723000000, -350000000, 9E12, 10F,
-                Body.CollisionBehavior.FRAGMENT, Body.Color.ORANGE, .01, 5500));
+        bodies.add(new Body(Body.nextID(), 900, -900, 900, -450000000, 723000000, -350000000, 9E12F, 10F,
+                Body.CollisionBehavior.FRAGMENT, Body.Color.ORANGE, .01F, 5500));
         return new Sim(bodies, new sim5Thread());
     }
 
@@ -299,7 +299,7 @@ public class SimGenerator {
      *
      * x,y,z,vx,vy,vz,mass,radius,is_sun,collision_behavior,color,fragmentation_factor,fragmentation_step
      *
-     * Everything from 'x' through 'radius' is required - and is parsed as a double. Everything else is optional.
+     * Everything from 'x' through 'radius' is required - and is parsed as a float. Everything else is optional.
      * Comments are allowed: any line where '#' is the first character
      *
      * If 'is_sun' is omitted, the loader defaults it to 'False' The following values are parsed as TRUE:
@@ -337,20 +337,20 @@ public class SimGenerator {
                 if (line.startsWith("#")) continue;
                 String[] fields = line.split(",");
                 try {
-                    double x = Double.parseDouble(fields[0].trim());
-                    double y = Double.parseDouble(fields[1].trim());
-                    double z = Double.parseDouble(fields[2].trim());
-                    double vx = Double.parseDouble(fields[3].trim());
-                    double vy = Double.parseDouble(fields[4].trim());
-                    double vz = Double.parseDouble(fields[5].trim());
-                    double mass = Double.parseDouble(fields[6].trim());
+                    float x = Float.parseFloat(fields[0].trim());
+                    float y = Float.parseFloat(fields[1].trim());
+                    float z = Float.parseFloat(fields[2].trim());
+                    float vx = Float.parseFloat(fields[3].trim());
+                    float vy = Float.parseFloat(fields[4].trim());
+                    float vz = Float.parseFloat(fields[5].trim());
+                    float mass = Float.parseFloat(fields[6].trim());
                     float radius = Float.parseFloat(fields[7].trim());
                     boolean isSun = fields.length >= 9 && parseBoolean(fields[8].trim());
                     Body.CollisionBehavior collisionBehavior = fields.length >= 10 ?
                             parseCollisionBehavior(fields[9].trim()) : defaultCollisionBehavior;
                     Body.Color color = fields.length >= 11 ? parseColor(fields[10].trim()) : defaultBodyColor;
-                    double fragFactor = fields.length >= 12 ? Double.parseDouble(fields[12].trim()) : 1;
-                    double fragStep = fields.length >= 13 ? Double.parseDouble(fields[13].trim()) : 1;
+                    float fragFactor = fields.length >= 12 ? Float.parseFloat(fields[12].trim()) : 1;
+                    float fragStep = fields.length >= 13 ? Float.parseFloat(fields[13].trim()) : 1;
                     Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, collisionBehavior, color,
                             fragFactor, fragStep);
                     if (isSun) {
@@ -398,9 +398,8 @@ public class SimGenerator {
      *
      * @param bodies a list of bodies in the simulation. The sun is appended to the list
      */
-    private static void createSunAndAddToQueue(List<Body> bodies, double x, double y, double z, double mass,
-                                               double radius) {
-        Body theSun = new Body(Body.nextID(), x, y, z, -3, -3, -5, mass, (float) radius, Body.CollisionBehavior.SUBSUME,
+    private static void createSunAndAddToQueue(List<Body> bodies, float x, float y, float z, float mass, float radius) {
+        Body theSun = new Body(Body.nextID(), x, y, z, -3, -3, -5, mass, radius, Body.CollisionBehavior.SUBSUME,
                 null, 1, 1);
         theSun.setSun();
         bodies.add(theSun);

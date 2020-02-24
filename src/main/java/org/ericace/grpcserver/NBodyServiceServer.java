@@ -170,17 +170,17 @@ public class NBodyServiceServer {
         @Override
         public void addBody(org.ericace.grpcserver.BodyDescription request,
                             io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode> responseObserver) {
-            double mass = request.getMass();
-            double x = request.getX();
-            double y = request.getY();
-            double z = request.getZ();
-            double vx = request.getVx();
-            double vy = request.getVy();
-            double vz = request.getVz();
-            double radius = request.getRadius();
+            float mass = request.getMass();
+            float x = request.getX();
+            float y = request.getY();
+            float z = request.getZ();
+            float vx = request.getVx();
+            float vy = request.getVy();
+            float vz = request.getVz();
+            float radius = request.getRadius();
             boolean isSun = request.getIsSun();
-            double fragFactor = request.getFragFactor();
-            double fragStep = request.getFragStep();
+            float fragFactor = request.getFragFactor();
+            float fragStep = request.getFragStep();
             Body.CollisionBehavior behavior = xlatCollisionBehavior(request.getCollisionBehavior());
             Body.Color bodyColor = xlatColor(request.getBodyColor());
 
@@ -240,10 +240,10 @@ public class NBodyServiceServer {
         }
 
         @Override
-        public void setSmoothing(double smoothing)  {}
+        public void setSmoothing(float smoothing)  {}
 
         @Override
-        public double getSmoothing() {
+        public float getSmoothing() {
             return 200;
         }
 
@@ -264,10 +264,10 @@ public class NBodyServiceServer {
         }
 
         @Override
-        public void setRestitutionCoefficient(double R)  {}
+        public void setRestitutionCoefficient(float R)  {}
 
         @Override
-        public double getRestitutionCoefficient() { return 1;}
+        public float getRestitutionCoefficient() { return 1;}
 
         @Override
         public void removeBodies(int countToRemove)  {}
@@ -278,8 +278,8 @@ public class NBodyServiceServer {
         }
 
         @Override
-        public void addBody(double mass, double x, double y, double z, double vx, double vy, double vz, double radius,
-                            boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, double fragFactor,
-                            double fragStep)  {}
+        public void addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
+                            boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
+                            float fragStep)  {}
     }
 }

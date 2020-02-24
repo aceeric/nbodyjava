@@ -66,7 +66,7 @@ public final class JMEApp extends SimpleApplication {
     private Map<Integer, Geometry> geos;
 
     /**
-     * Holds the bodies in the simulation - the map key is the ID of the body
+     * Holds the light sources (suns) in the simulation - the map key is the ID of the body
      */
     private Map<Integer, PointLight> lightSources;
 
@@ -153,16 +153,16 @@ public final class JMEApp extends SimpleApplication {
         Material mat;
         Sphere sphere;
         if (b.isSun) {
-            sphere = new Sphere(40, 50, (float) b.radius);
+            sphere = new Sphere(40, 50, b.radius);
             mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
             PointLight pl = new PointLight();
-            pl.setPosition(new Vector3f((float)b.x, (float)b.y, (float)b.z));
+            pl.setPosition(new Vector3f(b.x, b.y, b.z));
             pl.setColor(ColorRGBA.White);
             pl.setRadius(0f);
             rootNode.addLight(pl);
             lightSources.put(b.id, pl);
         } else {
-            sphere = new Sphere(20, 20, (float) b.radius);
+            sphere = new Sphere(20, 20, b.radius);
             mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
             mat.setFloat("Shininess", 25);
             mat.setBoolean("UseMaterialColors", true);
@@ -172,7 +172,7 @@ public final class JMEApp extends SimpleApplication {
         }
         Geometry geo = new Geometry(String.valueOf(b.id), sphere);
         geo.setLocalScale(1f);
-        geo.setLocalTranslation((float)b.x, (float)b.y, (float)b.z);
+        geo.setLocalTranslation(b.x, b.y, b.z);
         geo.setMaterial(mat);
         rootNode.attachChild(geo);
         geos.put(b.id, geo);
@@ -251,13 +251,13 @@ public final class JMEApp extends SimpleApplication {
                 }
                 Sphere s = (Sphere) g.getMesh();
                 if (s.radius < b.radius) {
-                    s.updateGeometry(s.getZSamples(), s.getRadialSamples(), (float) b.radius);
+                    s.updateGeometry(s.getZSamples(), s.getRadialSamples(), b.radius);
                 }
                 // update this body's position and if the body has a light source, also update that
-                g.setLocalTranslation((float) b.x, (float) b.y, (float) b.z);
+                g.setLocalTranslation(b.x, b.y, b.z);
                 PointLight pl = lightSources.get(b.id);
                 if (pl != null) {
-                    pl.setPosition(new Vector3f((float)b.x, (float)b.y, (float)b.z));
+                    pl.setPosition(new Vector3f(b.x, b.y, b.z));
                 }
             }
         }
