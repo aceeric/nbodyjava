@@ -45,9 +45,9 @@ The latest successful version of Java that I have tested with is 10.0.2. I have 
 
 ```
 mvn package
-/opt/java-jdk/jdk-10.0.2/bin/java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar
+/opt/java-jdk/jdk-10.0.2/bin/java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar&
 ```
 
-The above command runs canned simulation, which consists of four spherical clusters of bodies orbiting a sun.
+The above command runs a canned simulation, which consists of four spherical clusters of bodies orbiting a sun. Note - the sim is presently hard-coded to start the sim on the second monitor. Obviously on a one-monitor system this won't work. It's one of my to-do's to fix that. Also - when you run the sim it takes control of the mouse and keyboard. F12 disengages the sim from the mouse and keyboard. 
 
 
