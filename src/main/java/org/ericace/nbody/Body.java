@@ -12,20 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Models a body with position, velocity, radius, and mass. Calculates force exerted
- * on itself from other {@code Body} instances.
- * <p>
- * The three primary components of functionality are:</p>
- * <p>
- * The {@link Body.ForceComputer} nested class, which is run by a {@code ThreadPoolExecutor} and which
- * calculates force from all other Body instances in the simulation.</p>
- * <p>
- * The {@link #update} method, which applies the calculated force to the body and computes a new position</p>
- * <p>
- * The {@link #subsume} method - which absorbs another body into an instance when they reach a certain
- * proximity. Since the main purpose of this Java app is to see how many bodies can be simulated based
- * on CPU/GPU configuration, I elected to combine bodies together if there is a collision, rather than
- * breaking them apart or just doing a collision and redirection. (That might change in a future
- * version.)</p>
+ * on itself from other {@code Body} instances. Supports collision resolution between bodies.
  * <p>
  * This class borrows from: http://physics.princeton.edu/~fpretori/Nbody/code.htm</p>
  */
@@ -67,7 +54,6 @@ public class Body {
     private volatile float radius, mass;
 
     /**
-     * TODO handle in gRPC and SimGenerator
      * When the body fragments, how many sub-bodies are created per frag factor
      */
     private final float fragmentationStep;
@@ -749,9 +735,8 @@ public class Body {
     }
 
     /**
-     * Sets this body to not exist, and creates a number of smaller bodies occupying the same space, thus
-     * appearing to fragment the instance into smaller bodies. This only looks good when a reasonable number of
-     * bodies are created. One sphere splitting into two looks kind of silly.
+     * Fragments the body into a number of smaller bodies occupying the same space.This only looks good when
+     * a reasonable number of bodies are created. One sphere splitting into two looks kind of silly.
      *
      * @param fragFactor The calculated fragmentation factor based on velocity change for this body
      * @param bodyQueue  the body queue to add new bodies to

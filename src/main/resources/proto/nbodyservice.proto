@@ -100,8 +100,7 @@ message ResultCode {
   ResultCodeEnum result_code = 1;
 }
 
-// Defines the behavior when bodies reach a certain proximity. Currently, only SUBSUME
-// is supported:
+// Defines the behavior when bodies reach a certain proximity
 //
 // - UNDEF    - Because protobuf handles zero enum values oddly - like it doesn't display a value
 //              in the cli tool if it is zero
