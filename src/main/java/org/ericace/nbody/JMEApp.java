@@ -250,7 +250,8 @@ public final class JMEApp extends SimpleApplication {
                     g = addBody(b);
                 }
                 Sphere s = (Sphere) g.getMesh();
-                if (s.radius < b.radius) {
+                if (s.radius != b.radius) {
+                    // allow a body's radius to change
                     s.updateGeometry(s.getZSamples(), s.getRadialSamples(), b.radius);
                 }
                 // update this body's position and if the body has a light source, also update that

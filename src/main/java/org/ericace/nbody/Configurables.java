@@ -102,5 +102,5 @@ public interface Configurables {
      */
     void addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
                  boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
-                 float fragStep);
+                 float fragStep, boolean withTelemetry);
 }

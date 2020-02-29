@@ -17,7 +17,7 @@ import java.util.concurrent.*;
  * scheduled, the computation thread waits for all threads in the pool to complete, and then adds the result
  * to a result queue. The result queue is used by the rendering thread to render the result of the computation.</p>
  *
- * @see ComputationRunner#ComputationRunner(int, ConcurrentLinkedQueue, float, ResultQueueHolder) Constructor
+ * @see ComputationRunner#ComputationRunner(int, ConcurrentLinkedQueue, float, ResultQueueHolder, boolean) Constructor
  */
 public final class ComputationRunner implements Runnable {
     private static final Logger logger = LogManager.getLogger(ComputationRunner.class);
@@ -53,6 +53,12 @@ public final class ComputationRunner implements Runnable {
     private final ConcurrentLinkedQueue<Body> bodyQueue;
 
     /**
+     * If true, the rendering engine is active. If false, the engine is not running so don't populate
+     * the results queue for the engine
+     */
+    private final boolean render;
+
+    /**
      * Defines the time unit
      */
     private float timeScaling;
@@ -72,17 +78,20 @@ public final class ComputationRunner implements Runnable {
      * @param bodyQueue         Bodies in the simulation
      * @param timeScaling       A factor to slow down and smooth out the simulation movement
      * @param resultQueueHolder Where the compute results are placed
+     * @param render            If true, the rendering engine is active. If false, the engine is not running so
+     *                          don't populate the results queue for the engine
      *
      * @see #run
      */
     private ComputationRunner(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, float timeScaling,
-                              ResultQueueHolder resultQueueHolder) {
+                              ResultQueueHolder resultQueueHolder, boolean render) {
         executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadCount);
         completionService = new ExecutorCompletionService<>(executor);
         setPoolSize(threadCount);
         this.bodyQueue = bodyQueue;
         this.timeScaling = timeScaling;
         this.resultQueueHolder = resultQueueHolder;
+        this.render = render;
     }
 
     /**
@@ -92,10 +101,11 @@ public final class ComputationRunner implements Runnable {
      * @param bodyQueue         "
      * @param timeScaling       "
      * @param resultQueueHolder "
+     * @param render            "
      */
     public static void start(int threadCount, ConcurrentLinkedQueue<Body> bodyQueue, float timeScaling,
-                             ResultQueueHolder resultQueueHolder) {
-        instance = new ComputationRunner(threadCount, bodyQueue, timeScaling, resultQueueHolder);
+                             ResultQueueHolder resultQueueHolder, boolean render) {
+        instance = new ComputationRunner(threadCount, bodyQueue, timeScaling, resultQueueHolder, render);
         new Thread(instance).start();
     }
     /**
@@ -191,7 +201,7 @@ public final class ComputationRunner implements Runnable {
      * @throws InterruptedException if interrupted waiting for a computation to complete
      */
     private void runOneComputation() throws InterruptedException {
-        if (resultQueueHolder.isFull()) {
+        if (render && resultQueueHolder.isFull()) {
             // this thread has outrun the rendering engine
             logger.debug("No more queues");
             metricNoQueuesCount.incValue();
@@ -203,15 +213,26 @@ public final class ComputationRunner implements Runnable {
             completionService.submit(body.new ForceComputer(bodyQueue));
             ++bodyCount;
         }
+        if (bodyCount == 0) {
+            // sim is empty at this time, don't peg the CPU
+            Thread.sleep(5);
+            return;
+        }
         metricBodyCountGauge.setValue(bodyCount);
         // blocks until all calculations are complete
         for (int i = 0; i < bodyCount; ++i) {
             completionService.take();
         }
-        ResultQueueHolder.ResultQueue rq = resultQueueHolder.newQueue(bodyCount);
+        ResultQueueHolder.ResultQueue rq = null;
         int countRemoved = 0;
         for (Body body : bodyQueue) {
-            rq.addRenderInfo(body.update(timeScaling));
+            BodyRenderInfo renderInfo = body.update(timeScaling);
+            if (render) {
+                if (rq == null) {
+                    rq = resultQueueHolder.newQueue(bodyCount);
+                }
+                rq.addRenderInfo(renderInfo);
+            }
             if (!body.exists()) {
                 // The body was subsumed into another and will still be placed into the result queue so
                 // the graphics engine can remove it from the scene graph
@@ -219,7 +240,9 @@ public final class ComputationRunner implements Runnable {
                 ++countRemoved;
             }
         }
-        rq.setComputed();
+        if (render) {
+            rq.setComputed();
+        }
         if (countRemoved > 0) {
             logger.debug("Removed {} bodies from the queue", countRemoved);
         }

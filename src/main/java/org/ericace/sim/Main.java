@@ -16,7 +16,7 @@ public class Main {
     private static final String DEFAULT_SIM_NAME = "sim1";
     private static final String NONE_SIM_NAME = "none";
 
-    private static boolean render = true; // TODO run with no rendering to test sim computation performance limits
+    private static boolean render = true;
     private static int threads = 5;
     private static float scaling = .000000001F;
     private static String simName = null;
@@ -60,7 +60,7 @@ public class Main {
                 return;
             }
         }
-        new NBodySim().run(t.bodies, threads, scaling, initialCam, t.thread);
+        new NBodySim().run(t.bodies, threads, scaling, initialCam, t.thread, render);
     }
 
     /**

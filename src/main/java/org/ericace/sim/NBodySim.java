@@ -45,18 +45,23 @@ class NBodySim {
      * @param simThread  If not null, then the method will call the {@code start} method on the instance after
      *                   the sim is started. The {@code start} method is expected to start a thread which will
      *                   then modify the body queue while the sim is running.
+     * @param render     If false, then don't start the rendering engine. Useful for testing/debugging since the
+     *                   rendering engine and OpenGL can interfere with single-stepping in the IDE
      */
-    void run(List<Body> bodies, int threads, float scaling, SimpleVector initialCam, SimThread simThread) {
+    void run(List<Body> bodies, int threads, float scaling, SimpleVector initialCam, SimThread simThread,
+             boolean render) {
         try {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
-            JMEApp.start(bodies.size(), resultQueueHolder, initialCam);
-            ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder);
+            if (render) {
+                JMEApp.start(bodies.size(), resultQueueHolder, initialCam);
+            }
+            ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder, render);
             NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));
             if (simThread != null) {
                 simThread.start(bodyQueue);
             }
-            getJmeThread().join();
+            getJmeThread(render).join();
         } catch (Exception e) {
             logger.error("Simulation error", e);
         } finally {
@@ -72,21 +77,27 @@ class NBodySim {
     }
 
     /**
-     * Runs a sim without a callback. See {@link #run(List, int, float, SimpleVector, SimThread)} for details
+     * If rendering, return the JME thread or throw a RuntimeException. If not rendering, start a thread
+     * and return it so the caller's logic is identical in both cases
+     *
+     * @return the JME thread or the created thread, based on the {@code render} arg
      */
-    void run(List<Body> bodies, int threads, float scaling, SimpleVector initialCam) {
-        run(bodies, threads, scaling, initialCam, null);
-    }
-
-    /**
-     * @return the JME thread, or throw a RuntimeException
-     */
-    private static Thread getJmeThread() {
-        Thread thread = Thread.getAllStackTraces().keySet()
-                .stream()
-                .filter(t -> t.getName().equals(JME_THREAD_NAME)).findFirst().orElse(null);
-        if (thread == null) {
-            throw new RuntimeException("Unable to find the JME thread");
+    private static Thread getJmeThread(boolean render) {
+        Thread thread;
+        if (render) {
+            thread = Thread.getAllStackTraces().keySet()
+                    .stream()
+                    .filter(t -> t.getName().equals(JME_THREAD_NAME)).findFirst().orElse(null);
+            if (thread == null) {
+                throw new RuntimeException("Unable to find the JME thread");
+            }
+        } else {
+            thread = new Thread(() -> {
+                while (true) {
+                    try {Thread.sleep(1000);} catch (InterruptedException e) {return;}
+                }
+            });
+            thread.start();
         }
         return thread;
     }
@@ -211,9 +222,9 @@ class NBodySim {
         @Override
         public void addBody(float mass, float x, float y, float z, float vx, float vy, float vz,
                             float radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
-                            float fragFactor, float fragStep)  {
+                            float fragFactor, float fragStep, boolean withTelemetry)  {
             Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, behavior, bodyColor, fragFactor,
-                    fragStep);
+                    fragStep, withTelemetry);
             if (isSun) {
                 b.setSun();
             }

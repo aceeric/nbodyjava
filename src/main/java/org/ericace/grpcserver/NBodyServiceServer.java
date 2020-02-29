@@ -181,10 +181,12 @@ public class NBodyServiceServer {
             boolean isSun = request.getIsSun();
             float fragFactor = request.getFragFactor();
             float fragStep = request.getFragStep();
+            boolean withTelemetry = request.getWithTelemetry();
             Body.CollisionBehavior behavior = xlatCollisionBehavior(request.getCollisionBehavior());
             Body.Color bodyColor = xlatColor(request.getBodyColor());
 
-            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor, fragFactor, fragStep);
+            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor, fragFactor, fragStep,
+                    withTelemetry);
             ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
             responseObserver.onNext(resultCode);
             responseObserver.onCompleted();
@@ -280,6 +282,6 @@ public class NBodyServiceServer {
         @Override
         public void addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
                             boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
-                            float fragStep)  {}
+                            float fragStep, boolean withTelemetry)  {}
     }
 }

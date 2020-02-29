@@ -2,7 +2,6 @@ package org.ericace.nbody;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Level;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,7 +32,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Body {
     private static final Logger logger = LogManager.getLogger(Body.class);
 
-    private static final Level CUSTOM = Level.getLevel("CUSTOM");
     /**
      * The gravitational constant
      */
@@ -116,8 +114,13 @@ public class Body {
     private final Lock lock;
 
     /**
+     * Supports test/debug
+     */
+    private final boolean withTelemetry;
+
+    /**
      * Defines the supported collision responses. SUBSUME means that two bodies merge into one
-     * upon collision: the larger mass body subsumes the smaller. ELASTIC_COLLISION means that the
+     * upon collision: the larger radius body subsumes the smaller. ELASTIC_COLLISION means that the
      * bodies bounce off each other. FRAGMENT means a body breaks into smaller bodies upon collision
      * NONE means no collisions - bodies pass through each other
      */
@@ -214,14 +217,6 @@ public class Body {
     public static void stop() {
         executor.shutdownNow();
     }
-    /**
-     * Creates an instance configured for elastic collision
-     *
-     * @see Body#Body(int, float, float, float, float, float, float, float, float, CollisionBehavior, Color, float, float)
-     */
-    public Body(int id, float x, float y, float z, float vx, float vy, float vz, float mass, float radius) {
-        this(id, x, y, z, vx, vy, vz, mass, radius, CollisionBehavior.ELASTIC, Color.RANDOM, 1, 10);
-    }
 
     /**
      * Creates an instance with passed configuration
@@ -241,9 +236,11 @@ public class Body {
      * @param color             Body color
      * @param fragFactor        Fragmentation factor
      * @param fragmentationStep The number of bodies to fragment into
+     * @param withTelemetry     Allows for emitting telemetry about a particular body for testing/debugging
      */
     public Body(int id, float x, float y, float z, float vx, float vy, float vz, float mass, float radius,
-                CollisionBehavior collisionBehavior, Color color, float fragFactor, float fragmentationStep) {
+                CollisionBehavior collisionBehavior, Color color, float fragFactor, float fragmentationStep,
+                boolean withTelemetry) {
         exists      = true;
         this.id     = id;
         this.x      = x;
@@ -259,6 +256,7 @@ public class Body {
         this.fragFactor        = fragFactor;
         this.fragmentationStep = fragmentationStep;
         lock = new ReentrantLock();
+        this.withTelemetry = withTelemetry;
     }
 
     /**
@@ -305,6 +303,10 @@ public class Body {
         z += timeScaling * vz;
         // clear collided flag for next cycle
         collided = false;
+        if (withTelemetry) {
+            System.out.println(String.format("id:%d x:%f y:%f z:%f vx:%f vy:%f vz:%f m:%f r:%f", id, x, y, z,
+                    vx, vy, vz, mass, radius));
+        }
         return getRenderInfo();
     }
 
@@ -756,25 +758,28 @@ public class Body {
      */
     private void implementFragmentation(float fragFactor, ConcurrentLinkedQueue<Body> bodyQueue) {
         float fragDelta = fragFactor - this.fragFactor > 10 ? 10 : fragFactor - this.fragFactor;
-        final int fragments = Math.min((int) (fragDelta * fragmentationStep), 2000);
+        int fragments = Math.min((int) (fragDelta * fragmentationStep), 2000);
         if (fragments <= 1) {
             collisionBehavior = CollisionBehavior.ELASTIC;
             return;
         }
-        // this body is destroyed and replaced by fragments filling the same volume
+        ignore = true;
+        SimpleVector curPos = new SimpleVector(x, y, z);
         float volume = (FOUR_THIRDS_PI * radius * radius * radius);
-        volume /= fragments;
-        final float newRadius = (float) Math.max(Math.pow((volume * 3F) / FOUR_PI, 1F / 3F), .1F);
+        float newRadius = (float) Math.max(Math.pow(((volume / fragments) * 3F) / FOUR_PI, 1F / 3F), .1F);
+        float newMass = mass / fragments;
+        // add the fragments in another thread
         executor.execute(() -> {
-            this.ignore = true;
             for (int i = 0; i < fragments; ++i) {
-                SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(x, y, z),
-                        radius * .9F);
-                Body b = new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass / fragments, newRadius,
-                        CollisionBehavior.ELASTIC, color, 0, 0);
-                bodyQueue.add(b);
+                SimpleVector v = SimpleVector.getVectorEven(curPos, radius * .9F);
+                bodyQueue.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, newMass, newRadius,
+                        CollisionBehavior.ELASTIC, color, 0, 0, false));
             }
-            this.exists = false;
+            // turn this body into one of the fragments
+            mass = newMass;
+            radius = newRadius;
+            collisionBehavior = CollisionBehavior.ELASTIC;
+            ignore = false;
         });
     }
 

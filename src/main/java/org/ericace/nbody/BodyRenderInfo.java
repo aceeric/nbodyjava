@@ -3,8 +3,6 @@ package org.ericace.nbody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static java.lang.Float.NaN;
-
 /**
  * A value class that holds the computed position of a body in the simulation, and other elements
  * needed by the graphics engine. The values are all copies from a Body instance. The ID matches the

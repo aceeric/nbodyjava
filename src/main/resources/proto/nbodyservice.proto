@@ -68,6 +68,7 @@ message BodyDescription {
   BodyColorEnum body_color = 11;
   float frag_factor = 12;
   float frag_step = 13;
+  bool with_telemetry = 14;
 }
 
 // Allows for setting collision behavior
