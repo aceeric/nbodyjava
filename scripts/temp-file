@@ -308,7 +308,7 @@ for i in {1..200}; do\
   x=$((x + 200 ));\
   y=$((y + 200));\
   z=$((z + 200));\
-  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: -223405342 vy: 995405342 vz: -223405342 radius: 2";\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: -223405342 vy: 995405342 vz: -723405342 radius: 2 body_color: RED";\
   sleep .2;\
 done
 for i in {1..200}; do\
@@ -319,6 +319,18 @@ for i in {1..200}; do\
   y=$((y - 250));\
   z=$((z - 250));\
   grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: 423405342 vy: 995405342 vz: 423405342 radius: 2";\
+  sleep .2;\
+done
+
+
+for i in {1..200}; do\
+  x=$((RANDOM % 4));\
+  y=$((RANDOM % 4));\
+  z=$((RANDOM % 4));\
+  x=$((x + 150 ));\
+  y=$((y + 150));\
+  z=$((z + 150));\
+  grpc_cli call localhost:50051 AddBody "mass: 1.196676E+12 x: $x y: $y z: $z vx: -223405342 vy: 1295405342 vz: -723405342 radius: 2 body_color: BLUE";\
   sleep .2;\
 done
 
@@ -347,13 +359,26 @@ grpc_cli call localhost:50051 AddBody "x: 100000 y: 100000 z: 100000 vx: 0 vy: 0
 grpc_cli call localhost:50051 AddBody "x: 0 y: 0 z: 0 vx: 12 vy: 12 vz: 12 mass: 9E30 radius: 145F  collision_behavior: ELASTIC body_color: RED"
 grpc_cli call localhost:50051 AddBody "x: 50 y: 0 z: -420 vx: -980000000 vy: 12 vz: -500000000 mass: 9E22 radius: 35F \
 collision_behavior: SUBSUME body_color: LIGHTGRAY"
+grpc_cli call localhost:50051 AddBody "x: 70 y: 0 z: -520 vx: -999000000 vy: 12 vz: -700000000 mass: 11E22 radius: 15F \
+collision_behavior: SUBSUME body_color: DARKGRAY"
 grpc_cli call localhost:50051 AddBody "x: 900 y: -900 z: 900 vx: -450000000 vy: 723000000 vz: -350000000 mass: 9E22 \
-radius: 10F  collision_behavior: FRAGMENT body_color: GREEN frag_factor: .01 frag_step: 3000"
+radius: 10F  collision_behavior: FRAGMENT body_color: YELLOW frag_factor: .01 frag_step: 500"
 
 --initial-cam=-100,50,1200
 
 grpc_cli call localhost:50051 AddBody "x: 800 y: 800 z: 800 vx: -723000000 vy: -723000000 vz: -723000000 mass: 9E12 \
-radius: 10F  collision_behavior: FRAGMENT body_color: YELLOW frag_factor: .1 frag_step: 1000"
+radius: 10F  collision_behavior: FRAGMENT body_color: YELLOW frag_factor: .1 frag_step: 100"
 
 grpc_cli call localhost:50051 SetSmoothing "factor: .0000000008F"
 
+grpc_cli call localhost:50051 AddBody "x: 800 y: 0 z: 0 vx: -923000000 vy: 880000000 vz: 0 mass: 9E12 \
+radius: 13F  collision_behavior: FRAGMENT body_color: YELLOW frag_factor: .1 frag_step: 200"
+grpc_cli call localhost:50051 AddBody "x: -800 y: 0 z: 0 vx: 923000000 vy: -180000000 vz: 0 mass: 9E12 \
+radius: 23F  collision_behavior: FRAGMENT body_color: GREEN frag_factor: .08 frag_step: 100"
+
+grpc_cli call localhost:50051 SetSmoothing "factor:  .9e-09"
+
+grpc_cli call localhost:50051 ModBody "id: 1 p: 'collision=elastic'"
+grpc_cli call localhost:50051 ModBody "id: 1 p: 'collision=subsume'"
+
+grpc_cli call localhost:50051 AddBody "x: 150 y: 10 z: 420 vx: -1180000000 vy: 12 vz: -500000000 mass: 9E11 radius: 12F collision_behavior: ELASTIC body_color: WHITE"

@@ -4,9 +4,12 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import org.ericace.nbody.Body;
+import org.ericace.nbody.BodyMod;
 import org.ericace.nbody.Configurables;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.ericace.nbody.Body.Color.*;
 
@@ -189,9 +192,40 @@ public class NBodyServiceServer {
             Body.CollisionBehavior behavior = xlatCollisionBehavior(request.getCollisionBehavior());
             Body.Color bodyColor = xlatColor(request.getBodyColor());
 
-            configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor, fragFactor, fragStep,
-                    withTelemetry);
-            ResultCode resultCode = ResultCode.newBuilder().setResultCode(ResultCode.ResultCodeEnum.OK).build();
+            int bodyID = configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor,
+                    fragFactor, fragStep, withTelemetry);
+            ResultCode resultCode = ResultCode.newBuilder()
+                    .setResultCode(ResultCode.ResultCodeEnum.OK)
+                    .setMessage(String.format("Added body ID: %d", bodyID))
+                    .build();
+            responseObserver.onNext(resultCode);
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void modBody(org.ericace.grpcserver.ModBodyMessage request,
+                            io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode> responseObserver) {
+            int bodyId = (int) request.getId();
+            List<BodyMod> bodyMods = new ArrayList<>();
+            for (int i = 0; i < request.getPCount(); ++i) {
+                String p = request.getP(i);
+                BodyMod bodyMod = BodyMod.makeMod(p);
+                if (bodyMod == null) {
+                    ResultCode resultCode = ResultCode.newBuilder()
+                            .setResultCode(ResultCode.ResultCodeEnum.ERROR)
+                            .setMessage(String.format("Invalid mod parameter: %s", p))
+                            .build();
+                    responseObserver.onNext(resultCode);
+                    responseObserver.onCompleted();
+                }
+                bodyMods.add(bodyMod);
+            }
+            boolean wasModified = configurables.modBody(bodyId, bodyMods);
+            String msg = wasModified ? "Body was modified" : "Body could not be modified - possibly could not be locked";
+            ResultCode resultCode = ResultCode.newBuilder()
+                    .setResultCode(ResultCode.ResultCodeEnum.OK)
+                    .setMessage(msg)
+                    .build();
             responseObserver.onNext(resultCode);
             responseObserver.onCompleted();
         }
@@ -284,8 +318,11 @@ public class NBodyServiceServer {
         }
 
         @Override
-        public void addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
-                            boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
-                            float fragStep, boolean withTelemetry)  {}
+        public int addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
+                           boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
+                           float fragStep, boolean withTelemetry)  {return 0;}
+
+        @Override
+        public boolean modBody(int id, List<BodyMod> bodyMods)  {return true;}
     }
 }

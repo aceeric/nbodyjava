@@ -1,5 +1,7 @@
 package org.ericace.nbody;
 
+import java.util.List;
+
 /**
  * Defines all the supported ways to inspect - and modify - the behavior of the simulation while the
  * simulation is running. This interface is also expressed in the gRPC service definition. (Refer to:
@@ -99,8 +101,15 @@ public interface Configurables {
 
     /**
      * Adds a body to the simulation. Params are not documented, as they appear to be relatively self-explanatory
+     *
+     * @return the ID of the body added
      */
-    void addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
-                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
-                 float fragStep, boolean withTelemetry);
+    int addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
+                boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
+                float fragStep, boolean withTelemetry);
+
+    /**
+     * Modifies body properties
+     */
+    boolean modBody(int id, List<BodyMod> bodyMods);
 }

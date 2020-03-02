@@ -68,7 +68,6 @@ class NBodySim {
             if (simThread != null) {
                 simThread.stop();
             }
-            Body.stop();
             NBodyServiceServer.stop();
             ComputationRunner.stop();
             instrumentation.stop();
@@ -220,15 +219,26 @@ class NBodySim {
         }
 
         @Override
-        public void addBody(float mass, float x, float y, float z, float vx, float vy, float vz,
-                            float radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
-                            float fragFactor, float fragStep, boolean withTelemetry)  {
+        public int addBody(float mass, float x, float y, float z, float vx, float vy, float vz,
+                           float radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
+                           float fragFactor, float fragStep, boolean withTelemetry)  {
             Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, behavior, bodyColor, fragFactor,
                     fragStep, withTelemetry);
             if (isSun) {
                 b.setSun();
             }
             bodyQueue.add(b);
+            return b.getId();
+        }
+
+        @Override
+        public boolean modBody(int id, List<BodyMod> bodyMods)  {
+            for (Body b : bodyQueue) {
+                if (b.getId() == id) {
+                    return b.mod(bodyMods);
+                }
+            }
+            return false;
         }
     }
 }

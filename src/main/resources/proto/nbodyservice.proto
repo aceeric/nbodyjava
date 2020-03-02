@@ -38,6 +38,9 @@ service NBodyService {
   // Adds a body into the simulation
   rpc AddBody (BodyDescription) returns (ResultCode) {}
 
+  // Modifies body properties
+  rpc ModBody (ModBodyMessage) returns (ResultCode) {}
+
   // Gets the current values of sim configurables
   rpc GetCurrentConfig(google.protobuf.Empty) returns (CurrentConfig) {}
 }
@@ -55,20 +58,27 @@ message CurrentConfig {
 
 // All the params required to represent a body in the simulation
 message BodyDescription {
-  float mass = 1;
-  float x = 2;
-  float y = 3;
-  float z = 4;
-  float vx = 5;
-  float vy = 6;
-  float vz = 7;
-  float radius = 8;
-  bool is_sun = 9;
-  CollisionBehaviorEnum collision_behavior = 10;
-  BodyColorEnum body_color = 11;
-  float frag_factor = 12;
-  float frag_step = 13;
-  bool with_telemetry = 14;
+  float mass = 2;
+  float x = 3;
+  float y = 4;
+  float z = 5;
+  float vx = 6;
+  float vy = 7;
+  float vz = 8;
+  float radius = 9;
+  bool is_sun = 10;
+  CollisionBehaviorEnum collision_behavior = 11;
+  BodyColorEnum body_color = 12;
+  float frag_factor = 13;
+  float frag_step = 14;
+  bool with_telemetry = 15;
+}
+
+// pass an array of params. E.g. from the cli:
+// grpc_cli call localhost:50051 ModBody "id: 1 p: 'radius=100' 'vx=200' 'collision=NONE'"
+message ModBodyMessage {
+  int64 id = 1;
+  repeated string p = 2;
 }
 
 // Allows for setting collision behavior
@@ -98,6 +108,7 @@ message ResultCode {
     ERROR = 1;
   }
   ResultCodeEnum result_code = 1;
+  string message = 2;
 }
 
 // Defines the behavior when bodies reach a certain proximity

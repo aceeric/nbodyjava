@@ -3,16 +3,15 @@ package org.ericace.nbody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Models a body with position, velocity, radius, and mass. Calculates force exerted
- * on itself from other {@code Body} instances. Supports collision resolution between bodies.
+ * Models a body with position, velocity, radius, and mass. Calculates force exerted on itself from other
+ * {@code Body} instances. Supports collision resolution between bodies.
  * <p>
  * This class borrows from: http://physics.princeton.edu/~fpretori/Nbody/code.htm</p>
  */
@@ -27,11 +26,6 @@ public class Body {
     // some PI-related constants
     private static final float FOUR_THIRDS_PI = (float) Math.PI * (4F/3F);
     private static final float FOUR_PI = (float) Math.PI * 4F;
-
-    /**
-     * Used to create bodies when a body fragments from a collision
-     */
-    private static ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
 
     /**
      * Coefficient of restitution
@@ -56,7 +50,28 @@ public class Body {
     /**
      * When the body fragments, how many sub-bodies are created per frag factor
      */
-    private final float fragmentationStep;
+    private float fragmentationStep;
+
+    /**
+     * The max number of bodies that a body can fragment into each cycle without impacting the frame rate
+     */
+    private static final int MAX_FRAGS_PER_CYCLE = 100;
+
+    /**
+     * When a body fragments, set an arbitrary limit on the number of bodies it can fragment into so the sim
+     * isn't swamped
+     */
+    private static final int MAX_FRAGS = 2000;
+
+    /**
+     * True while a body is fragmenting because of a collision
+     */
+    private boolean fragmenting;
+
+    /**
+     * Holds info that support fragmenting a body across cycles so that the frame rate isn't slowed
+     */
+    private FragInfo fragInfo;
 
     /**
      * Fragmentation factor
@@ -89,12 +104,6 @@ public class Body {
     private volatile boolean exists;
 
     /**
-     * When a body fragments, this is a temporary setting that allows the body to exist in the same space
-     * as the fragments replacing it until all the fragments are generated
-     */
-    private volatile boolean ignore = false;
-
-    /**
      * Supports modifying the instance from multiple threads
      */
     private final Lock lock;
@@ -102,7 +111,7 @@ public class Body {
     /**
      * Supports test/debug
      */
-    private final boolean withTelemetry;
+    private boolean withTelemetry;
 
     /**
      * Defines the supported collision responses. SUBSUME means that two bodies merge into one
@@ -129,7 +138,7 @@ public class Body {
     /**
      * Body color
      */
-    private final Color color;
+    private Color color;
 
     /**
      * Monotonically increasing ID generator
@@ -198,13 +207,6 @@ public class Body {
     }
 
     /**
-     * TODO this needs to be done differently
-     */
-    public static void stop() {
-        executor.shutdownNow();
-    }
-
-    /**
      * Creates an instance with passed configuration
      *
      * @param id                Every body should be created with a unique ID starting at zero with max < total
@@ -243,6 +245,44 @@ public class Body {
         this.fragmentationStep = fragmentationStep;
         lock = new ReentrantLock();
         this.withTelemetry = withTelemetry;
+    }
+
+    /**
+     * Modify body properties while the simulation is running
+     *
+     * @param bodyMods the list of modifications to make
+     *
+     * @return true if the instance lock could be acquired and the mods made
+     */
+    public boolean mod(List<BodyMod> bodyMods) {
+        boolean modified = false;
+        if (tryLock()) {
+            try {
+                for (BodyMod bodyMod : bodyMods) {
+                    switch (bodyMod.getMod()) {
+                        case X: x = bodyMod.getFloat(); break;
+                        case Y: y = bodyMod.getFloat(); break;
+                        case Z: z = bodyMod.getFloat(); break;
+                        case VX: vx = bodyMod.getFloat(); break;
+                        case VY: vy = bodyMod.getFloat(); break;
+                        case VZ: vz = bodyMod.getFloat(); break;
+                        case MASS: mass = bodyMod.getFloat(); break;
+                        case RADIUS: radius = bodyMod.getFloat(); break;
+                        // TODO MAYBE REMOVE THIS OTHERWISE HAS TO BE SUPPORTED IN JME
+                        case SUN: isSun = bodyMod.getBoolean(); break;
+                        case COLLISION: collisionBehavior = bodyMod.getCollision(); break;
+                        case COLOR: color = bodyMod.getColor(); break;
+                        case FRAG_FACTOR: fragFactor = bodyMod.getFloat(); break;
+                        case FRAG_STEP: fragmentationStep = bodyMod.getFloat(); break;
+                        case TELEMETRY: withTelemetry = bodyMod.getBoolean(); break;
+                    }
+                }
+                modified = true;
+            } finally {
+                unlock();
+            }
+        }
+        return modified;
     }
 
     /**
@@ -345,15 +385,19 @@ public class Body {
         @Override
         public Void call() {
             try {
-                fx = fy = fz = 0;
-                for (Body otherBody : bodyQueue) {
-                    if (!exists || ignore) {
-                        break;
-                    }
-                    if (Body.this != otherBody && otherBody.exists && !otherBody.ignore) {
-                        ForceCalcResult result = calcForceFrom(otherBody);
-                        if (result.collided) {
-                            resolveCollision(result.dist, otherBody, bodyQueue);
+                if (fragmenting) {
+                    fragment(bodyQueue);
+                } else {
+                    fx = fy = fz = 0;
+                    for (Body otherBody : bodyQueue) {
+                        if (!exists || fragmenting) {
+                            break;
+                        }
+                        if (Body.this != otherBody && otherBody.exists && !otherBody.fragmenting) {
+                            ForceCalcResult result = calcForceFrom(otherBody);
+                            if (result.collided) {
+                                resolveCollision(result.dist, otherBody);
+                            }
                         }
                     }
                 }
@@ -462,10 +506,8 @@ public class Body {
      *
      * @param dist      distance between bodies
      * @param otherBody the other body being collided with
-     * @param bodyQueue The body queue - in case the collision causes fragmentation resulting in  bodies being
-     *                  added to the queue
      */
-    private void resolveCollision(float dist, Body otherBody, ConcurrentLinkedQueue<Body> bodyQueue) {
+    private void resolveCollision(float dist, Body otherBody) {
         if (collisionBehavior == CollisionBehavior.SUBSUME ||
                 otherBody.collisionBehavior == CollisionBehavior.SUBSUME) {
             // arbitrarily, larger bodies always subsume smaller bodies
@@ -486,7 +528,7 @@ public class Body {
                         if (otherLock && exists && otherBody.exists) {
                             FragmentationCalcResult fr = shouldFragment(otherBody, r);
                             if (fr.shouldFragment) {
-                                doFragment(otherBody, fr, bodyQueue);
+                                doFragment(otherBody, fr);
                             } else {
                                 doElastic(otherBody, r);
                             }
@@ -693,7 +735,7 @@ public class Body {
      *
      * @return the result of the calculation
      */
-    /*private*/ FragmentationCalcResult shouldFragment(Body otherBody, CollisionCalcResult r) {
+    FragmentationCalcResult shouldFragment(Body otherBody, CollisionCalcResult r) {
         if (!(collisionBehavior == CollisionBehavior.FRAGMENT ||
                 otherBody.collisionBehavior == CollisionBehavior.FRAGMENT)) {
             return FragmentationCalcResult.noFragmentation();
@@ -723,49 +765,67 @@ public class Body {
      *
      * @param otherBody the other body being collided with
      * @param fr        results of fragmentation calc
-     * @param bodyQueue the body queue in case new bodies need to be added
      */
-    private void doFragment(Body otherBody, FragmentationCalcResult fr, ConcurrentLinkedQueue<Body> bodyQueue) {
+    private void doFragment(Body otherBody, FragmentationCalcResult fr) {
         if (collisionBehavior == CollisionBehavior.FRAGMENT && fr.thisFactor > fragFactor) {
-            implementFragmentation(fr.thisFactor, bodyQueue);
+            initiateFragmentation(fr.thisFactor);
         }
         if (otherBody.collisionBehavior == CollisionBehavior.FRAGMENT && fr.otherFactor > otherBody.fragFactor) {
-            otherBody.implementFragmentation(fr.otherFactor, bodyQueue);
+            otherBody.initiateFragmentation(fr.otherFactor);
         }
     }
 
     /**
-     * Fragments the body into a number of smaller bodies occupying the same space.This only looks good when
-     * a reasonable number of bodies are created. One sphere splitting into two looks kind of silly.
+     * Calculates fragmentation params, creates a {@link FragInfo} instance to hold the values, and sets the
+     * {@link #fragmenting} flag to true indicating that this body is now fragmenting
      *
      * @param fragFactor The calculated fragmentation factor based on velocity change for this body
-     * @param bodyQueue  the body queue to add new bodies to
      */
-    private void implementFragmentation(float fragFactor, ConcurrentLinkedQueue<Body> bodyQueue) {
+    private void initiateFragmentation(float fragFactor) {
         float fragDelta = fragFactor - this.fragFactor > 10 ? 10 : fragFactor - this.fragFactor;
-        int fragments = Math.min((int) (fragDelta * fragmentationStep), 2000);
+        int fragments = Math.min((int) (fragDelta * fragmentationStep), MAX_FRAGS);
         if (fragments <= 1) {
             collisionBehavior = CollisionBehavior.ELASTIC;
             return;
         }
-        ignore = true;
+        fragmenting = true;
         SimpleVector curPos = new SimpleVector(x, y, z);
         float volume = (FOUR_THIRDS_PI * radius * radius * radius);
         float newRadius = (float) Math.max(Math.pow(((volume / fragments) * 3F) / FOUR_PI, 1F / 3F), .1F);
         float newMass = mass / fragments;
-        // add the fragments in another thread
-        executor.execute(() -> {
-            for (int i = 0; i < fragments; ++i) {
-                SimpleVector v = SimpleVector.getVectorEven(curPos, radius * .9F);
-                bodyQueue.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, newMass, newRadius,
-                        CollisionBehavior.ELASTIC, color, 0, 0, false));
+        fragInfo = new FragInfo(radius, newRadius, newMass, fragments, curPos);
+    }
+
+    /**
+     * Fragments a body into smaller fragments as controlled by the {@link #fragInfo} field until the body has
+     * been fully fragmented. Then sets this body to a fragment as well, and turns off fragmentation for the
+     * instance. The number of fragments generated in any given cycle is capped by the {@link #MAX_FRAGS_PER_CYCLE}
+     * constant so the simulation isn't held up while a large number of bodies are generated all at once in a case
+     * where - say - one body fragments into a thousand
+     *
+     * @param bodyQueue to add bodies into
+     */
+    private void fragment(ConcurrentLinkedQueue<Body> bodyQueue) {
+        int cnt = 0;
+        while (fragInfo.fragments > 0) {
+            --fragInfo.fragments;
+            SimpleVector v = SimpleVector.getVectorEven(fragInfo.curPos, fragInfo.radius * .9F);
+            bodyQueue.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, fragInfo.mass, fragInfo.newRadius,
+                    CollisionBehavior.ELASTIC, color, 0, 0, false));
+            if (++cnt >= MAX_FRAGS_PER_CYCLE) {
+                break;
             }
-            // turn this body into one of the fragments
-            mass = newMass;
-            radius = newRadius;
+        }
+        if (fragInfo.fragments <= 0) {
+            // turn this instance into a fragment
+            mass = fragInfo.mass;
+            radius = fragInfo.newRadius;
             collisionBehavior = CollisionBehavior.ELASTIC;
-            ignore = false;
-        });
+            fragmenting = false;
+        } else {
+            // shrink the body a little each time
+            radius = radius * .9F;
+        }
     }
 
     /**
@@ -775,92 +835,6 @@ public class Body {
         private volatile static int id = 0;
         static synchronized int nextID() {
             return id++;
-        }
-    }
-
-    /**
-     * Helper that holds values associated with calculating fragmentation during body collision
-     */
-    /*private*/ static class FragmentationCalcResult {
-        final boolean shouldFragment;
-        final float thisFactor;
-        final float otherFactor;
-        private FragmentationCalcResult(boolean shouldFragment, float thisFactor, float otherFactor) {
-            this.shouldFragment = shouldFragment;
-            this.thisFactor     = thisFactor;
-            this.otherFactor    = otherFactor;
-        }
-        static FragmentationCalcResult noFragmentation() {
-            return new FragmentationCalcResult(false, 0, 0);
-        }
-        static FragmentationCalcResult fragmentation(float thisFactor, float otherFactor) {
-            return new FragmentationCalcResult(true, thisFactor, otherFactor);
-        }
-    }
-
-    /**
-     * Helper that holds values associated with calculating gravitational force between two bodies.
-     */
-    private static class ForceCalcResult {
-        /**
-         * Distance between bodies
-         */
-        final float dist;
-
-        /**
-         * True if force calculation determined that the bodies are colliding (radii overlap), else False
-         */
-        final boolean collided;
-
-        private ForceCalcResult(float dist, boolean collided) {
-            this.dist = dist;
-            this.collided = collided;
-        }
-        static ForceCalcResult noCollision() {
-            return new ForceCalcResult(0, false);
-        }
-        static ForceCalcResult collision(float dist) {
-            return new ForceCalcResult(dist, true);
-        }
-    }
-
-    /**
-     * Helper that holds values associated with the elastic collision calculation
-     */
-    /*private*/ static class CollisionCalcResult {
-        final boolean collided;
-        final float vx1;
-        final float vy1;
-        final float vz1;
-        final float vx2;
-        final float vy2;
-        final float vz2;
-        final float vx_cm;
-        final float vy_cm;
-        final float vz_cm;
-        private CollisionCalcResult() {
-            collided = false;
-            vx1 = vy1 = vz1 = vx2 = vy2 = vz2 = vx_cm = vy_cm = vz_cm = 0;
-        }
-        private CollisionCalcResult(float vx1, float vy1, float vz1, float vx2, float vy2, float vz2,
-                                    float vx_cm, float vy_cm, float vz_cm) {
-            collided = true;
-            this.vx1   = vx1;
-            this.vy1   = vy1;
-            this.vz1   = vz1;
-            this.vx2   = vx2;
-            this.vy2   = vy2;
-            this.vz2   = vz2;
-            this.vx_cm = vx_cm;
-            this.vy_cm = vy_cm;
-            this.vz_cm = vz_cm;
-        }
-        static CollisionCalcResult noCollision() {
-            return new CollisionCalcResult();
-        }
-        static CollisionCalcResult collision(float vx1, float vy1, float vz1, float vx2, float vy2, float vz2,
-                                             float vx_cm, float vy_cm, float vz_cm) {
-            return new CollisionCalcResult(vx1, vy1, vz1, vx2, vy2, vz2, vx_cm, vy_cm, vz_cm);
         }
     }
 }

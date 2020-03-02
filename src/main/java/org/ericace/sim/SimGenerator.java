@@ -12,14 +12,15 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Utility class to generate lists of bodies to start the simulation with. The following methods are provided:
+ * Utility class that generates various canned simulations:
  *
- * <p>{@link #sim1}    -- A canned simulation</p>
- * <p>{@link #sim2}    -- "</p>
- * <p>{@link #sim3}    -- "</p>
- * <p>{@link #sim4}    -- "</p>
- * <p>{@link #sim5}    -- "</p>
- * <p>{@link #fromCSV} -- Loads body definitions from a CSV file</p>
+ * <p>{@link #sim1}</p>
+ * <p>{@link #sim2}</p>
+ * <p>{@link #sim3}</p>
+ * <p>{@link #sim4}</p>
+ * <p>{@link #sim5}</p>
+ *
+ * <p>Also has a method to load a simulatiion from a CSV: {@link #fromCSV}</p>
  */
 public class SimGenerator {
     private static final float SOLAR_MASS = 1.98892e30F;
@@ -244,13 +245,16 @@ public class SimGenerator {
         bodies.add(new Body(Body.nextID(), 0, 0, 0, 12, 12, 12, 9E30F, 145F, Body.CollisionBehavior.ELASTIC,
                 Body.Color.RED, 0, 0, false));
         // moons
-        bodies.add(new Body(Body.nextID(), 50, 0, -420, -980000000, 12, -500000000, 9E10F, 25F,
-                Body.CollisionBehavior.SUBSUME, Body.Color.BLUE, 0, 0, false));
-        bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E8F, 5F,
-                 Body.CollisionBehavior.SUBSUME, Body.Color.WHITE, 0, 0, false));
+        bodies.add(new Body(Body.nextID(), 50, 0, -420, -980000000, 12, -500000000, 9E20F, 25F,
+                Body.CollisionBehavior.SUBSUME, Body.Color.LIGHTGRAY, 0, 0, false));
+        bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E15F, 5F,
+                Body.CollisionBehavior.SUBSUME, Body.Color.CYAN, 0, 0, false));
+        bodies.add(new Body(Body.nextID(), 70, 0, -520, -880000000, -10000, -300000000 , 11E22F, 15F,
+                Body.CollisionBehavior.SUBSUME, Body.Color.DARKGRAY, 0, 0, false));
+
         // impactor
         bodies.add(new Body(Body.nextID(), 900, -900, 900, -450000000, 723000000, -350000000, 9E12F, 10F,
-                Body.CollisionBehavior.FRAGMENT, Body.Color.ORANGE, .01F, 5500, false));
+                Body.CollisionBehavior.FRAGMENT, Body.Color.YELLOW, .01F, 1000, false));
         return new Sim(bodies, new sim5Thread());
     }
 
@@ -283,7 +287,7 @@ public class SimGenerator {
         public void run() {
             while (running) {
                 try {
-                    if (bodyQueue.size() > 5) {
+                    if (bodyQueue.size() > 6) {
                         planet.setCollisionBehavior(Body.CollisionBehavior.SUBSUME);
                         running = false;
                     } else {

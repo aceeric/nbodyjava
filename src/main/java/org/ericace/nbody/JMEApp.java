@@ -6,6 +6,7 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.PointLight;
+import com.jme3.material.MatParam;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
@@ -250,9 +251,17 @@ public final class JMEApp extends SimpleApplication {
                     g = addBody(b);
                 }
                 Sphere s = (Sphere) g.getMesh();
+                // allow a body's radius to change
                 if (s.radius != b.radius) {
-                    // allow a body's radius to change
                     s.updateGeometry(s.getZSamples(), s.getRadialSamples(), b.radius);
+                }
+                // allow a body's color to change
+                MatParam mp = g.getMaterial().getParam("Diffuse");
+                if (b.color != Body.Color.RANDOM && mp != null) {
+                    ColorRGBA c = (ColorRGBA) mp.getValue();
+                    if (! c.equals(xlatColor(b.color))) {
+                        g.getMaterial().setColor("Diffuse", xlatColor(b.color));
+                    }
                 }
                 // update this body's position and if the body has a light source, also update that
                 g.setLocalTranslation(b.x, b.y, b.z);
