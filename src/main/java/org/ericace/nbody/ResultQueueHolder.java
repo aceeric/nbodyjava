@@ -28,9 +28,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public final class ResultQueueHolder {
     private static final Logger logger = LogManager.getLogger(ResultQueueHolder.class);
     private static final Metric metricResultQueueMaxSizeGauge = InstrumentationManager.getInstrumentation()
-            .registerGauge("nbody_result_queue_max_size");
+            .registerGauge("nbody_result_queue_max_size", "Max cached computation results");
     private static final Metric metricResultQueueSizeGauge = InstrumentationManager.getInstrumentation()
-            .registerGauge("nbody_result_queue_size");
+            .registerGauge("nbody_result_queue_size", "Current cached computation results");
 
     /**
      * The maximum number of {@link ResultQueue} instances that the class will hold
@@ -170,7 +170,7 @@ public final class ResultQueueHolder {
     /**
      * @return the next computed queue or null if there are no computed queues
      */
-    ResultQueue nextComputedQueue() {
+    public ResultQueue nextComputedQueue() {
         try {
             return queues.getFirst().computed ? queues.poll() : null;
         } catch (NoSuchElementException e) {

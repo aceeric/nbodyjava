@@ -1,22 +1,27 @@
 # Java N-Body Simulation
 
-An n-body simulation that was inspired by this example: <http://physics.princeton.edu/~fpretori/Nbody/code.htm>. Calculates force - and changes in position - on multiple bodies in one or more threads, and renders them in a graphics engine in a separate thread. Currently, [JMonkeyEngine](https://jmonkeyengine.org/) is being used as the graphics engine.
+An n-body simulation that was inspired by this example: <http://physics.princeton.edu/~fpretori/Nbody/code.htm>. Calculates force - and changes in position - on multiple bodies in one or more threads, and renders them in a graphics engine in a separate thread. Currently, [JMonkeyEngine](https://jmonkeyengine.org/) is being used as the graphics engine. Implements elastic collisions in 3D thanks to: https://www.plasmaphysics.org.uk/programs/coll3d_cpp.htm. Supports different behaviors for the bodies when they collide:
+1. Subsume - larger radius bodies absorb smaller radius bodies
+2. Elastic Collision - bodies bounce off each other (thank you plasmaphysics.org.uk!)
+3. Fragment - bodies fragment into smaller bodies based on force of impact
+4. None - bodies pass through each other
 
-This has been tested on a 12 core Ubuntu 18.04.3 LTS desktop with 32 gig of RAM and an integrated Intel graphics card. With this configuration, about 2000 bodies can be run with the JME frame rate running in the 50's. More bodies (in the 3000's) will start to slow the JME frame rate though I'm only just getting started with  the engine.
+This has been tested on a 12 core Ubuntu 18.04.3 LTS desktop with an integrated Intel graphics card. With this configuration, about 2000 bodies can be run with the JME frame rate running in the 50's. More bodies (approaching the 3000's) will start to slow the simulation. The number of bodies the sim can compute directly relates to the number of cores, and CPU speed. JMonkey is more influenced, obviously, by the number of bodies it has to render. So a sim with lots of bodies but with many of them off screen runs plenty fast. 
 
-The design is to separate the simulation from the rendering engine as much as possible in the hopes of experimenting with different rendering engines in the future, although, building the sim in Java might limit alternatives. The elastic collision algorithm was adapted from the following URL: https://www.plasmaphysics.org.uk/programs/coll3d_cpp.htm
+The design is to separate the simulation from the rendering engine as much as possible in the hopes of experimenting with different rendering engines in the future, although, building the sim in Java might limit alternatives there.
+
+The sim can be run with Prometheus monitoring and a Grafana dashboard to get visibility into performance. See the `start-containers` script in the `scripts` directory.
 
 ### This is an initial version with some cleanups still to do: 
 
-* Add ability to set initial params (screen characteristics, etc.) from the command line or a config file
-* Can't decrease size of thread pool
-* Add Prometheus "HELP" field to metric initializer
+* Ability to name objects, pin objects (make them un-deletable), mod by name, assign class, mod/delete by class, freeze/unfreeze (set/unset ignore)
 * Clean up the scripts directory - right now it's a collection of fragments
-* Perhaps a client app in Java or Java + shell
+* Had converted from doubles to floats but now see occasional NaN Body computation results so - need to spend some time on that
+* Perhaps a client app in Java or Java + shell to replace all the temp-file stuff
 * Add a guide to running the whole app
 * Comprehensive Javadocs
 
-### The following classes comprise the N-Body package:
+### The following primary classes comprise the N-Body package:
 
 | Class | Purpose |
 |-------|---------|
@@ -25,8 +30,8 @@ The design is to separate the simulation from the rendering engine as much as po
 | ComputationRunner | Recomputes force and new positions for all bodies in the simulation using a thread pool running in a perpetual loop|
 | Configurables | Defines the interface for modifying simulation properties during runtime. The current version of the simulation supports modifying parameters via a gRPC server|
 | JMEApp | Subclassed from the JME library, integrates the simulation with JMonkeyEngine |
-| ResultQueueHolder | Holds the results of a computation cycle: all bodies and their new positions. Allows the computation threads to slightly outrun the render thread |
-| SimpleVector | Simple x,y,z vector class to avoid bringing the JME `Vector3f` class into the package and introducing that as a dependency with some utility methods |
+| ResultQueueHolder | Holds the results of a computation cycle: all bodies and their new positions. Allows the computation threads to be de-coupled from the render thread |
+| SimpleVector | Simple x,y,z vector class to avoid bringing the JME `Vector3f` class into the package and introducing that as a dependency. Also has some utility methods (thank you https://karthikkaranth.me!)|
 
 ### The following classes comprise the gRPC Server package:
 
@@ -42,12 +47,24 @@ TODO
 
 ### To run the application
 The latest successful version of Java that I have tested with is 10.0.2. I have not gotten the app to run under any later version. On my system, Java 10 is installed in `/opt/java-jdk/jdk-10.0.2`. So for me:
-
 ```
 mvn package
 /opt/java-jdk/jdk-10.0.2/bin/java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar&
 ```
+Or, with the included Prometheus instrumentation to use the included Grafana dashboard:
+```
+/opt/java-jdk/jdk-10.0.2/bin/java \
+ -Dorg.ericace.instrumentation.class=org.ericace.instrumentation.PrometheusInstrumentation \
+ -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar&
+```
+The above command (no args) runs the default canned simulation, which consists of four spherical clusters of bodies orbiting a sun. There are five canned sims, controlled via the `--sim-name` arg: `--sim-name=sim1` (the default) through `--sim-name=sim5`. You can also do: `--sim-name=none` for an empty sim and then use the gRPC CLI to add bodies. There are plenty of (messy) examples in `scripts/temp-file`. It's a TODO to clean that up. (You will need to install the gRCP CLI)
+ 
+ Finally you can do `--csv=/path/to/a/csv` - will document that in the future. Some examples in `src/main/resources/csvs`
 
-The above command runs a canned simulation, which consists of four spherical clusters of bodies orbiting a sun. Note - the sim is presently hard-coded to start the sim on the second monitor. Obviously on a one-monitor system this won't work. It's one of my to-do's to fix that. Also - when you run the sim it takes control of the mouse and keyboard. F12 disengages the sim from the mouse and keyboard. 
+Note - the sim is presently hard-coded to run in 2560x1405 resolution. You can override that by supplying the --resolution arg with a value that makes sense for your configuration. E.g.:
+```
+/opt/java-jdk/jdk-10.0.2/bin/java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar --resolution=2000x1000&
+```
+If you have a dual-monitor configuration, JMonkey seems to have a mind of its own regarding which monitor to use, depending on the resolution you specify and so far I have not had success making this explicit.
 
-
+When you run the sim it takes control of the mouse and keyboard. F12 disengages the sim from the mouse and keyboard. So you can use other windows. To give the sim the mouse and the keyboard back, click on the sim window and press F12 and the mouse pointer will disappear - indicating the JMonkey again owns the mouse and keyboard. The sim is defaulted to run with five threads. You can override that and many other settings using commandline options and params. Unfortunately, until I get some docs going, I refer you to the `Main` class in the `org.ericace.sim` package for details.

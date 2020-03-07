@@ -28,5 +28,5 @@ public class NoopInstrumentation extends Instrumentation {
      * @return the singleton nop metric
      */
     @Override
-    public Metric register(String name, String label, MetricType metricType) {return noOpMetric;}
+    public Metric register(String name, String label, String help, MetricType metricType) {return noOpMetric;}
 }

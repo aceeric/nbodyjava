@@ -15,8 +15,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <jme3_g>org.jmonkeyengine</jme3_g>
-<!--    <jme3_v>3.2.0-stable</jme3_v>-->
-    <jme3_v>3.3.0-alpha2</jme3_v>
+    <jme3_v>3.2.0-stable</jme3_v>
     <grpc.version>1.25.0</grpc.version>
     <protobuf.version>3.10.0</protobuf.version>
     <protoc.version>3.10.0</protoc.version>
@@ -100,6 +99,7 @@
   </dependencies>
 
   <repositories>
+    <!-- JME -->
     <repository>
       <id>jcenter</id>
       <url>http://jcenter.bintray.com</url>
@@ -161,6 +161,7 @@
         </executions>
       </plugin>
 
+      <!-- integrates Java code gen from protobuf -->
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>

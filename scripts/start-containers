@@ -4,10 +4,16 @@
 # Starts a Docker container to run Prometheus, providing it a configuration to scrape the n-body
 # simulation. Then starts a Grafana container, and provisions: 1) a data source referencing
 # the Prometheus Docker instance, and 2) a Dashboard to watch a set of n-body metrics
-# scraped from Prometheus
+# scraped from Prometheus. Once both containers are running, you can access the dashboard using:
+#
+# http://localhost:3000
+#
+# You may have to turn off tracking protection in your browser to make Grafana happy. Also: you have
+# run the sim with the -Dorg.ericace.instrumentation.class=org.ericace.instrumentation.PrometheusInstrumentation JVM
+# property defined to enable collecting and exposing metrics to Prometheus
 #
 
-RESROOT="/home/eace/IdeaProjects/nbodyjava/src/main/resources"
+RESROOT="$HOME/IdeaProjects/nbodyjava/src/main/resources"
 PROMROOT="$RESROOT/prometheus"
 GRAFROOT="$RESROOT/grafana"
 

@@ -1,0 +1,1 @@
+This is the original C++ elastic collision calculation code from: https://www.plasmaphysics.org.uk/programs/coll3d_cpp.htm that the Body.java calcElasticCollision method is modeled after.

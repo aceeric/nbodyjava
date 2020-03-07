@@ -6,8 +6,9 @@
  * <p>
  * By default, a <i>NOP</i> instrumentation class is instantiated - which minimizes
  * overhead of including instrumentation in the n-body code. The noop instrumentation does
- * nothing. If a JVM property is provided specifying the instrumentation class to use, then that class
- * is instantiated. Presently, only Prometheus instrumentation is included.
+ * nothing. If a JVM property is provided specifying an instrumentation class to use, then assuming that class
+ * is in the classpath, it is instantiated. Presently, only Prometheus instrumentation is included. Refer to
+ * {@link org.ericace.instrumentation.PrometheusInstrumentation}
  * </p>
  */
 package org.ericace.instrumentation;

@@ -17,8 +17,60 @@ class NBodySim {
     private static final Logger logger = LogManager.getLogger(NBodySim.class);
     private static final Instrumentation instrumentation = InstrumentationManager.getInstrumentation();
 
+    /**
+     * Default value for the number of result queues
+     */
     private static final int DEFAULT_MAX_RESULT_QUEUES = 10;
+
+    /**
+     * JMonkeyEngine thread name
+     */
     private static final String JME_THREAD_NAME = "jME3 Main";
+
+    /**
+     * If no rendering, then the amount of time to sleep between polling the result queue. Goal is the
+     * ensure the computation runner is running at full throttle
+     */
+    private static final int NO_RENDER_SLEEP_MS = 5;
+
+    /**
+     * A list of bodies to start the simulation with
+     */
+    private List<Body> bodies;
+
+    /**
+     * The number of threads to use for the computation runner
+     */
+    private int threads;
+
+    /**
+     * The time scaling factor, which speeds or slows the sim
+     */
+    private float scaling;
+
+    /**
+     * The initial camera position
+     */
+    private SimpleVector initialCam;
+
+    /**
+     * If not null, then the method will call the {@code start} method on the instance after
+     * the sim is started. The {@code start} method is expected to start a thread which will
+     * then modify the body queue while the sim is running.
+     */
+    private SimThread simThread;
+
+    /**
+     * If false, then don't start the rendering engine. Useful for testing/debugging since the
+     * rendering engine and OpenGL can interfere with single-stepping in the IDE
+     */
+    private boolean render;
+
+    /**
+     * Screen resolution. Note - depending on the resolution specified, on a dual monitor system the OpenGL
+     * subsystem may locate the sim window on a monitor of its choosing, rather than on the primary monitor
+     */
+    private int [] resolution;
 
     /**
      * Simulation runner
@@ -26,9 +78,9 @@ class NBodySim {
      * <ol>
      *     <li>Initializes instrumentation which - depending on JVM properties - could be
      *         NOP instrumentation, or Prometheus instrumentation</li>
-     *     <li>Initializes a queue to hold all the bodies in the simulation from the passed {@code bodies} param</li>
+     *     <li>Initializes a queue to hold all the bodies in the simulation from the {@link #bodies} field</li>
      *     <li>Initializes a result queue holder to hold computed results</li>
-     *     <li>Initializes a computation runner and starts it, which perpetually computes the body forces in a thread,
+     *     <li>Initializes a computation runner and starts it, which perpetually computes the sim in a thread,
      *         placing the computed results into the result queue holder</li>
      *     <li>Initializes a JMonkey App and starts it which renders the computed results from the result queue
      *         perpetually in a thread</li>
@@ -37,31 +89,20 @@ class NBodySim {
      *     <li>Waits for the JMonkey engine thread to exit</li>
      *     <li>Cleans up on exit</li>
      * </ol>
-     *
-     * @param bodies     A list of bodies to run the simulation with
-     * @param threads    The number of threads to use for the computation runner
-     * @param scaling    The time scaling factor, which speeds or slows the sim
-     * @param initialCam The initial camera position
-     * @param simThread  If not null, then the method will call the {@code start} method on the instance after
-     *                   the sim is started. The {@code start} method is expected to start a thread which will
-     *                   then modify the body queue while the sim is running.
-     * @param render     If false, then don't start the rendering engine. Useful for testing/debugging since the
-     *                   rendering engine and OpenGL can interfere with single-stepping in the IDE
      */
-    void run(List<Body> bodies, int threads, float scaling, SimpleVector initialCam, SimThread simThread,
-             boolean render) {
+    void run() {
         try {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
             if (render) {
-                JMEApp.start(bodies.size(), resultQueueHolder, initialCam);
+                JMEApp.start(bodies.size(), resultQueueHolder, initialCam, resolution);
             }
-            ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder, render);
+            ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder);
             NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));
             if (simThread != null) {
                 simThread.start(bodyQueue);
             }
-            getJmeThread(render).join();
+            getJmeThread(render, resultQueueHolder).join();
         } catch (Exception e) {
             logger.error("Simulation error", e);
         } finally {
@@ -77,11 +118,18 @@ class NBodySim {
 
     /**
      * If rendering, return the JME thread or throw a RuntimeException. If not rendering, start a thread
-     * and return it so the caller's logic is identical in both cases
+     * and return it so the caller's logic is identical in both cases. If starting a thread, then the started
+     * thread will consume the passed {@code resultQueueHolder} so the {@link ComputationRunner} can run at
+     * max throughput. This is useful for testing the max number of bodies that the Computation Runner can compute
+     * and still stay within the target 50-60 frames per second. It factors the rendering engine's performance
+     * out.
+     *
+     * @param render            True if rendering, else false: not rendering
+     * @param resultQueueHolder If not rendering, the created thread will consume this queue
      *
      * @return the JME thread or the created thread, based on the {@code render} arg
      */
-    private static Thread getJmeThread(boolean render) {
+    private static Thread getJmeThread(boolean render, ResultQueueHolder resultQueueHolder) {
         Thread thread;
         if (render) {
             thread = Thread.getAllStackTraces().keySet()
@@ -92,8 +140,15 @@ class NBodySim {
             }
         } else {
             thread = new Thread(() -> {
-                while (true) {
-                    try {Thread.sleep(1000);} catch (InterruptedException e) {return;}
+                boolean running = true;
+                while (running) {
+                    try {
+                        if (resultQueueHolder.nextComputedQueue() == null) {
+                            Thread.sleep(NO_RENDER_SLEEP_MS);
+                        }
+                    } catch (InterruptedException e) {
+                        running = false;
+                    }
                 }
             });
             thread.start();
@@ -105,7 +160,7 @@ class NBodySim {
      * Handles the requests from the gRPC server to get and set configurables affecting the
      * behavior of the simulation. This is a facade class that delegates everything to the
      * {@link #resultQueueHolder}, {@link #bodyQueue}, and {@link #computationRunner} instance
-     * fields. The class is called by the gRPC server.
+     * fields. The class is called by the gRPC server: {@link NBodyServiceServer}
      *
      * @see NBodyServiceServer
      */
@@ -187,7 +242,8 @@ class NBodySim {
 
         /**
          * Makes a best effort to remove the passed number of bodies from the simulation, with the removals
-         * distributed evenly across the body queue. Suns aren't removed. Since the queue can be changing
+         * distributed evenly across the body queue. Suns aren't removed. (If you remove all the suns, you
+         * remove all the light sources and then you can't see anything.) Since the queue can be changing
          * concurrently it might not be possible to remove exactly the specified number of bodies.
          *
          * @param countToRemove the number of bodies to remove
@@ -239,6 +295,64 @@ class NBodySim {
                 }
             }
             return false;
+        }
+    }
+
+    /**
+     * Constructor from builder
+     */
+    private NBodySim(Builder builder) {
+        this.bodies = builder.bodies;
+        this.threads = builder.threads;
+        this.scaling = builder.scaling;
+        this.initialCam = builder.initialCam;
+        this.simThread = builder.simThread;
+        this.render = builder.render;
+        this.resolution = builder.resolution;
+    }
+
+    /**
+     * Standard builder pattern
+     */
+    static class Builder {
+        private List<Body> bodies;
+        private int threads;
+        private float scaling;
+        private SimpleVector initialCam;
+        private SimThread simThread;
+        private boolean render;
+        private int [] resolution;
+
+        Builder bodies(List<Body> bodies) {
+            this.bodies = bodies;
+            return this;
+        }
+        Builder threads(int threads) {
+            this.threads = threads;
+            return this;
+        }
+        Builder scaling(float scaling) {
+            this.scaling = scaling;
+            return this;
+        }
+        Builder initialCam(SimpleVector initialCam) {
+            this.initialCam = initialCam;
+            return this;
+        }
+        Builder simThread(SimThread simThread) {
+            this.simThread = simThread;
+            return this;
+        }
+        Builder render(boolean render) {
+            this.render = render;
+            return this;
+        }
+        Builder resolution(int [] resolution) {
+            this.resolution = resolution;
+            return this;
+        }
+        NBodySim build() {
+            return new NBodySim(this);
         }
     }
 }

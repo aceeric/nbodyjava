@@ -268,7 +268,7 @@ public class Body {
                         case VZ: vz = bodyMod.getFloat(); break;
                         case MASS: mass = bodyMod.getFloat(); break;
                         case RADIUS: radius = bodyMod.getFloat(); break;
-                        // TODO MAYBE REMOVE THIS OTHERWISE HAS TO BE SUPPORTED IN JME
+                        // TODO MAYBE REMOVE THIS OTHERWISE HAS TO BE SUPPORTED IN JME BUT CURRENTLY NOT FUNCTIONAL
                         case SUN: isSun = bodyMod.getBoolean(); break;
                         case COLLISION: collisionBehavior = bodyMod.getCollision(); break;
                         case COLOR: color = bodyMod.getColor(); break;
@@ -332,6 +332,11 @@ public class Body {
         if (withTelemetry) {
             System.out.println(String.format("id:%d x:%f y:%f z:%f vx:%f vy:%f vz:%f m:%f r:%f", id, x, y, z,
                     vx, vy, vz, mass, radius));
+        }
+        if (Float.isNaN(x) || Float.isNaN(y) || Float.isNaN(z)) {
+            logger.error("NaN values. ID={}", id);
+            System.err.println(String.format("Body id %d has NaN values - removing from sim", id));
+            exists = false;
         }
         return getRenderInfo();
     }

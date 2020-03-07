@@ -37,9 +37,6 @@ class BodyRenderInfo {
         this.y = y;
         this.z = z;
         this.radius = radius;
-        if (Float.isNaN(x) || Float.isNaN(y) || Float.isNaN(z)) {
-            logger.info("NaN values. ID={}", id);
-        }
         exists = true;
         this.isSun = isSun;
         this.color = color;

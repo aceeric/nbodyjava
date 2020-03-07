@@ -16,6 +16,7 @@ public class Main {
     private static final String DEFAULT_SIM_NAME = "sim1";
     private static final String NONE_SIM_NAME = "none";
 
+    private static int [] resolution = {2560, 1405};
     private static boolean render = true;
     private static int threads = 5;
     private static float scaling = .000000001F;
@@ -60,7 +61,15 @@ public class Main {
                 return;
             }
         }
-        new NBodySim().run(t.bodies, threads, scaling, initialCam, t.thread, render);
+        new NBodySim.Builder().bodies(t.bodies)
+                .threads(threads)
+                .scaling(scaling)
+                .initialCam(initialCam)
+                .simThread(t.thread)
+                .render(render)
+                .resolution(resolution)
+                .build()
+                .run();
     }
 
     /**
@@ -83,7 +92,7 @@ public class Main {
      * A very rudimentary command-line option parser. Accepts short-form opts like -t and long-form like --threads.
      * Accepts this form: -t 1 and --threads 1, as well as this form -t=1 and --threads=1. Does not accept
      * concatenated short form opts in cases where such opts don't accept params. E.g. doesn't handle: -ot=1 where
-     * -o is a parameterless option, and -t takes a value (one in this example.) Doesn't have any error handling
+     * -o is a parameterless option, and -t takes a value (one in this example.) Doesn't have great error handling
      * so - is fragile with respect to parsing errors.
      *
      * Sets class static fields corresponding to command line args.
@@ -105,6 +114,16 @@ public class Main {
         while ((arg = argQueue.poll()) != null) {
             try {
                 switch (arg.toLowerCase()) {
+                    case "-z":
+                    case "--resolution":
+                        String s = argQueue.poll();
+                        String [] sSplit = s.split("[xX]");
+                        if (sSplit.length != 2) {
+                            throw new RuntimeException("Invalid resolution: " + s);
+                        }
+                        resolution[0] = Integer.parseInt(sSplit[0]);
+                        resolution[1] = Integer.parseInt(sSplit[1]);
+                        break;
                     case "-r":
                     case "--no-render":
                         render = false;
@@ -146,6 +165,10 @@ public class Main {
                     case "--initial-cam":
                         initialCam = parseVector(argQueue.poll());
                         break;
+                    case "-h":
+                    case "--help":
+                        System.out.println("Sorry: help not implemented yet...");
+                        return false;
                     default:
                         System.out.println("ERROR: unknown option: " + arg);
                         return false;

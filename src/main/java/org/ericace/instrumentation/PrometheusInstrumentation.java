@@ -9,12 +9,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Wraps the Prometheus Java client libraries, thus implementing Prometheus instrumentation
+ * Wraps the Prometheus Java client libraries, thus implementing Prometheus instrumentation. See:
+ * https://github.com/prometheus/client_java
  */
 public class PrometheusInstrumentation extends Instrumentation {
 
     /**
-     * Defines the port that will expose the metrics to Prometheus. Can be manually inspected e.g. using
+     * Defines the port that will expose the n-body metrics to Prometheus. Can be manually inspected e.g. using
      * curl: watch -n 1 curl -s localhost:12345/metrics
      */
     private static final int PROMETHEUS_EXPORTER_PORT = 12345;
@@ -54,33 +55,34 @@ public class PrometheusInstrumentation extends Instrumentation {
     }
 
     @Override
-    public Metric register(String name, String label, MetricType metricType) {
+    public Metric register(String name, String label, String help, MetricType metricType) {
         if ((label != null && !name.contains("/")) || (label == null && name.contains("/"))) {
             throw new IllegalArgumentException("Metric name form is incompatible with label value");
         }
         if (metricType == MetricType.SUMMARY) {
-            return buildSummaryMetric(name, label);
+            return buildSummaryMetric(name, label, help);
         } else if (metricType == MetricType.GAUGE) {
-            return buildGaugeMetric(name, label);
+            return buildGaugeMetric(name, label, help);
         } else {
-            return buildCounterMetric(name, label);
+            return buildCounterMetric(name, label, help);
         }
     }
 
     /**
      * Builds a "counter" metric. A counter metric only ever increases, so the only valid operation
-     * is "increment"
+     * is "increment".
      *
      * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
      * @param label The metric label. Refer to the {@link Instrumentation} class for semantics
+     * @param help  A descriptive phrase for the metric to improve comprehension
      *
      * @return the Metric
      */
-    private Metric buildCounterMetric(String name, String label) {
+    private Metric buildCounterMetric(String name, String label, String help) {
         if (collectors.containsKey(name)) {
             return new PrometheusMetric(collectors.get(name), MetricType.COUNT, label);
         }
-        return new PrometheusMetric(buildMetric(Counter.build(), name), MetricType.COUNT, label);
+        return new PrometheusMetric(buildMetric(Counter.build(), name, help), MetricType.COUNT, label);
     }
 
     /**
@@ -89,14 +91,15 @@ public class PrometheusInstrumentation extends Instrumentation {
      *
      * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
      * @param label The metric label. Refer to the {@link Instrumentation} class for semantics
+     * @param help  A descriptive phrase for the metric to improve comprehension
      *
      * @return the Metric
      */
-    private Metric buildSummaryMetric(String name, String label) {
+    private Metric buildSummaryMetric(String name, String label, String help) {
         if (collectors.containsKey(name)) {
             return new PrometheusMetric(collectors.get(name), MetricType.SUMMARY, label);
         }
-        return new PrometheusMetric(buildMetric(Summary.build(), name), MetricType.SUMMARY, label);
+        return new PrometheusMetric(buildMetric(Summary.build(), name, help), MetricType.SUMMARY, label);
     }
 
     /**
@@ -104,28 +107,30 @@ public class PrometheusInstrumentation extends Instrumentation {
      *
      * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
      * @param label The metric label. Refer to the {@link Instrumentation} class for semantics
+     * @param help  A descriptive phrase for the metric to improve comprehension
      *
      * @return the Metric
      */
-    private Metric buildGaugeMetric(String name, String label) {
+    private Metric buildGaugeMetric(String name, String label, String help) {
         if (collectors.containsKey(name)) {
             return new PrometheusMetric(collectors.get(name), MetricType.GAUGE, label);
         }
-        return new PrometheusMetric(buildMetric(Gauge.build(), name), MetricType.GAUGE, label);
+        return new PrometheusMetric(buildMetric(Gauge.build(), name, help), MetricType.GAUGE, label);
     }
 
     /**
      * Builds the Prometheus metric that is wrapped by the class
      *
-     * @param b     A Prometheus builder
+     * @param b     A Prometheus collector builder
      * @param name  The metric name. Refer to the {@link Instrumentation} class for allowed naming
+     * @param help  A descriptive phrase for the metric to improve comprehension
      *
      * @return A Prometheus collector instance
      */
-    private Collector buildMetric(SimpleCollector.Builder b, String name) {
+    private Collector buildMetric(SimpleCollector.Builder b, String name, String help) {
         String [] nameElements = name.split("/");
         b.name(nameElements[0]);
-        b.help("future");
+        b.help(help);
         if (nameElements.length == 2) {
             b.labelNames(nameElements[1]);
         }

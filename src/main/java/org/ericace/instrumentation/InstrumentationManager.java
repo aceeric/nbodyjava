@@ -26,8 +26,8 @@ public class InstrumentationManager {
      * <p>
      * -Dorg.ericace.instrumentation.class=org.ericace.instrumentation.PrometheusInstrumentation
      * </p>
-     * If not provided to the JVM, then an instance of the {@link NoopInstrumentation} class is used,
-     * which, as the name implies, performs no instrumentation.
+     * If the property is not provided to the JVM, then an instance of the {@link NoopInstrumentation} class is
+     * created by default which, as the name implies, performs no instrumentation.
      */
     private static final String INSTRUMENTATION_CLASS_PROPERTY = "org.ericace.instrumentation.class";
 

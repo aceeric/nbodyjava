@@ -115,7 +115,8 @@ public class SimGenerator {
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
      * @param defaultBodyColor  Default body color
-     * @param simArgs           The number of additional bodies to inject after the sim starts. Defaults to 700
+     * @param simArgs           CSV in the form: radius of clump, mass of bodies in clump, body count to inject. E.g.:,
+     *                          "70F,90E25F,500" (these are the defaults if no arg provided)
      *
      * @return a simulation instance containing a list of bodies and a {@link SimThread} instance for injecting
      * additional bodies after the sim starts.
@@ -124,18 +125,22 @@ public class SimGenerator {
     static Sim sim3(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
                     String simArgs) {
         List<Body> bodies = new ArrayList<>();
+        String [] parsedSimArgs = simArgs == null ? new String[] {"50F","90E25F","700"} : simArgs.split(",");
+        float radius = parsedSimArgs.length >= 1 ? Float.parseFloat(parsedSimArgs[0]) : 70F;
+        float mass = parsedSimArgs.length >= 2 ? Float.parseFloat(parsedSimArgs[1]) : 90E25F;
+        int injectCnt = parsedSimArgs.length == 3 ? Integer.parseInt(parsedSimArgs[2]) : 500;
         // far away light source with minimal mass & gravity
         createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
         for (int j = -1; j <= 1; j += 2) {
             for (int i = 0; i < bodyCount / 2; ++i) {
                 Body.Color bodyColor = defaultBodyColor != null ? defaultBodyColor:
                     j == -1 ? Body.Color.YELLOW : Body.Color.RED;
-                SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), 50);
+                SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), radius);
                 bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, j * 121185000, j * 121185000, j * -121185000,
-                        90E25F, 5F, collisionBehavior, bodyColor, 1, 1, false));
+                        mass, 5F, collisionBehavior, bodyColor, 1, 1, false));
             }
         }
-        return new Sim(bodies, new sim3Thread(defaultBodyColor, collisionBehavior, simArgs));
+        return new Sim(bodies, new sim3Thread(defaultBodyColor, collisionBehavior, injectCnt));
     }
 
     /**
@@ -146,12 +151,12 @@ public class SimGenerator {
         private ConcurrentLinkedQueue<Body> bodyQueue;
         private final Body.CollisionBehavior collisionBehavior;
         private final Body.Color defaultBodyColor;
-        private final String simArgs;
+        private final int injectCnt;
 
-        public sim3Thread(Body.Color defaultBodyColor, Body.CollisionBehavior collisionBehavior, String simArgs) {
+        public sim3Thread(Body.Color defaultBodyColor, Body.CollisionBehavior collisionBehavior, int injectCnt) {
             this.defaultBodyColor = defaultBodyColor;
             this.collisionBehavior = collisionBehavior;
-            this.simArgs = simArgs;
+            this.injectCnt = injectCnt;
         }
         @Override
         public void stop() {
@@ -166,12 +171,11 @@ public class SimGenerator {
         @Override
         public void run() {
             int cnt = 0;
-            int max = simArgs == null ? 500 : Integer.parseInt(simArgs);
             while (running) {
                 try {
-                    if (cnt > max) {
+                    if (cnt >= injectCnt) {
                         running = false;
-                        System.out.println("Done: added " + max + " bodies");
+                        System.out.println("Done: added " + injectCnt + " bodies");
                     } else {
                         ++cnt;
                         float x = (float) Math.random() * 5 - 200;
@@ -231,7 +235,9 @@ public class SimGenerator {
      * @param bodyCount         Ignored
      * @param collisionBehavior Ignored
      * @param defaultBodyColor  Ignored
-     * @param simArgs           Ignored
+     * @param simArgs           CSV configuring the impactor in the form frag factor,frag step. E.g.:
+     *                          .01F,1000 (the default). The larger the factor, the more force is required to
+     *                          cause fragmentation. The larger the step, the more fragments are created.
      *
      * @return a simulation instance containing a list of bodies
      **/
@@ -239,22 +245,25 @@ public class SimGenerator {
     static Sim sim5(int bodyCount, Body.CollisionBehavior collisionBehavior, Body.Color defaultBodyColor,
                     String simArgs) {
         List<Body> bodies = new ArrayList<>();
+        String [] parsedSimArgs = simArgs == null ? new String[] {".01F","1000"} : simArgs.split(",");
+        float fragFactor = parsedSimArgs.length >= 1 ? Float.parseFloat(parsedSimArgs[0]) : .01F;
+        float fragStep = parsedSimArgs.length >= 2 ? Float.parseFloat(parsedSimArgs[1]) : 1000;
         // far away light source with minimal mass & gravity
         createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
         // planet
         bodies.add(new Body(Body.nextID(), 0, 0, 0, 12, 12, 12, 9E30F, 145F, Body.CollisionBehavior.ELASTIC,
                 Body.Color.RED, 0, 0, false));
         // moons
-        bodies.add(new Body(Body.nextID(), 50, 0, -420, -980000000, 12, -500000000, 9E20F, 25F,
+        bodies.add(new Body(Body.nextID(), 50, 0, -420, -980000000, 12, -500000000, 9E20F, 35F,
                 Body.CollisionBehavior.SUBSUME, Body.Color.LIGHTGRAY, 0, 0, false));
-        bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E15F, 5F,
-                Body.CollisionBehavior.SUBSUME, Body.Color.CYAN, 0, 0, false));
+        bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E19F, 5F,
+                Body.CollisionBehavior.ELASTIC, Body.Color.CYAN, 0, 0, false));
         bodies.add(new Body(Body.nextID(), 70, 0, -520, -880000000, -10000, -300000000 , 11E22F, 15F,
-                Body.CollisionBehavior.SUBSUME, Body.Color.DARKGRAY, 0, 0, false));
+                Body.CollisionBehavior.ELASTIC, Body.Color.DARKGRAY, 0, 0, false));
 
         // impactor
         bodies.add(new Body(Body.nextID(), 900, -900, 900, -450000000, 723000000, -350000000, 9E12F, 10F,
-                Body.CollisionBehavior.FRAGMENT, Body.Color.YELLOW, .01F, 1000, false));
+                Body.CollisionBehavior.FRAGMENT, Body.Color.YELLOW, fragFactor, fragStep, false));
         return new Sim(bodies, new sim5Thread());
     }
 

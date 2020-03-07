@@ -27,11 +27,12 @@ import java.util.Map;
 public final class JMEApp extends SimpleApplication {
     private static final Logger logger = LogManager.getLogger(JMEApp.class);
     private static final Metric metricComputationCount = InstrumentationManager.getInstrumentation()
-            .registerCounter("nbody_computation_count/thread", "renderer");
+            .registerLabeledCounter("nbody_computation_count/thread", "renderer", "Simulation cycles");
     private static final Metric metricBodyCountGauge = InstrumentationManager.getInstrumentation()
-            .registerGauge("nbody_body_count_gauge/thread", "renderer");
+            .registerLabeledGauge("nbody_body_count_gauge/thread", "renderer", "Number of rendered bodies");
     private static final Metric metricNoQueuesCount = InstrumentationManager.getInstrumentation()
-            .registerCounter("nbody_no_queues_to_render_count");
+            .registerCounter("nbody_no_queues_to_render_count",
+                    "Count of rendering engine outrunning computation runner");
 
     /**
      * Camera functionality:
@@ -47,6 +48,12 @@ public final class JMEApp extends SimpleApplication {
     private static final int CAM_SPEED = 200;
 
     /**
+     * When incrementing or decrementing the cam speed via the keypad plus/minus, use
+     * this increment
+     */
+    private static final int CAM_SPEED_STEP = 100;
+
+    /**
      * Defines the far side of the frustrum
      */
     private static final float FRUSTRUM_FAR = 400000F;
@@ -55,6 +62,16 @@ public final class JMEApp extends SimpleApplication {
      * The key mappings used by the class
      */
     private static final String F12MappingName = "F12";
+
+    /**
+     * Supports increasing cam speed
+     */
+    private static final String increaseCamSpeedMappingName = "KEYPAD_PLUS";
+
+    /**
+     * Supports decreasing cam speed
+     */
+    private static final String decreaseCamSpeedMappingName = "KEYPAD_MINUS";
 
     /**
      * True if the fly cam is currently attached, else false
@@ -90,16 +107,15 @@ public final class JMEApp extends SimpleApplication {
      * @param resultQueueHolder provides the updated list of bodies to render each cycle. See {@link #resultQueueHolder}
      * @param initialCam        Initial cam position. See {@link #initialCam}
      */
-    private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam) {
+    private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam, int [] resolution) {
         super();
 
         AppSettings settings = new AppSettings(true);
         settings.setUseInput(true);
-        settings.setResolution(2560, 1380);
-        settings.setFrequency(60);
-        settings.setBitsPerPixel(24);
+        settings.setResolution(resolution[0], resolution[1]);
         settings.setFullscreen(false);
         settings.setResizable(false);
+        settings.setTitle("N-Body Java Simulation");
         setSettings(settings);
         setShowSettings(false);
         setPauseOnLostFocus(false);
@@ -114,8 +130,9 @@ public final class JMEApp extends SimpleApplication {
      * Starts the JME app (which in turn starts a thread). Refer to constructor - {@link #JMEApp} - for
      * param explanation
      */
-    public static void start(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam) {
-        new JMEApp(bodySize, resultQueueHolder, initialCam).start();
+    public static void start(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam,
+                             int [] resolution) {
+        new JMEApp(bodySize, resultQueueHolder, initialCam, resolution).start();
     }
 
     /**
@@ -139,6 +156,12 @@ public final class JMEApp extends SimpleApplication {
         // connect the F12 key to handle engaging/disengaging the fly cam
         getInputManager().addMapping(F12MappingName, new KeyTrigger(KeyInput.KEY_F12));
         getInputManager().addListener(f12Listener, F12MappingName);
+
+        // connect keypad +- to vary the cam speed
+        getInputManager().addMapping(increaseCamSpeedMappingName, new KeyTrigger(KeyInput.KEY_ADD));
+        getInputManager().addMapping(decreaseCamSpeedMappingName, new KeyTrigger(KeyInput.KEY_SUBTRACT));
+        getInputManager().addListener(camSpeed, increaseCamSpeedMappingName, decreaseCamSpeedMappingName);
+
         // turn off debug stats initially
         stateManager.getState(StatsAppState.class).toggleStats();
     }
@@ -180,6 +203,13 @@ public final class JMEApp extends SimpleApplication {
         return geo;
     }
 
+    /**
+     * Translate {@link Body} color to JME {@link ColorRGBA}
+     *
+     * @param color the {@code Body} color
+     *
+     * @return the JMonkeyEngine color
+     */
     private static ColorRGBA xlatColor(Body.Color color) {
         if (color == null) {
             return ColorRGBA.randomColor();
@@ -225,7 +255,35 @@ public final class JMEApp extends SimpleApplication {
     };
 
     /**
-     * Updates the positions of all the bodies in the scene graph
+     * Increases of decreases the cam speed by increments of
+     */
+    private ActionListener camSpeed = (name, isPressed, tpf) -> {
+        if (name.equals(increaseCamSpeedMappingName) && isPressed) {
+            flyCam.setMoveSpeed(flyCam.getMoveSpeed() + CAM_SPEED_STEP);
+        } else if (name.equals(decreaseCamSpeedMappingName) && isPressed) {
+            float curSpeed = flyCam.getMoveSpeed();
+            if (curSpeed > 0) {
+                curSpeed = curSpeed < CAM_SPEED_STEP ? 0 : curSpeed - CAM_SPEED_STEP;
+                flyCam.setMoveSpeed(curSpeed);
+            }
+        }
+        System.out.println(name + ": new cam speed=" + flyCam.getMoveSpeed());
+        logger.debug("New cam speed: {}", flyCam.getMoveSpeed());
+    };
+
+
+    /**
+     * Updates the positions of all the bodies in the scene graph. This class subclasses the {@link SimpleApplication}
+     * class. Therefore, when this class's {@code start} method is invoked, it delegates to the base class method
+     * of the same name. The result is the creation of a thread which, in turn, invokes this method according to the
+     * base class's frame rate.
+     *
+     * <p>This method uses the instance field {@link #resultQueueHolder} to get a queue of bodies whose positions
+     * and other attributes have been computed by another thread. Assuming such a queue is available, it walks the
+     * queue and renders the bodies according to their updated positions and attributes.</p>
+     *
+     * <p>In some cases, a body is designated as no longer existing. In this case, the method removes the
+     * body from the scene graph.</p>
      *
      * @param tpf unused
      */
