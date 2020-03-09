@@ -63,7 +63,7 @@ public class SimGenerator {
                     mass = radius * SOLAR_MASS * .000005F;
                     SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(xc, y, zc), 30);
                     bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, radius, collisionBehavior,
-                            color, 1, 1, false));
+                            color, 1, 1, false, null, null, false));
                 }
             }
         }
@@ -92,7 +92,7 @@ public class SimGenerator {
             float mass = 2 * ((float) Math.random()) * SOLAR_MASS * .000005F;
             float radius = (float) Math.random() * 4;
             bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, -1124500000F, -824500000F, -1124500000F, mass,
-                    radius, collisionBehavior, defaultBodyColor, 1, 1, false));
+                    radius, collisionBehavior, defaultBodyColor, 1, 1, false, null, null, false));
         }
         return new Sim(bodies, null);
     }
@@ -137,7 +137,7 @@ public class SimGenerator {
                     j == -1 ? Body.Color.YELLOW : Body.Color.RED;
                 SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(j * 70F, j * 70F, j * 70F), radius);
                 bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, j * 121185000, j * 121185000, j * -121185000,
-                        mass, 5F, collisionBehavior, bodyColor, 1, 1, false));
+                        mass, 5F, collisionBehavior, bodyColor, 1, 1, false, null, null, false));
             }
         }
         return new Sim(bodies, new sim3Thread(defaultBodyColor, collisionBehavior, injectCnt));
@@ -185,7 +185,7 @@ public class SimGenerator {
                         float mass = radius * 2.93E+12F;
                         Body.Color color = defaultBodyColor == null ? Body.Color.BLUE : defaultBodyColor;
                         Body b = new Body(Body.nextID(), x, y, z, -99827312, 112344240, 323464000, mass, radius,
-                                collisionBehavior, color, 1, 1, false);
+                                collisionBehavior, color, 1, 1, false, null, null, false);
                         bodyQueue.add(b);
                         Thread.sleep(500);
                     }
@@ -218,7 +218,7 @@ public class SimGenerator {
             float radius = 2;
             bodies.add(new Body(Body.nextID(), (i*4) + 100, 0, 0, // x,y,z
                     0, 0, -824500000 + (i * 1E6F), // vx, vy, vz
-                    mass, radius, collisionBehavior, defaultBodyColor, 1, 1, false));
+                    mass, radius, collisionBehavior, defaultBodyColor, 1, 1, false, null, null, false));
         }
         return new Sim(bodies, null);
     }
@@ -252,18 +252,18 @@ public class SimGenerator {
         createSunAndAddToQueue(bodies, 100000, 100000, 100000, 1, 500);
         // planet
         bodies.add(new Body(Body.nextID(), 0, 0, 0, 12, 12, 12, 9E30F, 145F, Body.CollisionBehavior.ELASTIC,
-                Body.Color.RED, 0, 0, false));
+                Body.Color.RED, 0, 0, false, null, null, false));
         // moons
         bodies.add(new Body(Body.nextID(), 50, 0, -420, -980000000, 12, -500000000, 9E20F, 35F,
-                Body.CollisionBehavior.SUBSUME, Body.Color.LIGHTGRAY, 0, 0, false));
+                Body.CollisionBehavior.SUBSUME, Body.Color.LIGHTGRAY, 0, 0, false, null, null, false));
         bodies.add(new Body(Body.nextID(), -400, 50, 405, 530000000, -313000000, 520000000, 9E19F, 5F,
-                Body.CollisionBehavior.ELASTIC, Body.Color.CYAN, 0, 0, false));
+                Body.CollisionBehavior.ELASTIC, Body.Color.CYAN, 0, 0, false, null, null, false));
         bodies.add(new Body(Body.nextID(), 70, 0, -520, -880000000, -10000, -300000000 , 11E22F, 15F,
-                Body.CollisionBehavior.ELASTIC, Body.Color.DARKGRAY, 0, 0, false));
+                Body.CollisionBehavior.ELASTIC, Body.Color.DARKGRAY, 0, 0, false, null, null, false));
 
         // impactor
         bodies.add(new Body(Body.nextID(), 900, -900, 900, -450000000, 723000000, -350000000, 9E12F, 10F,
-                Body.CollisionBehavior.FRAGMENT, Body.Color.YELLOW, fragFactor, fragStep, false));
+                Body.CollisionBehavior.FRAGMENT, Body.Color.YELLOW, fragFactor, fragStep, false, null, null, false));
         return new Sim(bodies, new sim5Thread());
     }
 
@@ -367,7 +367,7 @@ public class SimGenerator {
                     float fragFactor = fields.length >= 12 ? Float.parseFloat(fields[12].trim()) : 1;
                     float fragStep = fields.length >= 13 ? Float.parseFloat(fields[13].trim()) : 1;
                     Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, collisionBehavior, color,
-                            fragFactor, fragStep, false);
+                            fragFactor, fragStep, false, null, null, false);
                     if (isSun) {
                         b.setSun();
                     }
@@ -415,7 +415,7 @@ public class SimGenerator {
      */
     private static void createSunAndAddToQueue(List<Body> bodies, float x, float y, float z, float mass, float radius) {
         Body theSun = new Body(Body.nextID(), x, y, z, -3, -3, -5, mass, radius, Body.CollisionBehavior.SUBSUME,
-                null, 1, 1, false);
+                null, 1, 1, false, null, null, false);
         theSun.setSun();
         bodies.add(theSun);
     }

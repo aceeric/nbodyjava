@@ -38,6 +38,16 @@ public class Body {
     private final int id;
 
     /**
+     * A user-friendly name
+     */
+    private final String name;
+
+    /**
+     * A class
+     */
+    private final String clas;
+
+    /**
      * Set to True whenever this object collided with another
      */
     private volatile boolean collided;
@@ -64,7 +74,10 @@ public class Body {
     private static final int MAX_FRAGS = 2000;
 
     /**
-     * True while a body is fragmenting because of a collision
+     * True while a body is fragmenting because of a collision: In order to avoid overloading a single compute cycle,
+     * a body can fragment in stages across consecutive cycles. The only other option I could come up
+     * with was to fragment all at once which caused the sim to suspend noticeably when a body fragmented into
+     * a large number of bodies. This is a compromise
      */
     private boolean fragmenting;
 
@@ -114,6 +127,12 @@ public class Body {
     private boolean withTelemetry;
 
     /**
+     * Don't delete from sim when the gRPC delete bodies method is invoked, unless the method
+     * is invoked with -1 as the count to remove, in which case everything is removed no matter what
+     */
+    private boolean pinned;
+
+    /**
      * Defines the supported collision responses. SUBSUME means that two bodies merge into one
      * upon collision: the larger radius body subsumes the smaller. ELASTIC_COLLISION means that the
      * bodies bounce off each other. FRAGMENT means a body breaks into smaller bodies upon collision
@@ -154,6 +173,27 @@ public class Body {
      */
     public int getId() {
         return id;
+    }
+
+    /**
+     * @return the body name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return the body class
+     */
+    public String getClas() {
+        return clas;
+    }
+
+    /**
+     * @return whether the body is pinned
+     */
+    public boolean isPinned() {
+        return pinned;
     }
 
     /**
@@ -228,7 +268,7 @@ public class Body {
      */
     public Body(int id, float x, float y, float z, float vx, float vy, float vz, float mass, float radius,
                 CollisionBehavior collisionBehavior, Color color, float fragFactor, float fragmentationStep,
-                boolean withTelemetry) {
+                boolean withTelemetry, String name, String clas, boolean pinned) {
         exists      = true;
         this.id     = id;
         this.x      = x;
@@ -245,6 +285,9 @@ public class Body {
         this.fragmentationStep = fragmentationStep;
         lock = new ReentrantLock();
         this.withTelemetry = withTelemetry;
+        this.name = name;
+        this.clas = clas;
+        this.pinned = pinned;
     }
 
     /**
@@ -399,6 +442,7 @@ public class Body {
                             break;
                         }
                         if (Body.this != otherBody && otherBody.exists && !otherBody.fragmenting) {
+                            // calcForceFrom updates fx,fy,fz
                             ForceCalcResult result = calcForceFrom(otherBody);
                             if (result.collided) {
                                 resolveCollision(result.dist, otherBody);
@@ -488,7 +532,7 @@ public class Body {
         // Only allow one collision per body per cycle. Once a collision happens, continue to apply gravitational
         // force to the collided body. Allowing a body to collide multiple times caused odd things to happen
         // when many bodies were tightly compacted (not sure why) and it also impacts performance - the collision
-        // calculation is expensive
+        // calculation is expensive. This is a compromise
         if (collided || dist > (radius + otherBody.radius)) {
             double force = (G * mass * otherBody.mass) / (dist * dist);
             // only one thread at a time will ever modify force values. If either this or other body
@@ -816,7 +860,7 @@ public class Body {
             --fragInfo.fragments;
             SimpleVector v = SimpleVector.getVectorEven(fragInfo.curPos, fragInfo.radius * .9F);
             bodyQueue.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, fragInfo.mass, fragInfo.newRadius,
-                    CollisionBehavior.ELASTIC, color, 0, 0, false));
+                    CollisionBehavior.ELASTIC, color, 0, 0, false, name, clas, false));
             if (++cnt >= MAX_FRAGS_PER_CYCLE) {
                 break;
             }

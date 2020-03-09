@@ -35,15 +35,18 @@ public final class JMEApp extends SimpleApplication {
                     "Count of rendering engine outrunning computation runner");
 
     /**
-     * Camera functionality:
-     * W     = Forward
-     * A     = Left
-     * S     = Back
-     * D     = Right
-     * Q     = Up
-     * Z     = Down
-     * Mouse = Look
-     * ESC   = exit simulation
+     * Camera/Keyboard functionality:
+     * W       = Cam Forward
+     * A       = Left
+     * S       = Back
+     * D       = Right
+     * Q       = Up
+     * Z       = Down
+     * Mouse   = Look
+     * keypad+ = increase cam speed
+     * keypad- = decrease cam speed
+     * F12     = unbind/bind keyboard from/to the sim window
+     * ESC     = exit simulation
      */
     private static final int CAM_SPEED = 200;
 
@@ -66,12 +69,12 @@ public final class JMEApp extends SimpleApplication {
     /**
      * Supports increasing cam speed
      */
-    private static final String increaseCamSpeedMappingName = "KEYPAD_PLUS";
+    private static final String increaseCamSpeedMappingName = "KEYPAD+";
 
     /**
      * Supports decreasing cam speed
      */
-    private static final String decreaseCamSpeedMappingName = "KEYPAD_MINUS";
+    private static final String decreaseCamSpeedMappingName = "KEYPAD-";
 
     /**
      * True if the fly cam is currently attached, else false
@@ -79,7 +82,7 @@ public final class JMEApp extends SimpleApplication {
     private boolean flyCamAttached = true;
 
     /**
-     * Holds the bodies in the simulation - the map key is the ID of the body
+     * Holds the bodies in the simulation for JMonkey - the map key is the ID of the body
      */
     private Map<Integer, Geometry> geos;
 
@@ -106,6 +109,7 @@ public final class JMEApp extends SimpleApplication {
      *                          the class uses to manage the bodies in the scene graph
      * @param resultQueueHolder provides the updated list of bodies to render each cycle. See {@link #resultQueueHolder}
      * @param initialCam        Initial cam position. See {@link #initialCam}
+     * @param resolution        Screen resolution {x,y}
      */
     private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam, int [] resolution) {
         super();
@@ -168,7 +172,7 @@ public final class JMEApp extends SimpleApplication {
 
     /**
      * Adds the passed BodyRenderInfo to the JME scene graph, and also to the local
-     * array of Geometry instances. Each Geometry instance holds the JME-specific info
+     * {@code Map} of Geometry instances. Each Geometry instance holds the JME-specific info
      * corresponding to a {@code Body} in the simulation.
      *
      * @param b the instance to add
@@ -255,7 +259,7 @@ public final class JMEApp extends SimpleApplication {
     };
 
     /**
-     * Increases of decreases the cam speed by increments of
+     * Increases of decreases the cam speed by increments of {@link #CAM_SPEED_STEP}
      */
     private ActionListener camSpeed = (name, isPressed, tpf) -> {
         if (name.equals(increaseCamSpeedMappingName) && isPressed) {
@@ -267,10 +271,8 @@ public final class JMEApp extends SimpleApplication {
                 flyCam.setMoveSpeed(curSpeed);
             }
         }
-        System.out.println(name + ": new cam speed=" + flyCam.getMoveSpeed());
         logger.debug("New cam speed: {}", flyCam.getMoveSpeed());
     };
-
 
     /**
      * Updates the positions of all the bodies in the scene graph. This class subclasses the {@link SimpleApplication}
@@ -315,7 +317,7 @@ public final class JMEApp extends SimpleApplication {
                 }
                 // allow a body's color to change
                 MatParam mp = g.getMaterial().getParam("Diffuse");
-                if (b.color != Body.Color.RANDOM && mp != null) {
+                if (b.color != null && b.color != Body.Color.RANDOM && mp != null) {
                     ColorRGBA c = (ColorRGBA) mp.getValue();
                     if (! c.equals(xlatColor(b.color))) {
                         g.getMaterial().setColor("Diffuse", xlatColor(b.color));

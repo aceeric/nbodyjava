@@ -1,5 +1,6 @@
 package org.ericace.sim;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ericace.grpcserver.NBodyServiceServer;
@@ -82,7 +83,7 @@ class NBodySim {
      *     <li>Initializes a result queue holder to hold computed results</li>
      *     <li>Initializes a computation runner and starts it, which perpetually computes the sim in a thread,
      *         placing the computed results into the result queue holder</li>
-     *     <li>Initializes a JMonkey App and starts it which renders the computed results from the result queue
+     *     <li>Initializes a JMonkey App and starts it - which renders the computed results from the result queue
      *         perpetually in a thread</li>
      *     <li>Starts a gRPC server to handle requests from external entities to modify various
      *         aspects of the simulation</li>
@@ -121,8 +122,8 @@ class NBodySim {
      * and return it so the caller's logic is identical in both cases. If starting a thread, then the started
      * thread will consume the passed {@code resultQueueHolder} so the {@link ComputationRunner} can run at
      * max throughput. This is useful for testing the max number of bodies that the Computation Runner can compute
-     * and still stay within the target 50-60 frames per second. It factors the rendering engine's performance
-     * out.
+     * and still stay within the target 50-60 frames (computation cycles) per second. It factors the rendering
+     * engine's performance out.
      *
      * @param render            True if rendering, else false: not rendering
      * @param resultQueueHolder If not rendering, the created thread will consume this queue
@@ -242,23 +243,30 @@ class NBodySim {
 
         /**
          * Makes a best effort to remove the passed number of bodies from the simulation, with the removals
-         * distributed evenly across the body queue. Suns aren't removed. (If you remove all the suns, you
-         * remove all the light sources and then you can't see anything.) Since the queue can be changing
-         * concurrently it might not be possible to remove exactly the specified number of bodies.
+         * distributed evenly across the body queue. Pinned objects aren't removed (with the exception described
+         * in the {@code countToRemove} arg below. Since the queue can be changing concurrently it might
+         * not be possible to remove exactly the specified number of bodies.
          *
-         * @param countToRemove the number of bodies to remove
+         * @param countToRemove the number of bodies to remove. If -1, remove everything, even pinned
+         *                      bodies
          */
         @Override
         public void removeBodies(int countToRemove)  {
+            if (countToRemove == -1) {
+                for (Body b : bodyQueue) {
+                    b.setNotExists();
+                }
+                return;
+            }
             int removedCnt = 0;
-            int step = countToRemove < 0 || countToRemove > bodyQueue.size() ? 1 : bodyQueue.size() / countToRemove;
+            int step = countToRemove > bodyQueue.size() ? 1 : bodyQueue.size() / countToRemove;
             int iter = 0;
             boolean shouldRemove = false;
             for (Body b : bodyQueue) {
                 if (iter++ % step == 0) {
                     shouldRemove = true;
                 }
-                if (shouldRemove && !b.isSun() && b.exists()) {
+                if (shouldRemove && !b.isPinned() && b.exists()) {
                     b.setNotExists();
                     shouldRemove = false;
                     if (++removedCnt >= countToRemove) {
@@ -277,9 +285,10 @@ class NBodySim {
         @Override
         public int addBody(float mass, float x, float y, float z, float vx, float vy, float vz,
                            float radius, boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor,
-                           float fragFactor, float fragStep, boolean withTelemetry)  {
+                           float fragFactor, float fragStep, boolean withTelemetry, String name, String clas,
+                           boolean pinned)  {
             Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, behavior, bodyColor, fragFactor,
-                    fragStep, withTelemetry);
+                    fragStep, withTelemetry, name, clas, pinned);
             if (isSun) {
                 b.setSun();
             }
@@ -288,13 +297,21 @@ class NBodySim {
         }
 
         @Override
-        public boolean modBody(int id, List<BodyMod> bodyMods)  {
+        public ModBodyResult modBody(int id, String bodyName, String bodyClass, List<BodyMod> bodyMods)  {
+            int modified = 0;
+            int found = 0;
             for (Body b : bodyQueue) {
-                if (b.getId() == id) {
-                    return b.mod(bodyMods);
+                if (!StringUtils.isEmpty(bodyClass) && bodyClass.equalsIgnoreCase(b.getClas()) ||
+                    !StringUtils.isEmpty(bodyName) && bodyName.equalsIgnoreCase(b.getName()) ||
+                    id == b.getId()) {
+                    ++found;
+                    modified += b.mod(bodyMods) ? 1 : 0;
                 }
             }
-            return false;
+            if (found == 0) return ModBodyResult.NO_MATCH;
+            if (modified == 0) return ModBodyResult.MOD_NONE;
+            if (found == modified) return ModBodyResult.MOD_ALL;
+            return ModBodyResult.MOD_SOME;
         }
     }
 

@@ -58,30 +58,42 @@ message CurrentConfig {
 
 // All the params required to represent a body in the simulation
 message BodyDescription {
-  float mass = 2;
-  float x = 3;
-  float y = 4;
-  float z = 5;
-  float vx = 6;
-  float vy = 7;
-  float vz = 8;
-  float radius = 9;
-  bool is_sun = 10;
-  CollisionBehaviorEnum collision_behavior = 11;
-  BodyColorEnum body_color = 12;
-  float frag_factor = 13;
-  float frag_step = 14;
-  bool with_telemetry = 15;
+  float x = 1;
+  float y = 2;
+  float z = 3;
+  float vx = 4;
+  float vy = 5;
+  float vz = 6;
+  float mass = 7;
+  float radius = 8;
+  bool is_sun = 9;
+  CollisionBehaviorEnum collision_behavior = 10;
+  BodyColorEnum body_color = 11;
+  float frag_factor = 12;
+  float frag_step = 13;
+  bool with_telemetry = 14;
+  string name = 15;
+  string class = 16;
+  bool pinned = 17;
 }
 
-// pass an array of params. E.g. from the cli:
-// grpc_cli call localhost:50051 ModBody "id: 1 p: 'radius=100' 'vx=200' 'collision=NONE'"
+// Modify body properties. To modify by ID, pass the ID and omit name and class:
+//   ModBody "id: 1 p: 'radius=100'"
+// To modify by name or class, pass the ID as -1, and provide name or class:
+//   ModBody "id: -1 name='jupiter' p: 'radius=100'"
+// ID has to be passed in this case because the cli tool (or the protobuf protocol) passes a non-specified
+// int field as zero, which happens to be a valid body ID pretty much all the time...
+// Pass an array of params via the cli by repeating the 'p' message:
+//   ModBody "id: 1 p: 'radius=100' p: 'vx=200' p: 'collision=NONE'"
 message ModBodyMessage {
   int64 id = 1;
-  repeated string p = 2;
+  string name = 2;
+  string class = 3;
+  repeated string p = 4;
 }
 
 // Allows for setting collision behavior
+// TODO this is not implemented should it be set default collision behavior??
 message CollisionBehavior {
   CollisionBehaviorEnum collision_behavior = 1;
 }
@@ -101,7 +113,7 @@ message RestitutionCoefficient {
   float restitution_coefficient = 1;
 }
 
-// Returned to clients
+// Returned to clients from all messages in the API
 message ResultCode {
   enum ResultCodeEnum {
     OK = 0;

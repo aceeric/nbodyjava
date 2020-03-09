@@ -189,11 +189,14 @@ public class NBodyServiceServer {
             float fragFactor = request.getFragFactor();
             float fragStep = request.getFragStep();
             boolean withTelemetry = request.getWithTelemetry();
+            String name = request.getName();
+            String clas = request.getClass_();
+            boolean pinned = request.getPinned();
             Body.CollisionBehavior behavior = xlatCollisionBehavior(request.getCollisionBehavior());
             Body.Color bodyColor = xlatColor(request.getBodyColor());
 
             int bodyID = configurables.addBody(mass, x, y, z, vx, vy, vz, radius, isSun, behavior, bodyColor,
-                    fragFactor, fragStep, withTelemetry);
+                    fragFactor, fragStep, withTelemetry, name, clas, pinned);
             ResultCode resultCode = ResultCode.newBuilder()
                     .setResultCode(ResultCode.ResultCodeEnum.OK)
                     .setMessage(String.format("Added body ID: %d", bodyID))
@@ -206,6 +209,8 @@ public class NBodyServiceServer {
         public void modBody(org.ericace.grpcserver.ModBodyMessage request,
                             io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode> responseObserver) {
             int bodyId = (int) request.getId();
+            String bodyName = request.getName();
+            String bodyClass = request.getClass_();
             List<BodyMod> bodyMods = new ArrayList<>();
             for (int i = 0; i < request.getPCount(); ++i) {
                 String p = request.getP(i);
@@ -220,11 +225,10 @@ public class NBodyServiceServer {
                 }
                 bodyMods.add(bodyMod);
             }
-            boolean wasModified = configurables.modBody(bodyId, bodyMods);
-            String msg = wasModified ? "Body was modified" : "Body could not be modified - possibly could not be locked";
+            Configurables.ModBodyResult modBodyResult = configurables.modBody(bodyId, bodyName, bodyClass, bodyMods);
             ResultCode resultCode = ResultCode.newBuilder()
                     .setResultCode(ResultCode.ResultCodeEnum.OK)
-                    .setMessage(msg)
+                    .setMessage(modBodyResult.getResult())
                     .build();
             responseObserver.onNext(resultCode);
             responseObserver.onCompleted();
@@ -320,9 +324,9 @@ public class NBodyServiceServer {
         @Override
         public int addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
                            boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
-                           float fragStep, boolean withTelemetry)  {return 0;}
+                           float fragStep, boolean withTelemetry, String name, String clas, boolean pinned)  {return 0;}
 
         @Override
-        public boolean modBody(int id, List<BodyMod> bodyMods)  {return true;}
+        public ModBodyResult modBody(int id, String bodyName, String bodyClass, List<BodyMod> bodyMods) {return null;}
     }
 }

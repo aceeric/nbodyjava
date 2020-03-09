@@ -106,10 +106,21 @@ public interface Configurables {
      */
     int addBody(float mass, float x, float y, float z, float vx, float vy, float vz, float radius,
                 boolean isSun, Body.CollisionBehavior behavior, Body.Color bodyColor, float fragFactor,
-                float fragStep, boolean withTelemetry);
+                float fragStep, boolean withTelemetry, String name, String clas, boolean pinned);
 
+    enum ModBodyResult {
+        NO_MATCH("No matching bodies"),
+        MOD_ALL("All matching bodies were modified"),
+        MOD_SOME("Some matching bodies were modified"),
+        MOD_NONE("No matching bodies were modified");
+        private String result;
+        private ModBodyResult(String result) {
+            this.result = result;
+        }
+        public String getResult() {return result;}
+    }
     /**
      * Modifies body properties
      */
-    boolean modBody(int id, List<BodyMod> bodyMods);
+    ModBodyResult modBody(int id, String name, String clas, List<BodyMod> bodyMods);
 }
