@@ -63,18 +63,6 @@ public interface Configurables {
     int getComputationThreads();
 
     /**
-     * Sets the collision behavior
-     *
-     * @param behavior the behavior to set
-     */
-    void setCollisionBehavior(CollisionBehavior behavior);
-
-    /**
-     * @return the current collision behavior
-     */
-    CollisionBehavior getCollisionBehavior();
-
-    /**
      * Sets the coefficient of restitution for elastic collisions
      *
      * @param R the value to set

@@ -26,9 +26,6 @@ service NBodyService {
   // that the apparent motion of the simulation is faster or slower
   rpc SetSmoothing (Factor) returns (ResultCode) {}
 
-  // Sets the collision behavior. See the message enum for explanation
-  rpc SetCollisionBehavior (CollisionBehavior) returns (ResultCode) {}
-
   // Sets the coefficient of restitution for elastic collisions
   rpc SetRestitutionCoefficient (RestitutionCoefficient) returns (ResultCode) {}
 
@@ -51,8 +48,6 @@ message CurrentConfig {
   int64  result_queue_size = 2;
   int64  computation_threads = 3;
   float smoothing_factor = 4;
-  // default collision behavior
-  CollisionBehaviorEnum collision_behavior = 5;
   float restitution_coefficient = 6;
 }
 
@@ -92,18 +87,12 @@ message ModBodyMessage {
   repeated string p = 4;
 }
 
-// Allows for setting collision behavior
-// TODO this is not implemented should it be set default collision behavior??
-message CollisionBehavior {
-  CollisionBehaviorEnum collision_behavior = 1;
-}
-
 // A generic int arg
 message ItemCount {
   int64 item_count = 1;
 }
 
-// A smoothing  factor
+// A smoothing factor
 message Factor {
   float factor = 1;
 }

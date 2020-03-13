@@ -1,5 +1,6 @@
 package org.ericace.sim;
 
+import org.ericace.globals.Globals;
 import org.ericace.nbody.Body;
 import org.ericace.nbody.SimpleVector;
 
@@ -14,7 +15,7 @@ import java.util.Queue;
 public class Main {
 
     private static final String DEFAULT_SIM_NAME = "sim1";
-    private static final String NONE_SIM_NAME = "none";
+    private static final String EMPTY_SIM = "empty";
 
     private static int [] resolution = {2560, 1405};
     private static boolean render = true;
@@ -46,7 +47,7 @@ public class Main {
         if (csvPath != null) {
             List<Body> bodies = SimGenerator.fromCSV(csvPath, bodyCount, defaultCollisionBehavior, defaultBodyColor);
             t = new Sim(bodies, null);
-        } else if (NONE_SIM_NAME.equalsIgnoreCase(simName)) {
+        } else if (EMPTY_SIM.equalsIgnoreCase(simName)) {
             t = new Sim();
         } else {
             Method method = getSimMethodFor(simName);
@@ -139,7 +140,7 @@ public class Main {
                         break;
                     case "-c":
                     case "--collision":
-                        defaultCollisionBehavior = SimGenerator.parseCollisionBehavior(argQueue.poll());
+                        defaultCollisionBehavior = Globals.parseCollisionBehavior(argQueue.poll());
                         break;
                     case "-b":
                     case "--bodies":
@@ -159,7 +160,7 @@ public class Main {
                         break;
                     case "-l":
                     case "--body-color":
-                        defaultBodyColor = SimGenerator.parseColor(argQueue.poll());
+                        defaultBodyColor = Globals.parseColor(argQueue.poll());
                         break;
                     case "-i":
                     case "--initial-cam":

@@ -158,7 +158,6 @@ public class NBodyServiceServer {
                     .setComputationThreads(configurables.getComputationThreads())
                     .setResultQueueSize(configurables.getResultQueueSize())
                     .setSmoothingFactor(configurables.getSmoothing())
-                    .setCollisionBehaviorValue(configurables.getCollisionBehavior().value())
                     .setRestitutionCoefficient(configurables.getRestitutionCoefficient())
                     .build();
             responseObserver.onNext(currentConfig);
@@ -297,14 +296,6 @@ public class NBodyServiceServer {
         @Override
         public int getComputationThreads() {
             return 300;
-        }
-
-        @Override
-        public void setCollisionBehavior(CollisionBehavior behavior)  {}
-
-        @Override
-        public CollisionBehavior getCollisionBehavior() {
-            return CollisionBehavior.SUBSUME;
         }
 
         @Override

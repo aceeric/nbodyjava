@@ -222,16 +222,6 @@ class NBodySim {
         }
 
         @Override
-        public void setCollisionBehavior(CollisionBehavior behavior)  {
-            // not currently supported - should err?
-        }
-
-        @Override
-        public CollisionBehavior getCollisionBehavior() {
-            return CollisionBehavior.SUBSUME;
-        }
-
-        @Override
         public void setRestitutionCoefficient(float R) {
             Body.setRestitutionCoefficient(R);
         }

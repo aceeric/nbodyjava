@@ -14,8 +14,6 @@ The sim can be run with Prometheus monitoring and a Grafana dashboard to get vis
 
 ### This is an initial version with some cleanups still to do: 
 
-* Body: x,y,z,mass,radius float but calcs in doubles. Keep BodyRenderInfo float
-* Clean up gRPC collision behavior method - should get/set a default
 * Clean up the scripts directory - right now it's a collection of fragments
 * Perhaps a client app in Java or Java + shell to replace all the temp-file stuff
 * Add a guide to running the whole app

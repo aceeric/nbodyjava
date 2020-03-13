@@ -5,21 +5,21 @@ package org.ericace.nbody;
  */
 class CollisionCalcResult {
     final boolean collided;
-    final float vx1;
-    final float vy1;
-    final float vz1;
-    final float vx2;
-    final float vy2;
-    final float vz2;
-    final float vx_cm;
-    final float vy_cm;
-    final float vz_cm;
+    final double vx1;
+    final double vy1;
+    final double vz1;
+    final double vx2;
+    final double vy2;
+    final double vz2;
+    final double vx_cm;
+    final double vy_cm;
+    final double vz_cm;
     private CollisionCalcResult() {
         collided = false;
         vx1 = vy1 = vz1 = vx2 = vy2 = vz2 = vx_cm = vy_cm = vz_cm = 0;
     }
-    private CollisionCalcResult(float vx1, float vy1, float vz1, float vx2, float vy2, float vz2,
-                                float vx_cm, float vy_cm, float vz_cm) {
+    private CollisionCalcResult(double vx1, double vy1, double vz1, double vx2, double vy2, double vz2,
+                                double vx_cm, double vy_cm, double vz_cm) {
         collided = true;
         this.vx1   = vx1;
         this.vy1   = vy1;
@@ -34,8 +34,8 @@ class CollisionCalcResult {
     static CollisionCalcResult noCollision() {
         return new CollisionCalcResult();
     }
-    static CollisionCalcResult collision(float vx1, float vy1, float vz1, float vx2, float vy2, float vz2,
-                                         float vx_cm, float vy_cm, float vz_cm) {
+    static CollisionCalcResult collision(double vx1, double vy1, double vz1, double vx2, double vy2, double vz2,
+                                         double vx_cm, double vy_cm, double vz_cm) {
         return new CollisionCalcResult(vx1, vy1, vz1, vx2, vy2, vz2, vx_cm, vy_cm, vz_cm);
     }
 }

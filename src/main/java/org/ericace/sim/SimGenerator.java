@@ -1,5 +1,6 @@
 package org.ericace.sim;
 
+import org.ericace.globals.Globals;
 import org.ericace.nbody.Body;
 import org.ericace.nbody.SimpleVector;
 
@@ -7,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -24,11 +24,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class SimGenerator {
     private static final float SOLAR_MASS = 1.98892e30F;
-
-    /**
-     * defines CSV values to parse as True
-     */
-    private static final List<String> TRUES = Arrays.asList("t", "true", "1", "y", "yes");
 
     /**
      * Creates four clumps of bodies centered at "left, right, front, and back", with each clump organized
@@ -360,10 +355,10 @@ public class SimGenerator {
                     float vz = Float.parseFloat(fields[5].trim());
                     float mass = Float.parseFloat(fields[6].trim());
                     float radius = Float.parseFloat(fields[7].trim());
-                    boolean isSun = fields.length >= 9 && parseBoolean(fields[8].trim());
+                    boolean isSun = fields.length >= 9 && Globals.parseBoolean(fields[8].trim());
                     Body.CollisionBehavior collisionBehavior = fields.length >= 10 ?
-                            parseCollisionBehavior(fields[9].trim()) : defaultCollisionBehavior;
-                    Body.Color color = fields.length >= 11 ? parseColor(fields[10].trim()) : defaultBodyColor;
+                            Globals.parseCollisionBehavior(fields[9].trim()) : defaultCollisionBehavior;
+                    Body.Color color = fields.length >= 11 ? Globals.parseColor(fields[10].trim()) : defaultBodyColor;
                     float fragFactor = fields.length >= 12 ? Float.parseFloat(fields[12].trim()) : 1;
                     float fragStep = fields.length >= 13 ? Float.parseFloat(fields[13].trim()) : 1;
                     Body b = new Body(Body.nextID(), x, y, z, vx, vy, vz, mass, radius, collisionBehavior, color,
@@ -381,30 +376,6 @@ public class SimGenerator {
             throw new RuntimeException("Unable to parse input file '" + pathSpec + "'");
         }
         return bodies;
-    }
-
-    /**
-     * @return the passed string parsed as a boolean, as defined by the {@link #TRUES} constant. Null
-     * parses as False.
-     */
-    static boolean parseBoolean(String s) {
-        return s != null && TRUES.contains(s.toLowerCase());
-    }
-
-    /**
-     * @return the passed string as a {@link Body.CollisionBehavior} enum. Valid values are "elastic", "none",
-     * "fragment", and "subsume" (in any case) as defined by the referenced enum. Null parses as
-     * Body.CollisionBehavior.ELASTIC.
-     */
-    static Body.CollisionBehavior parseCollisionBehavior(String s) {
-        return s != null ? Body.CollisionBehavior.valueOf(s.toUpperCase()) : Body.CollisionBehavior.ELASTIC;
-    }
-
-    /**
-     * @return the passed string as a {@link Body.Color} enum. Null parses as Body.Color.RANDOM
-     */
-    static Body.Color parseColor(String s) {
-        return s != null ? Body.Color.valueOf(s.toUpperCase()) : Body.Color.RANDOM;
     }
 
     /**

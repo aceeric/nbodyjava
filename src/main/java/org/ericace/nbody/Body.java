@@ -354,7 +354,7 @@ public class Body {
      *
      * @return see {@link BodyRenderInfo}
      */
-    BodyRenderInfo update(float timeScaling) {
+    BodyRenderInfo update(double timeScaling) {
         if (!exists) {
             // creates an instance with exists=false so the graphics engine will remove it from the scene
             return new BodyRenderInfo(id);
@@ -377,8 +377,7 @@ public class Body {
                     vx, vy, vz, mass, radius));
         }
         if (Float.isNaN(x) || Float.isNaN(y) || Float.isNaN(z)) {
-            logger.error("NaN values. ID={}", id);
-            System.err.println(String.format("Body id %d has NaN values - removing from sim", id));
+            logger.error("NaN values. ID={} (removing from sim)", id);
             exists = false;
         }
         return getRenderInfo();
@@ -604,12 +603,12 @@ public class Body {
      *                  colliding bodies
      */
     private void doElastic(Body otherBody, CollisionCalcResult r) {
-        vx = (r.vx1 - r.vx_cm) * R + r.vx_cm;
-        vy = (r.vy1 - r.vy_cm) * R + r.vy_cm;
-        vz = (r.vz1 - r.vz_cm) * R + r.vz_cm;
-        otherBody.vx = (r.vx2 - r.vx_cm) * R + r.vx_cm;
-        otherBody.vy = (r.vy2 - r.vy_cm) * R + r.vy_cm;
-        otherBody.vz = (r.vz2 - r.vz_cm) * R + r.vz_cm;
+        vx = (float) ((r.vx1 - r.vx_cm) * R + r.vx_cm);
+        vy = (float) ((r.vy1 - r.vy_cm) * R + r.vy_cm);
+        vz = (float) ((r.vz1 - r.vz_cm) * R + r.vz_cm);
+        otherBody.vx = (float) ((r.vx2 - r.vx_cm) * R + r.vx_cm);
+        otherBody.vy = (float) ((r.vy2 - r.vy_cm) * R + r.vy_cm);
+        otherBody.vz = (float) ((r.vz2 - r.vz_cm) * R + r.vz_cm);
         collided = otherBody.collided = true;
     }
 
@@ -624,26 +623,26 @@ public class Body {
      * @return the result of the calculation
      */
     /*private*/ CollisionCalcResult calcElasticCollision(Body otherBody) {
-        float r12, m21, d, v, theta2, phi2, st, ct, sp, cp, vx1r, vy1r, vz1r, fvz1r,
-                thetav, phiv, dr, alpha, beta, sbeta, cbeta, t, a, dvz2,
-                vx2r, vy2r, vz2r, x21, y21, z21, vx21, vy21, vz21, vx_cm, vy_cm, vz_cm;
+        double r12, m21, d, v, theta2, phi2, st, ct, sp, cp, vx1r, vy1r, vz1r, fvz1r,
+               thetav, phiv, dr, alpha, beta, sbeta, cbeta, t, a, dvz2,
+               vx2r, vy2r, vz2r, x21, y21, z21, vx21, vy21, vz21, vx_cm, vy_cm, vz_cm;
 
-        float m1 = mass;
-        float m2 = otherBody.mass;
-        float r1 = radius;
-        float r2 = otherBody.radius;
-        float x1 = x;
-        float y1 = y;
-        float z1 = z;
-        float x2 = otherBody.x;
-        float y2 = otherBody.y;
-        float z2 = otherBody.z;
-        float vx1 = vx;
-        float vy1 = vy;
-        float vz1 = vz;
-        float vx2 = otherBody.vx;
-        float vy2 = otherBody.vy;
-        float vz2 = otherBody.vz;
+        double m1 = mass;
+        double m2 = otherBody.mass;
+        double r1 = radius;
+        double r2 = otherBody.radius;
+        double x1 = x;
+        double y1 = y;
+        double z1 = z;
+        double x2 = otherBody.x;
+        double y2 = otherBody.y;
+        double z2 = otherBody.z;
+        double vx1 = vx;
+        double vy1 = vy;
+        double vz1 = vz;
+        double vx2 = otherBody.vx;
+        double vy2 = otherBody.vy;
+        double vz2 = otherBody.vz;
 
         r12 = r1 + r2;
         m21 = m2 / m1;
@@ -659,8 +658,8 @@ public class Body {
         vz_cm = (m1 * vz1 + m2 * vz2) / (m1 + m2);
 
         // calculate relative distance and relative speed
-        d = (float) Math.sqrt(x21*x21 + y21*y21 + z21*z21);
-        v = (float) Math.sqrt(vx21*vx21 + vy21*vy21 + vz21*vz21);
+        d = Math.sqrt(x21*x21 + y21*y21 + z21*z21);
+        v = Math.sqrt(vx21*vx21 + vy21*vy21 + vz21*vz21);
 
         // commented this out from the original - if the radii overlap run the calc anyway because the sim doesn't
         // prevent bodies overlapping - that would take way too much compute power
@@ -685,16 +684,16 @@ public class Body {
         vz1 = -vz21;
 
         // find the polar coordinates of the location of ball 2
-        theta2 = (float) Math.acos(z2/d);
+        theta2 = Math.acos(z2/d);
         if (x2 == 0 && y2 == 0) {
             phi2 = 0;
         } else {
-            phi2 = (float) Math.atan2(y2, x2);
+            phi2 = Math.atan2(y2, x2);
         }
-        st = (float) Math.sin(theta2);
-        ct = (float) Math.cos(theta2);
-        sp = (float) Math.sin(phi2);
-        cp = (float) Math.cos(phi2);
+        st = Math.sin(theta2);
+        ct = Math.cos(theta2);
+        sp = Math.sin(phi2);
+        cp = Math.cos(phi2);
 
         // express the velocity vector of ball 1 in a rotated coordinate system where ball 2 lies on the z-axis
         vx1r = ct * cp * vx1 + ct * sp * vy1 - st * vz1;
@@ -707,15 +706,15 @@ public class Body {
         } else if (fvz1r < -1) {
             fvz1r=-1;
         }
-        thetav = (float) Math.acos(fvz1r);
+        thetav = Math.acos(fvz1r);
         if (vx1r == 0 && vy1r == 0) {
             phiv=0;
         } else {
-            phiv = (float) Math.atan2(vy1r,vx1r);
+            phiv = Math.atan2(vy1r,vx1r);
         }
 
         // calculate the normalized impact parameter
-        dr = d * (float) Math.sin(thetav) / r12;
+        dr = d * Math.sin(thetav) / r12;
 
         // if balls do not collide, do nothing
         if (thetav > Math.PI / 2 || Math.abs(dr) > 1) {
@@ -724,10 +723,10 @@ public class Body {
         }
 
         // calculate impact angles if balls do collide
-        alpha = (float) Math.asin(-dr);
+        alpha = Math.asin(-dr);
         beta = phiv;
-        sbeta = (float) Math.sin(beta);
-        cbeta = (float) Math.cos(beta);
+        sbeta = Math.sin(beta);
+        cbeta = Math.cos(beta);
 
         // commented out from original - position is assigned in the update method
 
@@ -743,7 +742,7 @@ public class Body {
 
         // update velocities
 
-        a = (float) Math.tan(thetav + alpha);
+        a = Math.tan(thetav + alpha);
 
         dvz2 = 2 * (vz1r + a * (cbeta * vx1r + sbeta * vy1r)) / ((1 + a * a) * (1 + m21));
 
@@ -790,16 +789,16 @@ public class Body {
             return FragmentationCalcResult.noFragmentation();
         }
         float vThis = vx + vy + vz;
-        float dvThis =
-                Math.abs(vx - ((r.vx1 - r.vx_cm) * R + r.vx_cm)) +
+        float dvThis = (float)
+                (Math.abs(vx - ((r.vx1 - r.vx_cm) * R + r.vx_cm)) +
                 Math.abs(vy - ((r.vy1 - r.vy_cm) * R + r.vy_cm)) +
-                Math.abs(vz - ((r.vz1 - r.vz_cm) * R + r.vz_cm));
+                Math.abs(vz - ((r.vz1 - r.vz_cm) * R + r.vz_cm)));
         float vThisFactor = dvThis / Math.abs(vThis);
         float vOther = otherBody.vx + otherBody.vy + otherBody.vz;
-        float dvOther =
-                Math.abs(otherBody.vx - ((r.vx2 - r.vx_cm) * R + r.vx_cm)) +
+        float dvOther = (float)
+                (Math.abs(otherBody.vx - ((r.vx2 - r.vx_cm) * R + r.vx_cm)) +
                 Math.abs(otherBody.vy - ((r.vy2 - r.vy_cm) * R + r.vy_cm)) +
-                Math.abs(otherBody.vz - ((r.vz2 - r.vz_cm) * R + r.vz_cm));
+                Math.abs(otherBody.vz - ((r.vz2 - r.vz_cm) * R + r.vz_cm)));
         float vOtherFactor = dvOther / Math.abs(vOther);
         //logger.log(CUSTOM, "this.id={} vThis=({},{},{})", id, vx, vy, vz);
         if ((collisionBehavior == CollisionBehavior.FRAGMENT && vThisFactor > fragFactor) ||

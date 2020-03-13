@@ -110,7 +110,7 @@
     <!-- JME -->
     <repository>
       <id>jcenter</id>
-      <url>http://jcenter.bintray.com</url>
+      <url>https://jcenter.bintray.com</url>
     </repository>
     <repository>
       <id>central</id>
@@ -149,6 +149,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
+            <id>server</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
@@ -164,8 +165,36 @@
               <descriptorRefs>
                 <descriptorRef>jar-with-dependencies</descriptorRef>
               </descriptorRefs>
+              <finalName>server</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
             </configuration>
           </execution>
+
+          <execution>
+            <id>client</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <archive>
+                <manifest>
+                  <mainClass>
+                    org.ericace.grpcclient.NbodyServiceClient
+                  </mainClass>
+                </manifest>
+              </archive>
+              <descriptors>
+                <descriptor>src/main/resources/maven/jar-with-deps-with-exclude.xml</descriptor>
+              </descriptors>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+              <finalName>client</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+            </configuration>
+          </execution>
+
         </executions>
       </plugin>
 
