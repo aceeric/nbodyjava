@@ -10,12 +10,12 @@ This has been tested on a 12 core Ubuntu 18.04.3 LTS desktop with an integrated 
 
 The design is to separate the simulation from the rendering engine as much as possible in the hopes of experimenting with different rendering engines in the future, although, building the sim in Java might limit alternatives there.
 
-The sim can be run with Prometheus monitoring and a Grafana dashboard to get visibility into performance, and the interaction between the body computation thread(s) and the JME rendering thread. See the `start-containers` script in the `scripts` directory.
+The sim can be run with Prometheus monitoring and a Grafana dashboard to get visibility into performance, and the interaction between the body computation thread(s) and the JME rendering thread. See the `start-containers` script in the `additional/scripts` directory.
 
 ### This is an initial version with some cleanups still to do: 
 
 * Clean up the scripts directory - right now it's a collection of fragments
-* Perhaps a client app in Java or Java + shell to replace all the temp-file stuff
+* Complete client app and wrap with shell script
 * Add a guide to running the whole app
 * Comprehensive Javadocs
 * Windows testing - currently running exclusively on Ubuntu
@@ -49,21 +49,21 @@ TODO
 The latest successful version of Java that I have tested with is 10.0.2. I have not gotten the app to run under any later version. On my system, Java 10 is installed in `/opt/java-jdk/jdk-10.0.2`. So for me:
 ```
 mvn package
-/opt/java-jdk/jdk-10.0.2/bin/java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar&
+/opt/java-jdk/jdk-10.0.2/bin/java -jar server/target/server.jar&
 ```
 Or, with the included Prometheus instrumentation to use the included Grafana dashboard:
 ```
 /opt/java-jdk/jdk-10.0.2/bin/java \
  -Dorg.ericace.instrumentation.class=org.ericace.instrumentation.PrometheusInstrumentation \
- -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar&
+ -jar server/target/server.jar&
 ```
-The above command (no args) runs the default canned simulation, which consists of four spherical clusters of bodies orbiting a sun. There are five canned sims, controlled via the `--sim-name` arg: `--sim-name=sim1` (the default) through `--sim-name=sim5`. You can also do: `--sim-name=none` for an empty sim and then use the gRPC CLI to add bodies. There are plenty of (messy) examples in `scripts/temp-file`. It's a TODO to clean that up. (You will need to install the gRCP CLI)
+The above command (no args) runs the default canned simulation, which consists of four spherical clusters of bodies orbiting a sun. There are five canned sims, controlled via the `--sim-name` arg: `--sim-name=sim1` (the default) through `--sim-name=sim5`. You can also do: `--sim-name=none` for an empty sim and then use the gRPC CLI to add bodies. There are plenty of (messy) examples in `additional/scripts/temp-file`. It's a TODO to clean that up. (You will need to install the gRCP CLI)
  
- Finally you can do `--csv=/path/to/a/csv` - will document that in the future. Some examples in `src/main/resources/csvs`
+ Finally you can do `--csv=/path/to/a/csv` - will document that in the future. Some examples in `additional/csvs`
 
 Note - the sim is presently hard-coded to run in 2560x1405 resolution. You can override that by supplying the --resolution arg with a value that makes sense for your configuration. E.g.:
 ```
-/opt/java-jdk/jdk-10.0.2/bin/java -jar target/n-body-java-1.0-SNAPSHOT-jar-with-dependencies.jar --resolution=2000x1000&
+/opt/java-jdk/jdk-10.0.2/bin/java -jar server/target/server.jar --resolution=2000x1000&
 ```
 If you have a dual-monitor configuration, JMonkey seems to have a mind of its own regarding which monitor to use, depending on the resolution you specify and so far I have not had success making this explicit. With JME (I think due to the underlying libs) there appear to be two options with regard to screen resolution: Option 1 supports full screen but you can't detach/attach the mouse and keyboard. Option 2 supports a windowed display - which is what I use - but then you can't resize the window once it is created (or, I have not figured out how to do so.)
 
