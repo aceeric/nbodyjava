@@ -97,7 +97,7 @@ class NBodySim {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
             if (render) {
-                JMEApp.start(bodies.size(), resultQueueHolder, initialCam, resolution);
+                JMEApp.start(bodies.size(), resultQueueHolder, initialCam, resolution, JME_THREAD_NAME);
             }
             ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder);
             NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));

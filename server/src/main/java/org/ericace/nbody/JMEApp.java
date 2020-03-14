@@ -133,11 +133,15 @@ public final class JMEApp extends SimpleApplication {
 
     /**
      * Starts the JME app (which in turn starts a thread). Refer to constructor - {@link #JMEApp} - for
-     * param explanation
+     * param explanation. Note - inclusion of jme3-lwjgl3 caused the threading behavior to change. Calling
+     * 'start' on the superclass used to start a thread, but after lwjgl3 it waited - hence the explicit
+     * Thread creation.
      */
     public static void start(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam,
-                             int [] resolution) {
-        new JMEApp(bodySize, resultQueueHolder, initialCam, resolution).start();
+                             int [] resolution, String threadName) {
+        new Thread(() -> {
+            new JMEApp(bodySize, resultQueueHolder, initialCam, resolution).start();
+        }, threadName).start();
     }
 
     /**
@@ -291,7 +295,8 @@ public final class JMEApp extends SimpleApplication {
      * @param tpf unused
      */
     @Override
-    public void simpleUpdate(float tpf) {
+public void simpleUpdate(float tpf) {
+
         ResultQueueHolder.ResultQueue rq = resultQueueHolder.nextComputedQueue();
         if (rq == null) {
             metricNoQueuesCount.incValue();

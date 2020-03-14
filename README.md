@@ -46,15 +46,21 @@ TODO
 TODO
 
 ### To run the application
-The latest successful version of Java that I have tested with is 10.0.2. I have not gotten the app to run under any later version. On my system, Java 10 is installed in `/opt/java-jdk/jdk-10.0.2`. So for me:
+The latest version of Java that I have tested with is 11.0.6:
+```
+$ java --version
+openjdk 11.0.6 2020-01-14
+OpenJDK Runtime Environment (build 11.0.6+10-post-Ubuntu-1ubuntu118.04.1)
+OpenJDK 64-Bit Server VM (build 11.0.6+10-post-Ubuntu-1ubuntu118.04.1, mixed mode, sharing)
+```
+So to build and run:
 ```
 mvn package
-/opt/java-jdk/jdk-10.0.2/bin/java -jar server/target/server.jar&
+java -jar server/target/server.jar&
 ```
 Or, with the included Prometheus instrumentation to use the included Grafana dashboard:
 ```
-/opt/java-jdk/jdk-10.0.2/bin/java \
- -Dorg.ericace.instrumentation.class=org.ericace.instrumentation.PrometheusInstrumentation \
+java -Dorg.ericace.instrumentation.class=org.ericace.instrumentation.PrometheusInstrumentation \
  -jar server/target/server.jar&
 ```
 The above command (no args) runs the default canned simulation, which consists of four spherical clusters of bodies orbiting a sun. There are five canned sims, controlled via the `--sim-name` arg: `--sim-name=sim1` (the default) through `--sim-name=sim5`. You can also do: `--sim-name=none` for an empty sim and then use the gRPC CLI to add bodies. There are plenty of (messy) examples in `additional/scripts/temp-file`. It's a TODO to clean that up. (You will need to install the gRCP CLI)
@@ -63,7 +69,7 @@ The above command (no args) runs the default canned simulation, which consists o
 
 Note - the sim is presently hard-coded to run in 2560x1405 resolution. You can override that by supplying the --resolution arg with a value that makes sense for your configuration. E.g.:
 ```
-/opt/java-jdk/jdk-10.0.2/bin/java -jar server/target/server.jar --resolution=2000x1000&
+java -jar server/target/server.jar --resolution=2000x1000&
 ```
 If you have a dual-monitor configuration, JMonkey seems to have a mind of its own regarding which monitor to use, depending on the resolution you specify and so far I have not had success making this explicit. With JME (I think due to the underlying libs) there appear to be two options with regard to screen resolution: Option 1 supports full screen but you can't detach/attach the mouse and keyboard. Option 2 supports a windowed display - which is what I use - but then you can't resize the window once it is created (or, I have not figured out how to do so.)
 
