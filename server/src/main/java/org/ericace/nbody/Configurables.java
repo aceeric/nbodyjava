@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Defines all the supported ways to inspect - and modify - the behavior of the simulation while the
  * simulation is running. This interface is also expressed in the gRPC service definition. (Refer to:
- * {@code src/main/resources/proto/nbodyservice.proto} for the service definition.)
+ * the {@code grpc} module for the service definition.)
  */
 public interface Configurables {
     /**

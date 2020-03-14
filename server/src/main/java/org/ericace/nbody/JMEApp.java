@@ -139,9 +139,7 @@ public final class JMEApp extends SimpleApplication {
      */
     public static void start(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam,
                              int [] resolution, String threadName) {
-        new Thread(() -> {
-            new JMEApp(bodySize, resultQueueHolder, initialCam, resolution).start();
-        }, threadName).start();
+        new Thread(() -> new JMEApp(bodySize, resultQueueHolder, initialCam, resolution).start(), threadName).start();
     }
 
     /**

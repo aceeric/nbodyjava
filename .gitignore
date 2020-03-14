@@ -14,7 +14,7 @@
 .idea
 *.iml
 
-# generated sources (e.g. protobuf compiler)
+# compiler outputs
 **/target/**
 
 # scratchpad
