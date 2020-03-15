@@ -28,6 +28,8 @@ public class Main {
     private static Globals.Color defaultBodyColor = null;
     private static SimpleVector initialCam = new SimpleVector(-100, 300, 1200);
     private static String simArgs = null;
+    private static boolean vSync = true;
+    private static int frameRate = -1;
 
     /**
      * Entry point. Instantiates and runs the simulation class: {@link NBodySim}. Parses args to set params,
@@ -69,6 +71,8 @@ public class Main {
                 .simThread(t.thread)
                 .render(render)
                 .resolution(resolution)
+                .vSync(vSync)
+                .frameRate(frameRate)
                 .build()
                 .run();
     }
@@ -124,6 +128,12 @@ public class Main {
                         }
                         resolution[0] = Integer.parseInt(sSplit[0]);
                         resolution[1] = Integer.parseInt(sSplit[1]);
+                        break;
+                    case "--vsync":
+                        vSync = Boolean.parseBoolean(argQueue.poll());
+                        break;
+                    case "--frame-rate":
+                        frameRate = Integer.parseInt(argQueue.poll());
                         break;
                     case "-r":
                     case "--no-render":

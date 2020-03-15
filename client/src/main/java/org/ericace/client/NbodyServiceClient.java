@@ -13,7 +13,8 @@ import static org.ericace.globals.Globals.parseCollisionBehavior;
 import static org.ericace.globals.Globals.parseColor;
 
 /**
- * Provides a Java client to the gRPC server
+ * Provides a Java client to the gRPC server. Presently there isn't a lot of arg validation so invalid
+ * args can throw exceptions which appear on the console.
  */
 public class NbodyServiceClient {
     private final NBodyServiceGrpc.NBodyServiceBlockingStub blockingStub;
@@ -36,7 +37,6 @@ public class NbodyServiceClient {
         ItemCount request = ItemCount.newBuilder().setItemCount(threads).build();
         ResultCode resultCode = blockingStub.setComputationThreads(request);
         System.out.println(resultCode.getResultCode() + " " + resultCode.getMessage());
-
     }
 
     /**
@@ -84,7 +84,7 @@ public class NbodyServiceClient {
      *
      * E.g.:
      *
-     * mod-bodies id=412 mass=9E5 color=BLUE vx=12E6
+     * mod-bodies id=412 mass=9E5 color=BLUE vx=12E6 collision=fragment frag-factor=.05
      */
     private void modBodies(String [] args) {
         String [] cmd = args[1].split("=");
@@ -101,7 +101,7 @@ public class NbodyServiceClient {
         }
         ModBodyMessage.Builder builder = ModBodyMessage.newBuilder().setId(id).setName(name).setClass_(clas);
         final List<String> validMods = Arrays.asList("x","y","z","vx","vy","vz","mass","radius","sun","collision",
-                "color","frag-factor","frag-step","telemetry");
+                "color","frag-factor","frag-step","telemetry","exists");
         for (int i = 2; i < args.length; ++i) {
             String [] p = args[i].split("=");
             if (!validMods.contains(p[0])) {
@@ -120,6 +120,13 @@ public class NbodyServiceClient {
      * @param args
      */
     private void runCmds(String [] args) {} // read from stdin or file and exec the commands in there
+
+    /**
+     * Future
+     * load-csv
+     * @param args
+     */
+    private void loadCsv(String [] args) {} // read a CSV from a pathspec in args and load each body into the sim
 
     /**
      * get-config - no args
@@ -169,13 +176,13 @@ public class NbodyServiceClient {
      * These require values in the form name=value:
      *
      *   collision=   - see {@link Globals.CollisionBehavior}; e.g. collision=elastic
-     *   color=       - see  {@link Globals.Color}; e.g. collision=blue
+     *   color=       - see  {@link Globals.Color}; e.g. color=blue
      *   frag-factor= - fragmentation factor; e.g. frag-factor=.1
      *   frag-step=   - fragmentation step; e.g. frag-step=1000
      *   class=       - A class useful for mod-bodies; e.g. class=asteroid
      *   name=        - A name useful for mod-bodies; e.g. name=the-moon
      *
-     * These are used only if "add-bodies":
+     * These are used only if "add-bodies" (not for "add-body"):
      *
      *   qty=         - A number of bodies to add; e.g. qty=100
      *   delay=       - A delay between the insertion of each body into the sim
@@ -199,7 +206,7 @@ public class NbodyServiceClient {
         float fragFactor = 0, fragStep = 0;
         String name = "", clas = "";
 
-        // meaningful only for add bodies
+        // meaningful only for add bodies:
         int qty = 1;
         float delay = 0, positionRandom = 0, velocityRandom = 0, massRandom = 0, radiusRandom = 0;
 
@@ -236,19 +243,13 @@ public class NbodyServiceClient {
     }
 
     /**
-     * Adds a number of bodies
-     * @param qty            The number of bodies
-     * @param delay          Seconds to delay between the addition of each body
-     * @param positionRandom Randomization of the passed position. If "5", then passed x,y,z can vary by +5.
-     * @param velocityRandom " velocity
-     * @param massRandom     " mass
-     * @param radiusRandom   " radius
+     * Adds a number of bodies. See {@link #addBodies(String[])} for a description of the parameters.
      */
     private void addBodies(float x, float y, float z, float vx, float vy, float vz, float mass, float radius,
-                           boolean sun, Globals.CollisionBehavior collisionBehavior, Globals.Color color, float fragFactor,
-                           float fragStep, boolean telemetry, String name, String clas, boolean pinned,
-                           int qty, float delay, float positionRandom, float velocityRandom, float massRandom,
-                           float radiusRandom
+                           boolean sun, Globals.CollisionBehavior collisionBehavior, Globals.Color color,
+                           float fragFactor, float fragStep, boolean telemetry, String name, String clas,
+                           boolean pinned, int qty, float delay, float positionRandom, float velocityRandom,
+                           float massRandom, float radiusRandom
                            ) {
         for (int i = 0; i < qty; ++i) {
             float wx = positionRandom == 0 ? x : (float) (x + (Math.random() * positionRandom));
@@ -259,38 +260,9 @@ public class NbodyServiceClient {
             float wvz = velocityRandom == 0 ? vz : (float) (vz + (Math.random() * velocityRandom));
             float wmass = massRandom == 0 ? mass : (float) (mass + (Math.random() * massRandom));
             float wradius = radiusRandom == 0 ? radius : (float) (radius + (Math.random() * massRandom));
-            addBodies(wx, wy, wz, wvx, wvy, wvz, wmass, wradius, sun, collisionBehavior, color, fragFactor, fragStep, telemetry,
-                    name, clas, pinned);
+            addBodies(wx, wy, wz, wvx, wvy, wvz, wmass, wradius, sun, collisionBehavior, color, fragFactor, fragStep,
+                    telemetry, name, clas, pinned);
             try {Thread.sleep((long) (1000 * delay));} catch (InterruptedException e) {/* ignore */}
-        }
-    }
-
-    /**
-     * Main function. Based on the command, calls the handler function
-     *
-     * @param args from the cmd line
-     *
-     * @throws InterruptedException if gRPC channel is interrupted awaiting termination
-     */
-    public static void main(String[] args) throws InterruptedException {
-        NbodyServiceClient client = new NbodyServiceClient("localhost", PORT_NUM);
-        try {
-            switch (args[0].toLowerCase()) {
-                case "set-threads": client.setComputationThreads(args); ; break;
-                case "set-queue-size": client.setResultQueueSize(args); ; break;
-                case "set-time-scale": client.setSmoothing(args); ; break;
-                case "set-restitution": client.setRestitutionCoefficient(args); ; break;
-                case "remove-bodies": client.removeBodies(args); ; break;
-                case "mod-body": case "mod-bodies": client.modBodies(args); ; break;
-                case "get-config": client.getCurrentConfig(); break;
-                case "add-body": case "add-bodies":
-                    client.addBodies(args); break;
-                default:
-                    System.out.println("Unsupported cmd: " + args[0]);
-                    break;
-            }
-        } finally {
-            client.channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         }
     }
 
@@ -342,6 +314,35 @@ public class NbodyServiceClient {
             case ELASTIC:
             default:
                 return org.ericace.grpcserver.CollisionBehaviorEnum.ELASTIC;
+        }
+    }
+
+    /**
+     * Main function. Based on the command, calls the handler for that command
+     *
+     * @param args from the cmd line
+     *
+     * @throws InterruptedException if gRPC channel is interrupted awaiting termination
+     */
+    public static void main(String[] args) throws InterruptedException {
+        NbodyServiceClient client = new NbodyServiceClient("localhost", PORT_NUM);
+        try {
+            switch (args[0].toLowerCase()) {
+                case "set-threads": client.setComputationThreads(args); break;
+                case "set-queue-size": client.setResultQueueSize(args); break;
+                case "set-time-scale": client.setSmoothing(args); break;
+                case "set-restitution": client.setRestitutionCoefficient(args); break;
+                case "remove-bodies": client.removeBodies(args); break;
+                case "mod-body": case "mod-bodies": client.modBodies(args); break;
+                case "get-config": client.getCurrentConfig(); break;
+                case "add-body": case "add-bodies":
+                    client.addBodies(args); break;
+                default:
+                    System.out.println("Unsupported cmd: " + args[0]);
+                    break;
+            }
+        } finally {
+            client.channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         }
     }
 }

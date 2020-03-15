@@ -368,8 +368,10 @@ public class SimGenerator {
                     }
                     bodies.add(b);
                 } catch (NumberFormatException e) {
-                    // load what is possible to load and ignore everything else
-                    System.out.println("Ignoring line: " + line);
+                    if (!line.replaceAll("\\s+","").toLowerCase().startsWith("x,y,z,vx,vy,vz")) {
+                        // load what is possible to load and ignore everything else
+                        System.out.println("Ignoring line: " + line);
+                    }
                 }
             }
         } catch (IOException e) {

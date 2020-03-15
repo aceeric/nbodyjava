@@ -1,0 +1,20 @@
+This sim creates small low-gravity sun far removed from 0,0,0 just to create a light
+source. It then creates two bodies moving directly towards each other. One body is configured
+to fragment on impact and the other is not. The bodies impact, and one fragments.
+
+Assumes that you're at a directory with the server jar at: ./server/target/server.jar and the client
+is at ./client/target/client.jar.
+
+First, start an empty sim:
+java -jar server/target/server.jar --sim-name=empty &
+
+Press F12 to disengage the mouse and keyboard from the sim window. Then tab back to the console and
+paste these commands in:
+
+java -jar client/target/client.jar add-body 100000 100000 100000 0 0 0 1 500 is-sun pinned collision=subsume
+java -jar client/target/client.jar add-body  600 0 -600 -550000000 0 550000000 9E12 30 color=yellow \
+ collision=fragment frag-factor=.5 frag-step=400 &
+java -jar client/target/client.jar add-body -600 0  600  550000000 0 -550000000 9E27 10 color=red &
+
+Click the sim window and press F12 to re-attach the mouse and keyboard to the sim window. Use the navigation
+keys to navigate through the sim.

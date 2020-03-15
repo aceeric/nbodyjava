@@ -1,0 +1,35 @@
+This sim creates a sun, then streams in bodies in concentric orbits, with each
+orbit consisting of a different color.
+
+Assumes that you're at a directory with the server jar at: ./server/target/server.jar and the client
+is at ./client/target/client.jar.
+
+First, start an empty sim:
+java -jar server/target/server.jar --sim-name=empty &
+
+Or, if the sim is already running you can clear it this way:
+java -jar client/target/client.jar remove-bodies -1
+
+Press F12 to disengage the mouse and keyboard from the sim window. Then tab back to the console and
+paste these three commands in:
+
+java -jar client/target/client.jar add-body 0 0 0 0 0 0 52E29 23 is-sun collision=subsume pinned
+
+Paste all these commands in together to stream the bodies in:
+
+java -jar client/target/client.jar add-bodies 160 160 160 0 0 -670000000  9E1 2 color=yellow qty=15 delay=.8 class=yellow &
+java -jar client/target/client.jar add-bodies 200 200 200 0 0 -850000000  9E1 2 color=red qty=25 delay=1 class=red &
+java -jar client/target/client.jar add-bodies 230 230 230 0 0 -960000000  9E1 2 color=blue qty=70 delay=.7 class=blue &
+java -jar client/target/client.jar add-bodies 280 280 280 0 0 -995000000  9E1 2 color=green qty=62 delay=2 class=green &
+java -jar client/target/client.jar add-bodies 310 310 310 0 0 -1000500000 9E1 2 color=orange qty=77 delay=3 class=orange &
+
+Click the sim window and press F12 to re-attach the mouse and keyboard to the sim window. Use the navigation
+keys to navigate through the sim.
+
+The 'class' element is useful for modifying groups of bodies. Any value is valid. Example:
+
+java -jar client/target/client.jar mod-body class=red radius=5
+
+Or to remove classes of bodies from the simulation:
+
+java -jar client/target/client.jar mod-body class=orange exists=false

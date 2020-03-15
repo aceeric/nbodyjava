@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
 #
+# This script supports running the sim with enabled instrumentation to observe some of the key simulation
+# performance-related metrics in a Grafana dashboard.
+#
 # Starts a Docker container to run Prometheus, providing it a configuration to scrape the n-body
 # simulation. Then starts a Grafana container, and provisions: 1) a data source referencing
 # the Prometheus Docker instance, and 2) a Dashboard to watch a set of n-body metrics
-# scraped from Prometheus. Once both containers are running, you can access the dashboard using:
+# scraped from Prometheus. Once both containers are running, you can access the Grafanaa dashboard
+# using:
 #
 # http://localhost:3000
 #
@@ -13,7 +17,8 @@
 # property defined to enable collecting and exposing metrics to Prometheus
 #
 
-RESROOT="$HOME/IdeaProjects/nbodyjava/src/main/resources"
+# You will need to set these location variables for your system
+RESROOT="$HOME/IdeaProjects/nbodyjava/additional"
 PROMROOT="$RESROOT/prometheus"
 GRAFROOT="$RESROOT/grafana"
 

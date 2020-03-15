@@ -1,16 +1,9 @@
 package org.ericace.globals;
 
-import org.apache.logging.log4j.Level;
-
 import java.util.Arrays;
 import java.util.List;
 
 public final class Globals {
-    /**
-     * A custom log4j level
-     */
-    public static final Level CUSTOM = Level.getLevel("CUSTOM");
-
     /**
      * defines String values to parse as True
      */
@@ -36,7 +29,7 @@ public final class Globals {
     /**
      * @return the passed string as a {@link CollisionBehavior} enum. Valid values are "elastic", "none",
      * "fragment", and "subsume" (in any case) as defined by the referenced enum. Null parses as
-     * Body.CollisionBehavior.ELASTIC.
+     * ELASTIC.
      */
     public static CollisionBehavior parseCollisionBehavior(String s) {
         return s != null ? CollisionBehavior.valueOf(s.toUpperCase()) : CollisionBehavior.ELASTIC;
@@ -51,7 +44,7 @@ public final class Globals {
     }
 
     /**
-     * @return the passed string as a {@link Color} enum. Null parses as Body.Color.RANDOM
+     * @return the passed string as a {@link Color} enum. Null parses as RANDOM
      */
     public static Color parseColor(String s) {
         return s != null ? Color.valueOf(s.toUpperCase()) : Color.RANDOM;

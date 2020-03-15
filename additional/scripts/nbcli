@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#
+# Provides a simple wrapper around the nbody client JAR. Idea is: you edit in the location of the
+# client jar on your system and place this script in the path, then you have an easier way to invoke
+# the client jar.
+#
+
+script_name=$(basename "$0")
+client_jar="$HOME/IdeaProjects/nbodyjava/client/target/client.jar"  # change this
+
+# Validate the commands here rather than spinning up the jar to do it (the Java will validate the args
+# anyway but throws exceptions presently which is kind of ugly.)
+cmds=(
+  set-threads
+  set-queue-size
+  set-time-scale
+  set-restitution
+  remove-bodies
+  mod-body
+  mod-bodies
+  get-config
+  add-body
+  add-bodies
+)
+
+cmd=
+for c in "${cmds[@]}"; do
+  if [[ $c == "$1" ]]; then
+    cmd=$c
+    break
+  fi
+done
+
+if [[ -z "$cmd" ]]; then
+  echo "$script_name: missing or unknown command: '$1'"
+fi
+
+java -jar $client_jar "$@"

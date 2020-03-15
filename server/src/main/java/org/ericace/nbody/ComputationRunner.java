@@ -80,7 +80,6 @@ public final class ComputationRunner implements Runnable {
                               ResultQueueHolder resultQueueHolder) {
         executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadCount);
         completionService = new ExecutorCompletionService<>(executor);
-//        setPoolSize(threadCount);
         this.bodyQueue = bodyQueue;
         this.timeScaling = timeScaling;
         this.resultQueueHolder = resultQueueHolder;

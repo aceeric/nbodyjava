@@ -1,0 +1,30 @@
+This file contains some examples for interacting with a running simulation using grpc_cli.
+
+grpc_cli call localhost:50051 GetCurrentConfig ""
+grpc_cli call localhost:50051 RemoveBodies "item_count: 1000"
+grpc_cli call localhost:50051 SetSmoothing "factor: 9.9899999971718071e-10"
+grpc_cli call localhost:50051 SetComputationThreads "item_count: 8"
+grpc_cli call localhost:50051 SetRestitutionCoefficient "restitution_coefficient: .8"
+
+grpc_cli call localhost:50051 AddBody "mass: 5.96676E+25 x: 200 y: 200 z: 200 vx: 3100000 vy: 3100000 vz: 3300000 radius: 25"
+grpc_cli call localhost:50051 AddBody "mass: 25E28 x: 300 y: 300 z: -300 vx: 312321000 vy: -168000000 vz: -345345345 \
+ radius: 50 is_sun: true pinned: true collision_behavior: SUBSUME"
+grpc_cli call localhost:50051 AddBody "mass: 9E5   x: -100 y: 0 z: -300 vx:  500000000 vy: 315000000 vz: -600000 \
+ radius: 8 collision_behavior: FRAGMENT body_color: RED frag_factor: .5"
+
+grpc_cli call localhost:50051 ModBody "id: 1 p: 'collision=subsume'"
+grpc_cli call localhost:50051 ModBody "id: 1 p: 'collision=elastic' p: 'color=GREEN' p: 'radius=80'"
+grpc_cli call localhost:50051 ModBody "id: -1 class: 'foo' p: 'collision=elastic' p: 'color=GREEN' p: 'radius=80'"
+grpc_cli call localhost:50051 ModBody "id: 2601 p: 'mass=25E29'"
+grpc_cli call localhost:50051 ModBody "class: 'FOO' p: 'collision=fragment' p: 'frag_factor=.1 ' p: 'frag_step=200'"
+
+for i in {1..30}; do\
+  x=$((RANDOM % 4));\
+  y=$((RANDOM % 4));\
+  z=$((RANDOM % 4));\
+  x=$((600 + x));\
+  y=$((600 + y));\
+  z=$((600 - z));\
+  grpc_cli call localhost:50051 AddBody "mass: 5E+22 x: $x y: $y z: $z vx: -82321000 vy: -268000000 vz: 231558231 radius: 10 body_color: RED";\
+  sleep 4;\
+done

@@ -2,7 +2,10 @@ apiVersion: 1
 
 #
 # A Grafana data source that finds the Prometheus instance running in Docker that was
-# started by the scripts/start-containers script
+# started by the scripts/start-containers script. You can get the data source out of
+# Grafana this way:
+#
+#  curl -u root:secret http://localhost:3000/api/datasources/1 | python -m json.tool
 #
 datasources:
   - name: Prometheus

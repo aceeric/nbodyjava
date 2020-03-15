@@ -1,5 +1,6 @@
 package org.ericace.nbody;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ericace.globals.Globals;
@@ -18,6 +19,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Body {
     private static final Logger logger = LogManager.getLogger(Body.class);
+
+    private static final Level CUSTOM = Level.getLevel("CUSTOM");
 
     /**
      * The gravitational constant
@@ -245,6 +248,10 @@ public class Body {
      * @param fragFactor        Fragmentation factor
      * @param fragmentationStep The number of bodies to fragment into
      * @param withTelemetry     Allows for emitting telemetry about a particular body for testing/debugging
+     * @param name              Give a body a unique name to enable modifying its properties using the client
+     * @param clas              " class, like "asteroid" to enable modifying sets of bodies
+     * @param pinned            If true, then the remove-bodies client command won't remove the body unless
+     *                          remove-bodies -1 is specified which force removes everything
      */
     public Body(int id, float x, float y, float z, float vx, float vy, float vz, float mass, float radius,
                 Globals.CollisionBehavior collisionBehavior, Globals.Color color, float fragFactor, float fragmentationStep,
@@ -298,6 +305,7 @@ public class Body {
                         case FRAG_FACTOR: fragFactor = bodyMod.getFloat(); break;
                         case FRAG_STEP: fragmentationStep = bodyMod.getFloat(); break;
                         case TELEMETRY: withTelemetry = bodyMod.getBoolean(); break;
+                        case EXISTS: exists = bodyMod.getBoolean(); break;
                     }
                 }
                 modified = true;

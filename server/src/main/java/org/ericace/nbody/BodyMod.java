@@ -14,7 +14,7 @@ public class BodyMod {
      * Body properties that are allowed to be modified
      */
     enum Mod {
-        NOP,X,Y,Z,VX,VY,VZ,MASS,RADIUS,SUN,COLLISION,COLOR,FRAG_FACTOR,FRAG_STEP,TELEMETRY
+        NOP,X,Y,Z,VX,VY,VZ,MASS,RADIUS,SUN,COLLISION,COLOR,FRAG_FACTOR,FRAG_STEP,TELEMETRY,EXISTS
     }
 
     /**

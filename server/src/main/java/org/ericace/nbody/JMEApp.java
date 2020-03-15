@@ -111,8 +111,11 @@ public final class JMEApp extends SimpleApplication {
      * @param resultQueueHolder provides the updated list of bodies to render each cycle. See {@link #resultQueueHolder}
      * @param initialCam        Initial cam position. See {@link #initialCam}
      * @param resolution        Screen resolution {x,y}
+     * @param vSync             vSync setting
+     * @param frameRate         Frame rate - ignored if -1
      */
-    private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam, int [] resolution) {
+    private JMEApp(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam, int [] resolution,
+                   boolean vSync, int frameRate) {
         super();
 
         AppSettings settings = new AppSettings(true);
@@ -121,6 +124,10 @@ public final class JMEApp extends SimpleApplication {
         settings.setFullscreen(false);
         settings.setResizable(false);
         settings.setTitle("N-Body Java Simulation");
+        settings.setVSync(vSync);
+        if (frameRate != -1) {
+            settings.setFrameRate(frameRate);
+        }
         setSettings(settings);
         setShowSettings(false);
         setPauseOnLostFocus(false);
@@ -134,12 +141,13 @@ public final class JMEApp extends SimpleApplication {
     /**
      * Starts the JME app (which in turn starts a thread). Refer to constructor - {@link #JMEApp} - for
      * param explanation. Note - inclusion of jme3-lwjgl3 caused the threading behavior to change. Calling
-     * 'start' on the superclass used to start a thread, but after lwjgl3 it waited - hence the explicit
-     * Thread creation.
+     * 'start' on the superclass used to start a thread prior to jme3-lwjgl3, but after lwjgl3, calling
+     * start ran in the same thread and waited - hence the explicit Thread creation.
      */
     public static void start(int bodySize, ResultQueueHolder resultQueueHolder, SimpleVector initialCam,
-                             int [] resolution, String threadName) {
-        new Thread(() -> new JMEApp(bodySize, resultQueueHolder, initialCam, resolution).start(), threadName).start();
+                             int [] resolution, boolean vSync, int frameRate, String threadName) {
+        new Thread(() -> new JMEApp(bodySize, resultQueueHolder, initialCam, resolution, vSync, frameRate)
+                .start(), threadName).start();
     }
 
     /**
@@ -307,6 +315,9 @@ public void simpleUpdate(float tpf) {
                 if (geos.containsKey(b.id)) {
                     rootNode.detachChild(geos.get(b.id)); // remove from the scene graph
                     geos.remove(b.id);
+                    if (lightSources.get(b.id) != null) {
+                        lightSources.remove(b.id);
+                    }
                     ++countDetached;
                 }
             } else {

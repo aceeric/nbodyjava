@@ -75,6 +75,16 @@ class NBodySim {
     private int [] resolution;
 
     /**
+     * If true, configure the rendering engine to sync to the monitor vsync. Overrides frame rate.
+     */
+    private boolean vSync;
+
+    /**
+     * Frame rate. If -1, don't set the frame rate (leave it as defaulted by the rendering engine)
+     */
+    private int frameRate;
+
+    /**
      * Simulation runner
      *
      * <ol>
@@ -89,7 +99,7 @@ class NBodySim {
      *     <li>Starts a gRPC server to handle requests from external entities to modify various
      *         aspects of the simulation</li>
      *     <li>Waits for the JMonkey engine thread to exit</li>
-     *     <li>Cleans up on exit</li>
+     *     <li>Cleans up</li>
      * </ol>
      */
     void run() {
@@ -97,7 +107,7 @@ class NBodySim {
             ConcurrentLinkedQueue<Body> bodyQueue = new ConcurrentLinkedQueue<>(bodies);
             ResultQueueHolder resultQueueHolder = new ResultQueueHolder(DEFAULT_MAX_RESULT_QUEUES);
             if (render) {
-                JMEApp.start(bodies.size(), resultQueueHolder, initialCam, resolution, JME_THREAD_NAME);
+                JMEApp.start(bodies.size(), resultQueueHolder, initialCam, resolution, vSync, frameRate, JME_THREAD_NAME);
             }
             ComputationRunner.start(threads, bodyQueue, scaling, resultQueueHolder);
             NBodyServiceServer.start(new ConfigurablesImpl(bodyQueue, resultQueueHolder, ComputationRunner.getInstance()));
@@ -317,6 +327,8 @@ class NBodySim {
         this.simThread = builder.simThread;
         this.render = builder.render;
         this.resolution = builder.resolution;
+        this.vSync = builder.vSync;
+        this.frameRate = builder.frameRate;
     }
 
     /**
@@ -330,6 +342,8 @@ class NBodySim {
         private SimThread simThread;
         private boolean render;
         private int [] resolution;
+        private boolean vSync;
+        private int frameRate;
 
         Builder bodies(List<Body> bodies) {
             this.bodies = bodies;
@@ -357,6 +371,14 @@ class NBodySim {
         }
         Builder resolution(int [] resolution) {
             this.resolution = resolution;
+            return this;
+        }
+        Builder vSync(boolean vSync) {
+            this.vSync = vSync;
+            return this;
+        }
+        Builder frameRate(int frameRate) {
+            this.frameRate = frameRate;
             return this;
         }
         NBodySim build() {
