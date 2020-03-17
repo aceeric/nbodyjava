@@ -9,7 +9,7 @@ package org.ericace.grpcserver;
  *   ModBody "id: 1 p: 'radius=100'"
  * To modify by name or class, pass the ID as -1, and provide name or class:
  *   ModBody "id: -1 name='jupiter' p: 'radius=100'"
- * ID has to be passed in this case because the cli tool (or the protobuf protocol) passes a non-specified
+ * ID has to be passed in this case because the cli tool (or the protobuf protocol?) passes a non-specified
  * int field as zero, which happens to be a valid body ID pretty much all the time...
  * Pass an array of params via the cli by repeating the 'p' message:
  *   ModBody "id: 1 p: 'radius=100' p: 'vx=200' p: 'collision=NONE'"
@@ -398,7 +398,7 @@ public  final class ModBodyMessage extends
    *   ModBody "id: 1 p: 'radius=100'"
    * To modify by name or class, pass the ID as -1, and provide name or class:
    *   ModBody "id: -1 name='jupiter' p: 'radius=100'"
-   * ID has to be passed in this case because the cli tool (or the protobuf protocol) passes a non-specified
+   * ID has to be passed in this case because the cli tool (or the protobuf protocol?) passes a non-specified
    * int field as zero, which happens to be a valid body ID pretty much all the time...
    * Pass an array of params via the cli by repeating the 'p' message:
    *   ModBody "id: 1 p: 'radius=100' p: 'vx=200' p: 'collision=NONE'"

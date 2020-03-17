@@ -228,7 +228,7 @@ public final class ComputationRunner implements Runnable {
             BodyRenderInfo renderInfo = body.update(timeScaling);
             rq.addRenderInfo(renderInfo);
             if (!body.exists()) {
-                // The body was subsumed into another and will still be placed into the result queue so
+                // The body no longer exists, but will still be placed into the result queue so
                 // the graphics engine can remove it from the scene graph
                 bodyQueue.remove(body);
                 ++countRemoved;
