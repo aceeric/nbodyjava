@@ -314,6 +314,16 @@ class NBodySim {
             if (found == modified) return ModBodyResult.MOD_ALL;
             return ModBodyResult.MOD_SOME;
         }
+
+        @Override
+        public Body getBody(int id, String bodyName) {
+            for (Body b : bodyQueue) {
+                if (!StringUtils.isEmpty(bodyName) && bodyName.equalsIgnoreCase(b.getName()) || id == b.getId()) {
+                    return b;
+                }
+            }
+            return null;
+        }
     }
 
     /**

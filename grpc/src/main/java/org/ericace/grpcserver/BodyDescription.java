@@ -19,6 +19,7 @@ public  final class BodyDescription extends
     super(builder);
   }
   private BodyDescription() {
+    id_ = 0L;
     x_ = 0F;
     y_ = 0F;
     z_ = 0F;
@@ -63,91 +64,96 @@ public  final class BodyDescription extends
             }
             break;
           }
-          case 13: {
+          case 8: {
 
-            x_ = input.readFloat();
+            id_ = input.readInt64();
             break;
           }
           case 21: {
 
-            y_ = input.readFloat();
+            x_ = input.readFloat();
             break;
           }
           case 29: {
 
-            z_ = input.readFloat();
+            y_ = input.readFloat();
             break;
           }
           case 37: {
 
-            vx_ = input.readFloat();
+            z_ = input.readFloat();
             break;
           }
           case 45: {
 
-            vy_ = input.readFloat();
+            vx_ = input.readFloat();
             break;
           }
           case 53: {
 
-            vz_ = input.readFloat();
+            vy_ = input.readFloat();
             break;
           }
           case 61: {
 
-            mass_ = input.readFloat();
+            vz_ = input.readFloat();
             break;
           }
           case 69: {
 
+            mass_ = input.readFloat();
+            break;
+          }
+          case 77: {
+
             radius_ = input.readFloat();
             break;
           }
-          case 72: {
+          case 80: {
 
             isSun_ = input.readBool();
-            break;
-          }
-          case 80: {
-            int rawValue = input.readEnum();
-
-            collisionBehavior_ = rawValue;
             break;
           }
           case 88: {
             int rawValue = input.readEnum();
 
-            bodyColor_ = rawValue;
+            collisionBehavior_ = rawValue;
             break;
           }
-          case 101: {
+          case 96: {
+            int rawValue = input.readEnum();
 
-            fragFactor_ = input.readFloat();
+            bodyColor_ = rawValue;
             break;
           }
           case 109: {
 
+            fragFactor_ = input.readFloat();
+            break;
+          }
+          case 117: {
+
             fragStep_ = input.readFloat();
             break;
           }
-          case 112: {
+          case 120: {
 
             withTelemetry_ = input.readBool();
-            break;
-          }
-          case 122: {
-            java.lang.String s = input.readStringRequireUtf8();
-
-            name_ = s;
             break;
           }
           case 130: {
             java.lang.String s = input.readStringRequireUtf8();
 
+            name_ = s;
+            break;
+          }
+          case 138: {
+            java.lang.String s = input.readStringRequireUtf8();
+
             class__ = s;
             break;
           }
-          case 136: {
+          case 144: {
 
             pinned_ = input.readBool();
             break;
@@ -175,150 +181,163 @@ public  final class BodyDescription extends
             org.ericace.grpcserver.BodyDescription.class, org.ericace.grpcserver.BodyDescription.Builder.class);
   }
 
-  public static final int X_FIELD_NUMBER = 1;
+  public static final int ID_FIELD_NUMBER = 1;
+  private long id_;
+  /**
+   * <pre>
+   * ignored on create
+   * </pre>
+   *
+   * <code>optional int64 id = 1;</code>
+   */
+  public long getId() {
+    return id_;
+  }
+
+  public static final int X_FIELD_NUMBER = 2;
   private float x_;
   /**
-   * <code>optional float x = 1;</code>
+   * <code>optional float x = 2;</code>
    */
   public float getX() {
     return x_;
   }
 
-  public static final int Y_FIELD_NUMBER = 2;
+  public static final int Y_FIELD_NUMBER = 3;
   private float y_;
   /**
-   * <code>optional float y = 2;</code>
+   * <code>optional float y = 3;</code>
    */
   public float getY() {
     return y_;
   }
 
-  public static final int Z_FIELD_NUMBER = 3;
+  public static final int Z_FIELD_NUMBER = 4;
   private float z_;
   /**
-   * <code>optional float z = 3;</code>
+   * <code>optional float z = 4;</code>
    */
   public float getZ() {
     return z_;
   }
 
-  public static final int VX_FIELD_NUMBER = 4;
+  public static final int VX_FIELD_NUMBER = 5;
   private float vx_;
   /**
-   * <code>optional float vx = 4;</code>
+   * <code>optional float vx = 5;</code>
    */
   public float getVx() {
     return vx_;
   }
 
-  public static final int VY_FIELD_NUMBER = 5;
+  public static final int VY_FIELD_NUMBER = 6;
   private float vy_;
   /**
-   * <code>optional float vy = 5;</code>
+   * <code>optional float vy = 6;</code>
    */
   public float getVy() {
     return vy_;
   }
 
-  public static final int VZ_FIELD_NUMBER = 6;
+  public static final int VZ_FIELD_NUMBER = 7;
   private float vz_;
   /**
-   * <code>optional float vz = 6;</code>
+   * <code>optional float vz = 7;</code>
    */
   public float getVz() {
     return vz_;
   }
 
-  public static final int MASS_FIELD_NUMBER = 7;
+  public static final int MASS_FIELD_NUMBER = 8;
   private float mass_;
   /**
-   * <code>optional float mass = 7;</code>
+   * <code>optional float mass = 8;</code>
    */
   public float getMass() {
     return mass_;
   }
 
-  public static final int RADIUS_FIELD_NUMBER = 8;
+  public static final int RADIUS_FIELD_NUMBER = 9;
   private float radius_;
   /**
-   * <code>optional float radius = 8;</code>
+   * <code>optional float radius = 9;</code>
    */
   public float getRadius() {
     return radius_;
   }
 
-  public static final int IS_SUN_FIELD_NUMBER = 9;
+  public static final int IS_SUN_FIELD_NUMBER = 10;
   private boolean isSun_;
   /**
-   * <code>optional bool is_sun = 9;</code>
+   * <code>optional bool is_sun = 10;</code>
    */
   public boolean getIsSun() {
     return isSun_;
   }
 
-  public static final int COLLISION_BEHAVIOR_FIELD_NUMBER = 10;
+  public static final int COLLISION_BEHAVIOR_FIELD_NUMBER = 11;
   private int collisionBehavior_;
   /**
-   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
    */
   public int getCollisionBehaviorValue() {
     return collisionBehavior_;
   }
   /**
-   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
    */
   public org.ericace.grpcserver.CollisionBehaviorEnum getCollisionBehavior() {
     org.ericace.grpcserver.CollisionBehaviorEnum result = org.ericace.grpcserver.CollisionBehaviorEnum.valueOf(collisionBehavior_);
     return result == null ? org.ericace.grpcserver.CollisionBehaviorEnum.UNRECOGNIZED : result;
   }
 
-  public static final int BODY_COLOR_FIELD_NUMBER = 11;
+  public static final int BODY_COLOR_FIELD_NUMBER = 12;
   private int bodyColor_;
   /**
-   * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+   * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
    */
   public int getBodyColorValue() {
     return bodyColor_;
   }
   /**
-   * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+   * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
    */
   public org.ericace.grpcserver.BodyColorEnum getBodyColor() {
     org.ericace.grpcserver.BodyColorEnum result = org.ericace.grpcserver.BodyColorEnum.valueOf(bodyColor_);
     return result == null ? org.ericace.grpcserver.BodyColorEnum.UNRECOGNIZED : result;
   }
 
-  public static final int FRAG_FACTOR_FIELD_NUMBER = 12;
+  public static final int FRAG_FACTOR_FIELD_NUMBER = 13;
   private float fragFactor_;
   /**
-   * <code>optional float frag_factor = 12;</code>
+   * <code>optional float frag_factor = 13;</code>
    */
   public float getFragFactor() {
     return fragFactor_;
   }
 
-  public static final int FRAG_STEP_FIELD_NUMBER = 13;
+  public static final int FRAG_STEP_FIELD_NUMBER = 14;
   private float fragStep_;
   /**
-   * <code>optional float frag_step = 13;</code>
+   * <code>optional float frag_step = 14;</code>
    */
   public float getFragStep() {
     return fragStep_;
   }
 
-  public static final int WITH_TELEMETRY_FIELD_NUMBER = 14;
+  public static final int WITH_TELEMETRY_FIELD_NUMBER = 15;
   private boolean withTelemetry_;
   /**
-   * <code>optional bool with_telemetry = 14;</code>
+   * <code>optional bool with_telemetry = 15;</code>
    */
   public boolean getWithTelemetry() {
     return withTelemetry_;
   }
 
-  public static final int NAME_FIELD_NUMBER = 15;
+  public static final int NAME_FIELD_NUMBER = 16;
   private volatile java.lang.Object name_;
   /**
-   * <code>optional string name = 15;</code>
+   * <code>optional string name = 16;</code>
    */
   public java.lang.String getName() {
     java.lang.Object ref = name_;
@@ -333,7 +352,7 @@ public  final class BodyDescription extends
     }
   }
   /**
-   * <code>optional string name = 15;</code>
+   * <code>optional string name = 16;</code>
    */
   public com.google.protobuf.ByteString
       getNameBytes() {
@@ -349,10 +368,10 @@ public  final class BodyDescription extends
     }
   }
 
-  public static final int CLASS_FIELD_NUMBER = 16;
+  public static final int CLASS_FIELD_NUMBER = 17;
   private volatile java.lang.Object class__;
   /**
-   * <code>optional string class = 16;</code>
+   * <code>optional string class = 17;</code>
    */
   public java.lang.String getClass_() {
     java.lang.Object ref = class__;
@@ -367,7 +386,7 @@ public  final class BodyDescription extends
     }
   }
   /**
-   * <code>optional string class = 16;</code>
+   * <code>optional string class = 17;</code>
    */
   public com.google.protobuf.ByteString
       getClass_Bytes() {
@@ -383,10 +402,10 @@ public  final class BodyDescription extends
     }
   }
 
-  public static final int PINNED_FIELD_NUMBER = 17;
+  public static final int PINNED_FIELD_NUMBER = 18;
   private boolean pinned_;
   /**
-   * <code>optional bool pinned = 17;</code>
+   * <code>optional bool pinned = 18;</code>
    */
   public boolean getPinned() {
     return pinned_;
@@ -404,56 +423,59 @@ public  final class BodyDescription extends
 
   public void writeTo(com.google.protobuf.CodedOutputStream output)
                       throws java.io.IOException {
+    if (id_ != 0L) {
+      output.writeInt64(1, id_);
+    }
     if (x_ != 0F) {
-      output.writeFloat(1, x_);
+      output.writeFloat(2, x_);
     }
     if (y_ != 0F) {
-      output.writeFloat(2, y_);
+      output.writeFloat(3, y_);
     }
     if (z_ != 0F) {
-      output.writeFloat(3, z_);
+      output.writeFloat(4, z_);
     }
     if (vx_ != 0F) {
-      output.writeFloat(4, vx_);
+      output.writeFloat(5, vx_);
     }
     if (vy_ != 0F) {
-      output.writeFloat(5, vy_);
+      output.writeFloat(6, vy_);
     }
     if (vz_ != 0F) {
-      output.writeFloat(6, vz_);
+      output.writeFloat(7, vz_);
     }
     if (mass_ != 0F) {
-      output.writeFloat(7, mass_);
+      output.writeFloat(8, mass_);
     }
     if (radius_ != 0F) {
-      output.writeFloat(8, radius_);
+      output.writeFloat(9, radius_);
     }
     if (isSun_ != false) {
-      output.writeBool(9, isSun_);
+      output.writeBool(10, isSun_);
     }
     if (collisionBehavior_ != org.ericace.grpcserver.CollisionBehaviorEnum.UNDEF.getNumber()) {
-      output.writeEnum(10, collisionBehavior_);
+      output.writeEnum(11, collisionBehavior_);
     }
     if (bodyColor_ != org.ericace.grpcserver.BodyColorEnum.NOCOLOR.getNumber()) {
-      output.writeEnum(11, bodyColor_);
+      output.writeEnum(12, bodyColor_);
     }
     if (fragFactor_ != 0F) {
-      output.writeFloat(12, fragFactor_);
+      output.writeFloat(13, fragFactor_);
     }
     if (fragStep_ != 0F) {
-      output.writeFloat(13, fragStep_);
+      output.writeFloat(14, fragStep_);
     }
     if (withTelemetry_ != false) {
-      output.writeBool(14, withTelemetry_);
+      output.writeBool(15, withTelemetry_);
     }
     if (!getNameBytes().isEmpty()) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 15, name_);
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 16, name_);
     }
     if (!getClass_Bytes().isEmpty()) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 16, class__);
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 17, class__);
     }
     if (pinned_ != false) {
-      output.writeBool(17, pinned_);
+      output.writeBool(18, pinned_);
     }
   }
 
@@ -462,71 +484,75 @@ public  final class BodyDescription extends
     if (size != -1) return size;
 
     size = 0;
+    if (id_ != 0L) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeInt64Size(1, id_);
+    }
     if (x_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(1, x_);
+        .computeFloatSize(2, x_);
     }
     if (y_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(2, y_);
+        .computeFloatSize(3, y_);
     }
     if (z_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(3, z_);
+        .computeFloatSize(4, z_);
     }
     if (vx_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(4, vx_);
+        .computeFloatSize(5, vx_);
     }
     if (vy_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(5, vy_);
+        .computeFloatSize(6, vy_);
     }
     if (vz_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(6, vz_);
+        .computeFloatSize(7, vz_);
     }
     if (mass_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(7, mass_);
+        .computeFloatSize(8, mass_);
     }
     if (radius_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(8, radius_);
+        .computeFloatSize(9, radius_);
     }
     if (isSun_ != false) {
       size += com.google.protobuf.CodedOutputStream
-        .computeBoolSize(9, isSun_);
+        .computeBoolSize(10, isSun_);
     }
     if (collisionBehavior_ != org.ericace.grpcserver.CollisionBehaviorEnum.UNDEF.getNumber()) {
       size += com.google.protobuf.CodedOutputStream
-        .computeEnumSize(10, collisionBehavior_);
+        .computeEnumSize(11, collisionBehavior_);
     }
     if (bodyColor_ != org.ericace.grpcserver.BodyColorEnum.NOCOLOR.getNumber()) {
       size += com.google.protobuf.CodedOutputStream
-        .computeEnumSize(11, bodyColor_);
+        .computeEnumSize(12, bodyColor_);
     }
     if (fragFactor_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(12, fragFactor_);
+        .computeFloatSize(13, fragFactor_);
     }
     if (fragStep_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(13, fragStep_);
+        .computeFloatSize(14, fragStep_);
     }
     if (withTelemetry_ != false) {
       size += com.google.protobuf.CodedOutputStream
-        .computeBoolSize(14, withTelemetry_);
+        .computeBoolSize(15, withTelemetry_);
     }
     if (!getNameBytes().isEmpty()) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(15, name_);
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(16, name_);
     }
     if (!getClass_Bytes().isEmpty()) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(16, class__);
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(17, class__);
     }
     if (pinned_ != false) {
       size += com.google.protobuf.CodedOutputStream
-        .computeBoolSize(17, pinned_);
+        .computeBoolSize(18, pinned_);
     }
     memoizedSize = size;
     return size;
@@ -544,6 +570,8 @@ public  final class BodyDescription extends
     org.ericace.grpcserver.BodyDescription other = (org.ericace.grpcserver.BodyDescription) obj;
 
     boolean result = true;
+    result = result && (getId()
+        == other.getId());
     result = result && (
         java.lang.Float.floatToIntBits(getX())
         == java.lang.Float.floatToIntBits(
@@ -606,6 +634,9 @@ public  final class BodyDescription extends
     }
     int hash = 41;
     hash = (19 * hash) + getDescriptorForType().hashCode();
+    hash = (37 * hash) + ID_FIELD_NUMBER;
+    hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+        getId());
     hash = (37 * hash) + X_FIELD_NUMBER;
     hash = (53 * hash) + java.lang.Float.floatToIntBits(
         getX());
@@ -775,6 +806,8 @@ public  final class BodyDescription extends
     }
     public Builder clear() {
       super.clear();
+      id_ = 0L;
+
       x_ = 0F;
 
       y_ = 0F;
@@ -831,6 +864,7 @@ public  final class BodyDescription extends
 
     public org.ericace.grpcserver.BodyDescription buildPartial() {
       org.ericace.grpcserver.BodyDescription result = new org.ericace.grpcserver.BodyDescription(this);
+      result.id_ = id_;
       result.x_ = x_;
       result.y_ = y_;
       result.z_ = z_;
@@ -889,6 +923,9 @@ public  final class BodyDescription extends
 
     public Builder mergeFrom(org.ericace.grpcserver.BodyDescription other) {
       if (other == org.ericace.grpcserver.BodyDescription.getDefaultInstance()) return this;
+      if (other.getId() != 0L) {
+        setId(other.getId());
+      }
       if (other.getX() != 0F) {
         setX(other.getX());
       }
@@ -968,15 +1005,53 @@ public  final class BodyDescription extends
       return this;
     }
 
+    private long id_ ;
+    /**
+     * <pre>
+     * ignored on create
+     * </pre>
+     *
+     * <code>optional int64 id = 1;</code>
+     */
+    public long getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * ignored on create
+     * </pre>
+     *
+     * <code>optional int64 id = 1;</code>
+     */
+    public Builder setId(long value) {
+      
+      id_ = value;
+      onChanged();
+      return this;
+    }
+    /**
+     * <pre>
+     * ignored on create
+     * </pre>
+     *
+     * <code>optional int64 id = 1;</code>
+     */
+    public Builder clearId() {
+      
+      id_ = 0L;
+      onChanged();
+      return this;
+    }
+
     private float x_ ;
     /**
-     * <code>optional float x = 1;</code>
+     * <code>optional float x = 2;</code>
      */
     public float getX() {
       return x_;
     }
     /**
-     * <code>optional float x = 1;</code>
+     * <code>optional float x = 2;</code>
      */
     public Builder setX(float value) {
       
@@ -985,7 +1060,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float x = 1;</code>
+     * <code>optional float x = 2;</code>
      */
     public Builder clearX() {
       
@@ -996,13 +1071,13 @@ public  final class BodyDescription extends
 
     private float y_ ;
     /**
-     * <code>optional float y = 2;</code>
+     * <code>optional float y = 3;</code>
      */
     public float getY() {
       return y_;
     }
     /**
-     * <code>optional float y = 2;</code>
+     * <code>optional float y = 3;</code>
      */
     public Builder setY(float value) {
       
@@ -1011,7 +1086,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float y = 2;</code>
+     * <code>optional float y = 3;</code>
      */
     public Builder clearY() {
       
@@ -1022,13 +1097,13 @@ public  final class BodyDescription extends
 
     private float z_ ;
     /**
-     * <code>optional float z = 3;</code>
+     * <code>optional float z = 4;</code>
      */
     public float getZ() {
       return z_;
     }
     /**
-     * <code>optional float z = 3;</code>
+     * <code>optional float z = 4;</code>
      */
     public Builder setZ(float value) {
       
@@ -1037,7 +1112,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float z = 3;</code>
+     * <code>optional float z = 4;</code>
      */
     public Builder clearZ() {
       
@@ -1048,13 +1123,13 @@ public  final class BodyDescription extends
 
     private float vx_ ;
     /**
-     * <code>optional float vx = 4;</code>
+     * <code>optional float vx = 5;</code>
      */
     public float getVx() {
       return vx_;
     }
     /**
-     * <code>optional float vx = 4;</code>
+     * <code>optional float vx = 5;</code>
      */
     public Builder setVx(float value) {
       
@@ -1063,7 +1138,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float vx = 4;</code>
+     * <code>optional float vx = 5;</code>
      */
     public Builder clearVx() {
       
@@ -1074,13 +1149,13 @@ public  final class BodyDescription extends
 
     private float vy_ ;
     /**
-     * <code>optional float vy = 5;</code>
+     * <code>optional float vy = 6;</code>
      */
     public float getVy() {
       return vy_;
     }
     /**
-     * <code>optional float vy = 5;</code>
+     * <code>optional float vy = 6;</code>
      */
     public Builder setVy(float value) {
       
@@ -1089,7 +1164,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float vy = 5;</code>
+     * <code>optional float vy = 6;</code>
      */
     public Builder clearVy() {
       
@@ -1100,13 +1175,13 @@ public  final class BodyDescription extends
 
     private float vz_ ;
     /**
-     * <code>optional float vz = 6;</code>
+     * <code>optional float vz = 7;</code>
      */
     public float getVz() {
       return vz_;
     }
     /**
-     * <code>optional float vz = 6;</code>
+     * <code>optional float vz = 7;</code>
      */
     public Builder setVz(float value) {
       
@@ -1115,7 +1190,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float vz = 6;</code>
+     * <code>optional float vz = 7;</code>
      */
     public Builder clearVz() {
       
@@ -1126,13 +1201,13 @@ public  final class BodyDescription extends
 
     private float mass_ ;
     /**
-     * <code>optional float mass = 7;</code>
+     * <code>optional float mass = 8;</code>
      */
     public float getMass() {
       return mass_;
     }
     /**
-     * <code>optional float mass = 7;</code>
+     * <code>optional float mass = 8;</code>
      */
     public Builder setMass(float value) {
       
@@ -1141,7 +1216,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float mass = 7;</code>
+     * <code>optional float mass = 8;</code>
      */
     public Builder clearMass() {
       
@@ -1152,13 +1227,13 @@ public  final class BodyDescription extends
 
     private float radius_ ;
     /**
-     * <code>optional float radius = 8;</code>
+     * <code>optional float radius = 9;</code>
      */
     public float getRadius() {
       return radius_;
     }
     /**
-     * <code>optional float radius = 8;</code>
+     * <code>optional float radius = 9;</code>
      */
     public Builder setRadius(float value) {
       
@@ -1167,7 +1242,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float radius = 8;</code>
+     * <code>optional float radius = 9;</code>
      */
     public Builder clearRadius() {
       
@@ -1178,13 +1253,13 @@ public  final class BodyDescription extends
 
     private boolean isSun_ ;
     /**
-     * <code>optional bool is_sun = 9;</code>
+     * <code>optional bool is_sun = 10;</code>
      */
     public boolean getIsSun() {
       return isSun_;
     }
     /**
-     * <code>optional bool is_sun = 9;</code>
+     * <code>optional bool is_sun = 10;</code>
      */
     public Builder setIsSun(boolean value) {
       
@@ -1193,7 +1268,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional bool is_sun = 9;</code>
+     * <code>optional bool is_sun = 10;</code>
      */
     public Builder clearIsSun() {
       
@@ -1204,13 +1279,13 @@ public  final class BodyDescription extends
 
     private int collisionBehavior_ = 0;
     /**
-     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
      */
     public int getCollisionBehaviorValue() {
       return collisionBehavior_;
     }
     /**
-     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
      */
     public Builder setCollisionBehaviorValue(int value) {
       collisionBehavior_ = value;
@@ -1218,14 +1293,14 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
      */
     public org.ericace.grpcserver.CollisionBehaviorEnum getCollisionBehavior() {
       org.ericace.grpcserver.CollisionBehaviorEnum result = org.ericace.grpcserver.CollisionBehaviorEnum.valueOf(collisionBehavior_);
       return result == null ? org.ericace.grpcserver.CollisionBehaviorEnum.UNRECOGNIZED : result;
     }
     /**
-     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
      */
     public Builder setCollisionBehavior(org.ericace.grpcserver.CollisionBehaviorEnum value) {
       if (value == null) {
@@ -1237,7 +1312,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+     * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
      */
     public Builder clearCollisionBehavior() {
       
@@ -1248,13 +1323,13 @@ public  final class BodyDescription extends
 
     private int bodyColor_ = 0;
     /**
-     * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+     * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
      */
     public int getBodyColorValue() {
       return bodyColor_;
     }
     /**
-     * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+     * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
      */
     public Builder setBodyColorValue(int value) {
       bodyColor_ = value;
@@ -1262,14 +1337,14 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+     * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
      */
     public org.ericace.grpcserver.BodyColorEnum getBodyColor() {
       org.ericace.grpcserver.BodyColorEnum result = org.ericace.grpcserver.BodyColorEnum.valueOf(bodyColor_);
       return result == null ? org.ericace.grpcserver.BodyColorEnum.UNRECOGNIZED : result;
     }
     /**
-     * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+     * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
      */
     public Builder setBodyColor(org.ericace.grpcserver.BodyColorEnum value) {
       if (value == null) {
@@ -1281,7 +1356,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+     * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
      */
     public Builder clearBodyColor() {
       
@@ -1292,13 +1367,13 @@ public  final class BodyDescription extends
 
     private float fragFactor_ ;
     /**
-     * <code>optional float frag_factor = 12;</code>
+     * <code>optional float frag_factor = 13;</code>
      */
     public float getFragFactor() {
       return fragFactor_;
     }
     /**
-     * <code>optional float frag_factor = 12;</code>
+     * <code>optional float frag_factor = 13;</code>
      */
     public Builder setFragFactor(float value) {
       
@@ -1307,7 +1382,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float frag_factor = 12;</code>
+     * <code>optional float frag_factor = 13;</code>
      */
     public Builder clearFragFactor() {
       
@@ -1318,13 +1393,13 @@ public  final class BodyDescription extends
 
     private float fragStep_ ;
     /**
-     * <code>optional float frag_step = 13;</code>
+     * <code>optional float frag_step = 14;</code>
      */
     public float getFragStep() {
       return fragStep_;
     }
     /**
-     * <code>optional float frag_step = 13;</code>
+     * <code>optional float frag_step = 14;</code>
      */
     public Builder setFragStep(float value) {
       
@@ -1333,7 +1408,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional float frag_step = 13;</code>
+     * <code>optional float frag_step = 14;</code>
      */
     public Builder clearFragStep() {
       
@@ -1344,13 +1419,13 @@ public  final class BodyDescription extends
 
     private boolean withTelemetry_ ;
     /**
-     * <code>optional bool with_telemetry = 14;</code>
+     * <code>optional bool with_telemetry = 15;</code>
      */
     public boolean getWithTelemetry() {
       return withTelemetry_;
     }
     /**
-     * <code>optional bool with_telemetry = 14;</code>
+     * <code>optional bool with_telemetry = 15;</code>
      */
     public Builder setWithTelemetry(boolean value) {
       
@@ -1359,7 +1434,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional bool with_telemetry = 14;</code>
+     * <code>optional bool with_telemetry = 15;</code>
      */
     public Builder clearWithTelemetry() {
       
@@ -1370,7 +1445,7 @@ public  final class BodyDescription extends
 
     private java.lang.Object name_ = "";
     /**
-     * <code>optional string name = 15;</code>
+     * <code>optional string name = 16;</code>
      */
     public java.lang.String getName() {
       java.lang.Object ref = name_;
@@ -1385,7 +1460,7 @@ public  final class BodyDescription extends
       }
     }
     /**
-     * <code>optional string name = 15;</code>
+     * <code>optional string name = 16;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -1401,7 +1476,7 @@ public  final class BodyDescription extends
       }
     }
     /**
-     * <code>optional string name = 15;</code>
+     * <code>optional string name = 16;</code>
      */
     public Builder setName(
         java.lang.String value) {
@@ -1414,7 +1489,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional string name = 15;</code>
+     * <code>optional string name = 16;</code>
      */
     public Builder clearName() {
       
@@ -1423,7 +1498,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional string name = 15;</code>
+     * <code>optional string name = 16;</code>
      */
     public Builder setNameBytes(
         com.google.protobuf.ByteString value) {
@@ -1439,7 +1514,7 @@ public  final class BodyDescription extends
 
     private java.lang.Object class__ = "";
     /**
-     * <code>optional string class = 16;</code>
+     * <code>optional string class = 17;</code>
      */
     public java.lang.String getClass_() {
       java.lang.Object ref = class__;
@@ -1454,7 +1529,7 @@ public  final class BodyDescription extends
       }
     }
     /**
-     * <code>optional string class = 16;</code>
+     * <code>optional string class = 17;</code>
      */
     public com.google.protobuf.ByteString
         getClass_Bytes() {
@@ -1470,7 +1545,7 @@ public  final class BodyDescription extends
       }
     }
     /**
-     * <code>optional string class = 16;</code>
+     * <code>optional string class = 17;</code>
      */
     public Builder setClass_(
         java.lang.String value) {
@@ -1483,7 +1558,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional string class = 16;</code>
+     * <code>optional string class = 17;</code>
      */
     public Builder clearClass_() {
       
@@ -1492,7 +1567,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional string class = 16;</code>
+     * <code>optional string class = 17;</code>
      */
     public Builder setClass_Bytes(
         com.google.protobuf.ByteString value) {
@@ -1508,13 +1583,13 @@ public  final class BodyDescription extends
 
     private boolean pinned_ ;
     /**
-     * <code>optional bool pinned = 17;</code>
+     * <code>optional bool pinned = 18;</code>
      */
     public boolean getPinned() {
       return pinned_;
     }
     /**
-     * <code>optional bool pinned = 17;</code>
+     * <code>optional bool pinned = 18;</code>
      */
     public Builder setPinned(boolean value) {
       
@@ -1523,7 +1598,7 @@ public  final class BodyDescription extends
       return this;
     }
     /**
-     * <code>optional bool pinned = 17;</code>
+     * <code>optional bool pinned = 18;</code>
      */
     public Builder clearPinned() {
       

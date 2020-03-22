@@ -229,6 +229,21 @@ public class Body {
         return Body.R;
     }
 
+    // more getters to support the gRPC API
+    public float getX() {return x;}
+    public float getY() {return y;}
+    public float getZ() {return z;}
+    public float getVx() {return vx;}
+    public float getVy() {return vy;}
+    public float getVz() {return vz;}
+    public float getMass() {return mass;}
+    public float getRadius() {return radius;}
+    public Globals.CollisionBehavior getCollisionBehavior() {return collisionBehavior;}
+    public Globals.Color getBodyColor() {return color;}
+    public float getFragFactor() {return fragFactor;}
+    public float getFragStep() {return fragmentationStep;}
+    public boolean getWithTelemetry() {return withTelemetry;}
+
     /**
      * Creates an instance with passed configuration
      *

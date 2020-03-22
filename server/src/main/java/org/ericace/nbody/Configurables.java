@@ -109,8 +109,14 @@ public interface Configurables {
         }
         public String getResult() {return result;}
     }
+
     /**
      * Modifies body properties
      */
     ModBodyResult modBody(int id, String name, String clas, List<BodyMod> bodyMods);
+
+    /**
+     * Gets a body to display its properties
+     */
+    Body getBody(int id, String name);
 }

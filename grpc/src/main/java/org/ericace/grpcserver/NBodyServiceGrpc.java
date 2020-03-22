@@ -248,6 +248,37 @@ public final class NBodyServiceGrpc {
     return getModBodyMethod;
   }
 
+  private static volatile io.grpc.MethodDescriptor<org.ericace.grpcserver.ModBodyMessage,
+      org.ericace.grpcserver.BodyDescription> getGetBodyMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "GetBody",
+      requestType = org.ericace.grpcserver.ModBodyMessage.class,
+      responseType = org.ericace.grpcserver.BodyDescription.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<org.ericace.grpcserver.ModBodyMessage,
+      org.ericace.grpcserver.BodyDescription> getGetBodyMethod() {
+    io.grpc.MethodDescriptor<org.ericace.grpcserver.ModBodyMessage, org.ericace.grpcserver.BodyDescription> getGetBodyMethod;
+    if ((getGetBodyMethod = NBodyServiceGrpc.getGetBodyMethod) == null) {
+      synchronized (NBodyServiceGrpc.class) {
+        if ((getGetBodyMethod = NBodyServiceGrpc.getGetBodyMethod) == null) {
+          NBodyServiceGrpc.getGetBodyMethod = getGetBodyMethod =
+              io.grpc.MethodDescriptor.<org.ericace.grpcserver.ModBodyMessage, org.ericace.grpcserver.BodyDescription>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "GetBody"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  org.ericace.grpcserver.ModBodyMessage.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  org.ericace.grpcserver.BodyDescription.getDefaultInstance()))
+              .setSchemaDescriptor(new NBodyServiceMethodDescriptorSupplier("GetBody"))
+              .build();
+        }
+      }
+    }
+    return getGetBodyMethod;
+  }
+
   private static volatile io.grpc.MethodDescriptor<com.google.protobuf.Empty,
       org.ericace.grpcserver.CurrentConfig> getGetCurrentConfigMethod;
 
@@ -408,6 +439,16 @@ public final class NBodyServiceGrpc {
 
     /**
      * <pre>
+     * Gets body properties (use ModBodyMessage and ignore what is not needed)
+     * </pre>
+     */
+    public void getBody(org.ericace.grpcserver.ModBodyMessage request,
+        io.grpc.stub.StreamObserver<org.ericace.grpcserver.BodyDescription> responseObserver) {
+      asyncUnimplementedUnaryCall(getGetBodyMethod(), responseObserver);
+    }
+
+    /**
+     * <pre>
      * Gets the current values of sim configurables
      * </pre>
      */
@@ -467,6 +508,13 @@ public final class NBodyServiceGrpc {
                 org.ericace.grpcserver.ModBodyMessage,
                 org.ericace.grpcserver.ResultCode>(
                   this, METHODID_MOD_BODY)))
+          .addMethod(
+            getGetBodyMethod(),
+            asyncUnaryCall(
+              new MethodHandlers<
+                org.ericace.grpcserver.ModBodyMessage,
+                org.ericace.grpcserver.BodyDescription>(
+                  this, METHODID_GET_BODY)))
           .addMethod(
             getGetCurrentConfigMethod(),
             asyncUnaryCall(
@@ -580,6 +628,17 @@ public final class NBodyServiceGrpc {
 
     /**
      * <pre>
+     * Gets body properties (use ModBodyMessage and ignore what is not needed)
+     * </pre>
+     */
+    public void getBody(org.ericace.grpcserver.ModBodyMessage request,
+        io.grpc.stub.StreamObserver<org.ericace.grpcserver.BodyDescription> responseObserver) {
+      asyncUnaryCall(
+          getChannel().newCall(getGetBodyMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     * <pre>
      * Gets the current values of sim configurables
      * </pre>
      */
@@ -681,6 +740,16 @@ public final class NBodyServiceGrpc {
     public org.ericace.grpcserver.ResultCode modBody(org.ericace.grpcserver.ModBodyMessage request) {
       return blockingUnaryCall(
           getChannel(), getModBodyMethod(), getCallOptions(), request);
+    }
+
+    /**
+     * <pre>
+     * Gets body properties (use ModBodyMessage and ignore what is not needed)
+     * </pre>
+     */
+    public org.ericace.grpcserver.BodyDescription getBody(org.ericace.grpcserver.ModBodyMessage request) {
+      return blockingUnaryCall(
+          getChannel(), getGetBodyMethod(), getCallOptions(), request);
     }
 
     /**
@@ -796,6 +865,17 @@ public final class NBodyServiceGrpc {
 
     /**
      * <pre>
+     * Gets body properties (use ModBodyMessage and ignore what is not needed)
+     * </pre>
+     */
+    public com.google.common.util.concurrent.ListenableFuture<org.ericace.grpcserver.BodyDescription> getBody(
+        org.ericace.grpcserver.ModBodyMessage request) {
+      return futureUnaryCall(
+          getChannel().newCall(getGetBodyMethod(), getCallOptions()), request);
+    }
+
+    /**
+     * <pre>
      * Gets the current values of sim configurables
      * </pre>
      */
@@ -813,7 +893,8 @@ public final class NBodyServiceGrpc {
   private static final int METHODID_REMOVE_BODIES = 4;
   private static final int METHODID_ADD_BODY = 5;
   private static final int METHODID_MOD_BODY = 6;
-  private static final int METHODID_GET_CURRENT_CONFIG = 7;
+  private static final int METHODID_GET_BODY = 7;
+  private static final int METHODID_GET_CURRENT_CONFIG = 8;
 
   private static final class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
@@ -859,6 +940,10 @@ public final class NBodyServiceGrpc {
         case METHODID_MOD_BODY:
           serviceImpl.modBody((org.ericace.grpcserver.ModBodyMessage) request,
               (io.grpc.stub.StreamObserver<org.ericace.grpcserver.ResultCode>) responseObserver);
+          break;
+        case METHODID_GET_BODY:
+          serviceImpl.getBody((org.ericace.grpcserver.ModBodyMessage) request,
+              (io.grpc.stub.StreamObserver<org.ericace.grpcserver.BodyDescription>) responseObserver);
           break;
         case METHODID_GET_CURRENT_CONFIG:
           serviceImpl.getCurrentConfig((com.google.protobuf.Empty) request,
@@ -932,6 +1017,7 @@ public final class NBodyServiceGrpc {
               .addMethod(getRemoveBodiesMethod())
               .addMethod(getAddBodyMethod())
               .addMethod(getModBodyMethod())
+              .addMethod(getGetBodyMethod())
               .addMethod(getGetCurrentConfigMethod())
               .build();
         }

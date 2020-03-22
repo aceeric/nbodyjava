@@ -19,6 +19,7 @@ cmds=(
   mod-body
   mod-bodies
   get-config
+  get-body
   add-body
   add-bodies
 )

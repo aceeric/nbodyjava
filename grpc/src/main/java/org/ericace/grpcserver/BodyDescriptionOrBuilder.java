@@ -8,105 +8,114 @@ public interface BodyDescriptionOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>optional float x = 1;</code>
+   * <pre>
+   * ignored on create
+   * </pre>
+   *
+   * <code>optional int64 id = 1;</code>
+   */
+  long getId();
+
+  /**
+   * <code>optional float x = 2;</code>
    */
   float getX();
 
   /**
-   * <code>optional float y = 2;</code>
+   * <code>optional float y = 3;</code>
    */
   float getY();
 
   /**
-   * <code>optional float z = 3;</code>
+   * <code>optional float z = 4;</code>
    */
   float getZ();
 
   /**
-   * <code>optional float vx = 4;</code>
+   * <code>optional float vx = 5;</code>
    */
   float getVx();
 
   /**
-   * <code>optional float vy = 5;</code>
+   * <code>optional float vy = 6;</code>
    */
   float getVy();
 
   /**
-   * <code>optional float vz = 6;</code>
+   * <code>optional float vz = 7;</code>
    */
   float getVz();
 
   /**
-   * <code>optional float mass = 7;</code>
+   * <code>optional float mass = 8;</code>
    */
   float getMass();
 
   /**
-   * <code>optional float radius = 8;</code>
+   * <code>optional float radius = 9;</code>
    */
   float getRadius();
 
   /**
-   * <code>optional bool is_sun = 9;</code>
+   * <code>optional bool is_sun = 10;</code>
    */
   boolean getIsSun();
 
   /**
-   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
    */
   int getCollisionBehaviorValue();
   /**
-   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 10;</code>
+   * <code>optional .nbodyservice.CollisionBehaviorEnum collision_behavior = 11;</code>
    */
   org.ericace.grpcserver.CollisionBehaviorEnum getCollisionBehavior();
 
   /**
-   * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+   * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
    */
   int getBodyColorValue();
   /**
-   * <code>optional .nbodyservice.BodyColorEnum body_color = 11;</code>
+   * <code>optional .nbodyservice.BodyColorEnum body_color = 12;</code>
    */
   org.ericace.grpcserver.BodyColorEnum getBodyColor();
 
   /**
-   * <code>optional float frag_factor = 12;</code>
+   * <code>optional float frag_factor = 13;</code>
    */
   float getFragFactor();
 
   /**
-   * <code>optional float frag_step = 13;</code>
+   * <code>optional float frag_step = 14;</code>
    */
   float getFragStep();
 
   /**
-   * <code>optional bool with_telemetry = 14;</code>
+   * <code>optional bool with_telemetry = 15;</code>
    */
   boolean getWithTelemetry();
 
   /**
-   * <code>optional string name = 15;</code>
+   * <code>optional string name = 16;</code>
    */
   java.lang.String getName();
   /**
-   * <code>optional string name = 15;</code>
+   * <code>optional string name = 16;</code>
    */
   com.google.protobuf.ByteString
       getNameBytes();
 
   /**
-   * <code>optional string class = 16;</code>
+   * <code>optional string class = 17;</code>
    */
   java.lang.String getClass_();
   /**
-   * <code>optional string class = 16;</code>
+   * <code>optional string class = 17;</code>
    */
   com.google.protobuf.ByteString
       getClass_Bytes();
 
   /**
-   * <code>optional bool pinned = 17;</code>
+   * <code>optional bool pinned = 18;</code>
    */
   boolean getPinned();
 }

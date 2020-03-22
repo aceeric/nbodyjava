@@ -38,6 +38,9 @@ service NBodyService {
   // Modifies body properties
   rpc ModBody (ModBodyMessage) returns (ResultCode) {}
 
+  // Gets body properties (use ModBodyMessage and ignore what is not needed)
+  rpc GetBody (ModBodyMessage) returns (BodyDescription) {}
+
   // Gets the current values of sim configurables
   rpc GetCurrentConfig(google.protobuf.Empty) returns (CurrentConfig) {}
 }
@@ -53,23 +56,24 @@ message CurrentConfig {
 
 // All the params required to represent a body in the simulation
 message BodyDescription {
-  float x = 1;
-  float y = 2;
-  float z = 3;
-  float vx = 4;
-  float vy = 5;
-  float vz = 6;
-  float mass = 7;
-  float radius = 8;
-  bool is_sun = 9;
-  CollisionBehaviorEnum collision_behavior = 10;
-  BodyColorEnum body_color = 11;
-  float frag_factor = 12;
-  float frag_step = 13;
-  bool with_telemetry = 14;
-  string name = 15;
-  string class = 16;
-  bool pinned = 17;
+  int64 id = 1; // ignored on create
+  float x = 2;
+  float y = 3;
+  float z = 4;
+  float vx = 5;
+  float vy = 6;
+  float vz = 7;
+  float mass = 8;
+  float radius = 9;
+  bool is_sun = 10;
+  CollisionBehaviorEnum collision_behavior = 11;
+  BodyColorEnum body_color = 12;
+  float frag_factor = 13;
+  float frag_step = 14;
+  bool with_telemetry = 15;
+  string name = 16;
+  string class = 17;
+  bool pinned = 18;
 }
 
 // Modify body properties. To modify by ID, pass the ID and omit name and class:

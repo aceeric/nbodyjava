@@ -4,6 +4,7 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import org.ericace.globals.Globals;
+import org.ericace.nbody.Body;
 import org.ericace.nbody.BodyMod;
 import org.ericace.nbody.Configurables;
 
@@ -233,6 +234,35 @@ public class NBodyServiceServer {
             responseObserver.onCompleted();
         }
 
+        @Override
+        public void getBody(org.ericace.grpcserver.ModBodyMessage request,
+                             io.grpc.stub.StreamObserver<org.ericace.grpcserver.BodyDescription> responseObserver) {
+            int bodyId = (int) request.getId();
+            String bodyName = request.getName();
+            Body b = configurables.getBody(bodyId, bodyName);
+            BodyDescription bd = null;
+            if (b != null) {
+                bd = BodyDescription.newBuilder()
+                        .setId(b.getId())
+                        .setX(b.getX()).setY(b.getY()).setZ(b.getZ())
+                        .setVx(b.getVx()).setVy(b.getVy()).setVz(b.getVz())
+                        .setMass(b.getMass())
+                        .setRadius(b.getRadius())
+                        .setIsSun(b.isSun())
+                        .setCollisionBehavior(org.ericace.grpcserver.CollisionBehaviorEnum.valueOf(b.getCollisionBehavior().name()))
+                        .setBodyColor(org.ericace.grpcserver.BodyColorEnum.valueOf(b.getBodyColor() == null ? RANDOM.name() : b.getBodyColor().name()))
+                        .setFragFactor(b.getFragFactor())
+                        .setFragStep(b.getFragStep())
+                        .setWithTelemetry(b.getWithTelemetry())
+                        .setName(b.getName() == null ? "" : b.getName())
+                        .setClass_(b.getClas() == null ? "" : b.getClas())
+                        .setPinned(b.isPinned())
+                        .build();
+           }
+           responseObserver.onNext(bd);
+           responseObserver.onCompleted();
+        }
+
         private Globals.Color xlatColor(org.ericace.grpcserver.BodyColorEnum bodyColorEnum) {
             switch (bodyColorEnum.getNumber()) {
                 case 1: return RANDOM;
@@ -319,5 +349,9 @@ public class NBodyServiceServer {
 
         @Override
         public ModBodyResult modBody(int id, String bodyName, String bodyClass, List<BodyMod> bodyMods) {return null;}
+
+        @Override
+        public Body getBody(int id, String bodyName) {return null;}
+
     }
 }

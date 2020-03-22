@@ -145,6 +145,47 @@ public class NbodyServiceClient {
     }
 
     /**
+     * get-body id= or name= (don't support class yet as it would return potentially many objects
+     */
+    private void getBody(String [] args) {
+        String [] cmd = args[1].split("=");
+        int id=-1; // funkiness for gRPC
+        String name = "", clas = "";
+        if ("id".equals(cmd[0])) {
+            id = Integer.parseInt(cmd[1]);
+        } else if ("name".equals(cmd[0])) {
+            name = cmd[1];
+        } else {
+            throw new RuntimeException("Unknown cmd for get-body: " + args[1]);
+        }
+        ModBodyMessage.Builder builder = ModBodyMessage.newBuilder().setId(id).setName(name);
+        ModBodyMessage request = builder.build();
+        BodyDescription bd = blockingStub.getBody(request);
+        String result =
+            "id: %d\n" +
+            "x,y,z: %f,%f,%f\n" +
+            "vx,vy,vz: %f,%f,%f\n" +
+            "mass: %f\n" +
+            "radius: %f\n" +
+            "is-sun: %b\n"  +
+            "collision: %s\n"  +
+            "color: %s\n"  +
+            "frag-factor: %f\n"  +
+            "frag-step: %f\n"  +
+            "telemetry: %b\n"  +
+            "name: %s\n"  +
+            "class: %s\n";
+        result = String.format(result, bd.getId(),
+                bd.getX(), bd.getY(), bd.getZ(),
+                bd.getVx(), bd.getVy(), bd.getVz(),
+                bd.getMass(), bd.getRadius(),
+                bd.getIsSun(), bd.getCollisionBehavior().name(), bd.getBodyColor().name(),
+                bd.getFragFactor(), bd.getFragStep(),
+                bd.getWithTelemetry(), bd.getName(), bd.getClass_());
+        System.out.println(result);
+    }
+
+    /**
      * Adds one body with typed args
      */
     private void addBodies(float x, float y, float z, float vx, float vy, float vz, float mass, float radius,
@@ -335,6 +376,7 @@ public class NbodyServiceClient {
                 case "remove-bodies": client.removeBodies(args); break;
                 case "mod-body": case "mod-bodies": client.modBodies(args); break;
                 case "get-config": client.getCurrentConfig(); break;
+                case "get-body": client.getBody(args); break;
                 case "add-body": case "add-bodies":
                     client.addBodies(args); break;
                 default:

@@ -63,47 +63,50 @@ public final class Nbodyservice {
       "g\022\016\n\006bodies\030\001 \001(\003\022\031\n\021result_queue_size\030\002" +
       " \001(\003\022\033\n\023computation_threads\030\003 \001(\003\022\030\n\020smo" +
       "othing_factor\030\004 \001(\002\022\037\n\027restitution_coeff" +
-      "icient\030\006 \001(\002\"\343\002\n\017BodyDescription\022\t\n\001x\030\001 " +
-      "\001(\002\022\t\n\001y\030\002 \001(\002\022\t\n\001z\030\003 \001(\002\022\n\n\002vx\030\004 \001(\002\022\n\n" +
-      "\002vy\030\005 \001(\002\022\n\n\002vz\030\006 \001(\002\022\014\n\004mass\030\007 \001(\002\022\016\n\006r" +
-      "adius\030\010 \001(\002\022\016\n\006is_sun\030\t \001(\010\022?\n\022collision" +
-      "_behavior\030\n \001(\0162#.nbodyservice.Collision",
-      "BehaviorEnum\022/\n\nbody_color\030\013 \001(\0162\033.nbody" +
-      "service.BodyColorEnum\022\023\n\013frag_factor\030\014 \001" +
-      "(\002\022\021\n\tfrag_step\030\r \001(\002\022\026\n\016with_telemetry\030" +
-      "\016 \001(\010\022\014\n\004name\030\017 \001(\t\022\r\n\005class\030\020 \001(\t\022\016\n\006pi" +
-      "nned\030\021 \001(\010\"D\n\016ModBodyMessage\022\n\n\002id\030\001 \001(\003" +
-      "\022\014\n\004name\030\002 \001(\t\022\r\n\005class\030\003 \001(\t\022\t\n\001p\030\004 \003(\t" +
-      "\"\037\n\tItemCount\022\022\n\nitem_count\030\001 \001(\003\"\030\n\006Fac" +
-      "tor\022\016\n\006factor\030\001 \001(\002\"9\n\026RestitutionCoeffi" +
-      "cient\022\037\n\027restitution_coefficient\030\001 \001(\002\"\200" +
-      "\001\n\nResultCode\022<\n\013result_code\030\001 \001(\0162\'.nbo",
-      "dyservice.ResultCode.ResultCodeEnum\022\017\n\007m" +
-      "essage\030\002 \001(\t\"#\n\016ResultCodeEnum\022\006\n\002OK\020\000\022\t" +
-      "\n\005ERROR\020\001*T\n\025CollisionBehaviorEnum\022\t\n\005UN" +
-      "DEF\020\000\022\010\n\004NONE\020\001\022\013\n\007SUBSUME\020\002\022\013\n\007ELASTIC\020" +
-      "\003\022\014\n\010FRAGMENT\020\004*\307\001\n\rBodyColorEnum\022\013\n\007NOC" +
-      "OLOR\020\000\022\n\n\006RANDOM\020\001\022\t\n\005BLACK\020\002\022\t\n\005WHITE\020\003" +
-      "\022\014\n\010DARKGRAY\020\004\022\010\n\004GRAY\020\005\022\r\n\tLIGHTGRAY\020\006\022" +
-      "\007\n\003RED\020\007\022\t\n\005GREEN\020\010\022\010\n\004BLUE\020\t\022\n\n\006YELLOW\020" +
-      "\n\022\013\n\007MAGENTA\020\013\022\010\n\004CYAN\020\014\022\n\n\006ORANGE\020\r\022\t\n\005" +
-      "BROWN\020\016\022\010\n\004PINK\020\0172\343\004\n\014NBodyService\022L\n\025Se",
-      "tComputationThreads\022\027.nbodyservice.ItemC" +
-      "ount\032\030.nbodyservice.ResultCode\"\000\022I\n\022SetR" +
-      "esultQueueSize\022\027.nbodyservice.ItemCount\032" +
-      "\030.nbodyservice.ResultCode\"\000\022@\n\014SetSmooth" +
-      "ing\022\024.nbodyservice.Factor\032\030.nbodyservice" +
-      ".ResultCode\"\000\022]\n\031SetRestitutionCoefficie" +
-      "nt\022$.nbodyservice.RestitutionCoefficient" +
-      "\032\030.nbodyservice.ResultCode\"\000\022C\n\014RemoveBo" +
-      "dies\022\027.nbodyservice.ItemCount\032\030.nbodyser" +
-      "vice.ResultCode\"\000\022D\n\007AddBody\022\035.nbodyserv",
-      "ice.BodyDescription\032\030.nbodyservice.Resul" +
-      "tCode\"\000\022C\n\007ModBody\022\034.nbodyservice.ModBod" +
-      "yMessage\032\030.nbodyservice.ResultCode\"\000\022I\n\020" +
-      "GetCurrentConfig\022\026.google.protobuf.Empty" +
-      "\032\033.nbodyservice.CurrentConfig\"\000B%\n\026org.e" +
-      "ricace.grpcserverP\001\242\002\010NBODYSVCb\006proto3"
+      "icient\030\006 \001(\002\"\357\002\n\017BodyDescription\022\n\n\002id\030\001" +
+      " \001(\003\022\t\n\001x\030\002 \001(\002\022\t\n\001y\030\003 \001(\002\022\t\n\001z\030\004 \001(\002\022\n\n" +
+      "\002vx\030\005 \001(\002\022\n\n\002vy\030\006 \001(\002\022\n\n\002vz\030\007 \001(\002\022\014\n\004mas" +
+      "s\030\010 \001(\002\022\016\n\006radius\030\t \001(\002\022\016\n\006is_sun\030\n \001(\010\022" +
+      "?\n\022collision_behavior\030\013 \001(\0162#.nbodyservi",
+      "ce.CollisionBehaviorEnum\022/\n\nbody_color\030\014" +
+      " \001(\0162\033.nbodyservice.BodyColorEnum\022\023\n\013fra" +
+      "g_factor\030\r \001(\002\022\021\n\tfrag_step\030\016 \001(\002\022\026\n\016wit" +
+      "h_telemetry\030\017 \001(\010\022\014\n\004name\030\020 \001(\t\022\r\n\005class" +
+      "\030\021 \001(\t\022\016\n\006pinned\030\022 \001(\010\"D\n\016ModBodyMessage" +
+      "\022\n\n\002id\030\001 \001(\003\022\014\n\004name\030\002 \001(\t\022\r\n\005class\030\003 \001(" +
+      "\t\022\t\n\001p\030\004 \003(\t\"\037\n\tItemCount\022\022\n\nitem_count\030" +
+      "\001 \001(\003\"\030\n\006Factor\022\016\n\006factor\030\001 \001(\002\"9\n\026Resti" +
+      "tutionCoefficient\022\037\n\027restitution_coeffic" +
+      "ient\030\001 \001(\002\"\200\001\n\nResultCode\022<\n\013result_code",
+      "\030\001 \001(\0162\'.nbodyservice.ResultCode.ResultC" +
+      "odeEnum\022\017\n\007message\030\002 \001(\t\"#\n\016ResultCodeEn" +
+      "um\022\006\n\002OK\020\000\022\t\n\005ERROR\020\001*T\n\025CollisionBehavi" +
+      "orEnum\022\t\n\005UNDEF\020\000\022\010\n\004NONE\020\001\022\013\n\007SUBSUME\020\002" +
+      "\022\013\n\007ELASTIC\020\003\022\014\n\010FRAGMENT\020\004*\307\001\n\rBodyColo" +
+      "rEnum\022\013\n\007NOCOLOR\020\000\022\n\n\006RANDOM\020\001\022\t\n\005BLACK\020" +
+      "\002\022\t\n\005WHITE\020\003\022\014\n\010DARKGRAY\020\004\022\010\n\004GRAY\020\005\022\r\n\t" +
+      "LIGHTGRAY\020\006\022\007\n\003RED\020\007\022\t\n\005GREEN\020\010\022\010\n\004BLUE\020" +
+      "\t\022\n\n\006YELLOW\020\n\022\013\n\007MAGENTA\020\013\022\010\n\004CYAN\020\014\022\n\n\006" +
+      "ORANGE\020\r\022\t\n\005BROWN\020\016\022\010\n\004PINK\020\0172\255\005\n\014NBodyS",
+      "ervice\022L\n\025SetComputationThreads\022\027.nbodys" +
+      "ervice.ItemCount\032\030.nbodyservice.ResultCo" +
+      "de\"\000\022I\n\022SetResultQueueSize\022\027.nbodyservic" +
+      "e.ItemCount\032\030.nbodyservice.ResultCode\"\000\022" +
+      "@\n\014SetSmoothing\022\024.nbodyservice.Factor\032\030." +
+      "nbodyservice.ResultCode\"\000\022]\n\031SetRestitut" +
+      "ionCoefficient\022$.nbodyservice.Restitutio" +
+      "nCoefficient\032\030.nbodyservice.ResultCode\"\000" +
+      "\022C\n\014RemoveBodies\022\027.nbodyservice.ItemCoun" +
+      "t\032\030.nbodyservice.ResultCode\"\000\022D\n\007AddBody",
+      "\022\035.nbodyservice.BodyDescription\032\030.nbodys" +
+      "ervice.ResultCode\"\000\022C\n\007ModBody\022\034.nbodyse" +
+      "rvice.ModBodyMessage\032\030.nbodyservice.Resu" +
+      "ltCode\"\000\022H\n\007GetBody\022\034.nbodyservice.ModBo" +
+      "dyMessage\032\035.nbodyservice.BodyDescription" +
+      "\"\000\022I\n\020GetCurrentConfig\022\026.google.protobuf" +
+      ".Empty\032\033.nbodyservice.CurrentConfig\"\000B%\n" +
+      "\026org.ericace.grpcserverP\001\242\002\010NBODYSVCb\006pr" +
+      "oto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -129,7 +132,7 @@ public final class Nbodyservice {
     internal_static_nbodyservice_BodyDescription_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_nbodyservice_BodyDescription_descriptor,
-        new java.lang.String[] { "X", "Y", "Z", "Vx", "Vy", "Vz", "Mass", "Radius", "IsSun", "CollisionBehavior", "BodyColor", "FragFactor", "FragStep", "WithTelemetry", "Name", "Class_", "Pinned", });
+        new java.lang.String[] { "Id", "X", "Y", "Z", "Vx", "Vy", "Vz", "Mass", "Radius", "IsSun", "CollisionBehavior", "BodyColor", "FragFactor", "FragStep", "WithTelemetry", "Name", "Class_", "Pinned", });
     internal_static_nbodyservice_ModBodyMessage_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_nbodyservice_ModBodyMessage_fieldAccessorTable = new

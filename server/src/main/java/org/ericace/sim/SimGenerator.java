@@ -34,18 +34,23 @@ public class SimGenerator {
      * @param bodyCount         Max bodies
      * @param collisionBehavior The collision behavior for each body
      * @param defaultBodyColor  Default body color
-     * @param simArgs           Unused by this generator
+     * @param simArgs           CSV in the form: radius of clump, distance of clump from center
+     *                          "30,200" (these are the defaults if no arg provided)
      *
      * @return a simulation instance containing a list of bodies
      */
     static Sim sim1(int bodyCount, Globals.CollisionBehavior collisionBehavior, Globals.Color defaultBodyColor,
                     String simArgs) {
+        String [] parsedSimArgs = simArgs == null ? new String[] {"30","200"} : simArgs.split(",");
+        float clumpRadius = parsedSimArgs.length >= 1 ? Float.parseFloat(parsedSimArgs[0]) : 30F;
+        float dist = parsedSimArgs.length >= 2 ? Float.parseFloat(parsedSimArgs[1]) : 200F;
+
         List<Body> bodies = new ArrayList<>();
         float vx, vy, vz, y, mass, radius, V = 958000000;
         for (int i = -1; i <= 1; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
-                float xc = 200 * i;
-                float zc = 200 * j;
+                float xc = dist * i;
+                float zc = dist * j;
                 Globals.Color color;
                 if      (i == -1 && j == -1) {vx = -V; vz =  V; y = +100; color = defaultBodyColor == null ? Globals.Color.RED : defaultBodyColor;}
                 else if (i == -1 && j ==  1) {vx =  V; vz =  V; y = -100; color = defaultBodyColor == null ? Globals.Color.YELLOW : defaultBodyColor;}
@@ -56,7 +61,7 @@ public class SimGenerator {
                     float f = (float) Math.random();
                     radius = c < bodyCount * .0025 ? 8 * f : 3 * f;
                     mass = radius * SOLAR_MASS * .000005F;
-                    SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(xc, y, zc), 30);
+                    SimpleVector v = SimpleVector.getVectorEven(new SimpleVector(xc, y, zc), clumpRadius);
                     bodies.add(new Body(Body.nextID(), v.x, v.y, v.z, vx, vy, vz, mass, radius, collisionBehavior,
                             color, 1, 1, false, null, null, false));
                 }
@@ -388,7 +393,7 @@ public class SimGenerator {
      */
     private static void createSunAndAddToQueue(List<Body> bodies, float x, float y, float z, float mass, float radius) {
         Body theSun = new Body(Body.nextID(), x, y, z, -3, -3, -5, mass, radius, Globals.CollisionBehavior.SUBSUME,
-                null, 1, 1, false, null, null, false);
+                null, 1, 1, false, "the-sun", null, false);
         theSun.setSun();
         bodies.add(theSun);
     }
