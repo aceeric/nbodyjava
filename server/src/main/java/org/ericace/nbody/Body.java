@@ -4,6 +4,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ericace.globals.Globals;
+import org.ericace.instrumentation.InstrumentationManager;
+import org.ericace.instrumentation.Metric;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -21,6 +23,9 @@ public class Body {
     private static final Logger logger = LogManager.getLogger(Body.class);
 
     private static final Level CUSTOM = Level.getLevel("CUSTOM");
+
+    private static final Metric metricBodyComputations = InstrumentationManager.getInstrumentation()
+            .registerCounter("nbody_computations", "N-Body Computations");
 
     /**
      * The gravitational constant
@@ -444,6 +449,7 @@ public class Body {
                             break;
                         }
                         if (Body.this != otherBody && otherBody.exists && !otherBody.fragmenting) {
+                            metricBodyComputations.incValue();
                             // calcForceFrom updates fx,fy,fz
                             ForceCalcResult result = calcForceFrom(otherBody);
                             if (result.collided) {
